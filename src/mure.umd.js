@@ -1,0 +1,1 @@
+../../mure-library/dist/mure.umd.js

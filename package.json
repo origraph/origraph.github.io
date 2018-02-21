@@ -1,0 +1,19 @@
+{
+  "name": "origraph",
+  "version": "0.0.1",
+  "description": "Graph folding",
+  "scripts": {
+    "serve": "serve src",
+    "ghpages": "git add src/* && git commit -m \"ghpages autocommit\" && git subtree push --prefix src origin gh-pages"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alex-r-bigelow/origraph.git"
+  },
+  "author": "Alex Bigelow",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alex-r-bigelow/origraph/issues"
+  },
+  "homepage": "https://github.com/alex-r-bigelow/origraph#readme"
+}
