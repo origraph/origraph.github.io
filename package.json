@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/alex-r-bigelow/origraph/issues"
   },
-  "homepage": "https://github.com/alex-r-bigelow/origraph#readme"
+  "homepage": "https://github.com/alex-r-bigelow/origraph#readme",
+  "dependencies": {
+    "serve": "^6.5.1"
+  }
 }

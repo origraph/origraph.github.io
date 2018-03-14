@@ -1,24 +1,46 @@
 /* globals d3, mure */
 
+import NodeLinkDD from './views/NodeLinkDD.js';
+
+let views = {
+  'NodeLinkDD': NodeLinkDD
+};
+
 console.log('d3 version:', d3.version);
 console.log('mure version:', mure.version);
 
-// Example of listening for changes
-mure.db.changes({
-  since: 'now'
-}).on('change', function (change) {
-  console.log('change detected', change);
-});
+function resize () {
+  d3.select('svg')
+    .attr('width', window.innerWidth)
+    .attr('height', window.innerHeight);
+}
 
-// Example of creating an empty document
-(async () => {
-  await mure.db.put({
-    _id: 'empty document test'
-  }).catch(error => {
-    console.warn('error', error.message);
+function getLocation () {
+  let result = {};
+  window.location.search.substr(1).split('&').forEach(chunk => {
+    let [key, value] = chunk.split('=');
+    result[key] = decodeURIComponent(value);
   });
+  return result;
+}
 
-  let doc = await mure.getStandardizedDoc('empty document test');
+async function navigate () {
+  let location = getLocation();
+  let selection;
+  if (location.selection) {
+    selection = mure.selectAll(location.selection);
+  } else {
+    // TODO
+    selection = mure.selectAll('@ { "_id": "application/json;blackJack_round2.json" }');
+    // selection = mure.selectAllDocs();
+  }
+  if (!window.currentView) {
+    let viewName = views[location.view] ? location.view : 'NodeLinkDD';
+    d3.select('svg').attr('class', viewName);
+    window.currentView = new views[viewName](selection);
+  }
+  window.currentView.render(d3.select('svg'));
+}
 
-  console.log(doc);
-})();
+window.onload = () => { resize(); navigate(); };
+window.onresize = resize;
