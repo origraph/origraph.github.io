@@ -1,7 +1,7 @@
 /* globals d3 */
 import { View } from '../uki.es.js';
 
-let DEBUG = true;
+let DEBUG_FORCES = true;
 
 function createEnum (entries) {
   let temp = {};
@@ -39,11 +39,13 @@ let STANDARD_CIRCLE = getCirclePath(NODE_RADIUS);
 let ARC_CURVE = d3.line().curve(d3.curveCatmullRom.alpha(1));
 let SUPERNODE_CURVE = d3.line().curve(d3.curveCatmullRomClosed.alpha(1));
 
-let EXTERNAL_INDEX = 0;
-
 let GHOST_NODE_TYPES = createEnum([
-  'CENTER',
-  'JUNCTION',
+  'NODE_CENTER',
+  'NODE_JUNCTION',
+  'EDGE_CENTER',
+  'EDGE_JUNCTION',
+  'SUPER_CENTER',
+  'SUPER_JUNCTION',
   'EXTERNAL'
 ]);
 
@@ -58,8 +60,10 @@ class NodeLinkDD extends View {
     super();
     this.graph = undefined;
     let linkForce = d3.forceLink()
-      .id(d => d.id);
-    let manyBodyForce = d3.forceManyBody();
+      .id(d => d.id)
+      .distance(NODE_RADIUS);
+    let manyBodyForce = d3.forceManyBody()
+      .strength(-50);
     this.simulation = d3.forceSimulation()
       .force('link', linkForce)
       .force('charge', manyBodyForce)
@@ -76,8 +80,11 @@ class NodeLinkDD extends View {
     await this.updateGraph();
     if (this.graph) {
       this.simulation.nodes(this.graph.ghostNodes);
+      // Don't include the segments between supernodes in the simulation
+      let forceEdges = this.graph.ghostEdges
+        .filter(edge => edge.type !== 'SUPERNODE_JUNCTION>>SUPERNODE_JUNCTION');
       this.simulation.force('link')
-        .links(this.graph.ghostEdges);
+        .links(forceEdges);
       this.simulation.restart();
     } else {
       this.simulation.nodes([]);
@@ -91,7 +98,7 @@ class NodeLinkDD extends View {
     if (d3el.select('#entities').size() === 0) {
       d3el.append('g').attr('id', 'entities');
     }
-    if (DEBUG) {
+    if (DEBUG_FORCES) {
       if (d3el.select('#ghostEdges').size() === 0) {
         d3el.append('g').attr('id', 'ghostEdges');
       }
@@ -131,7 +138,7 @@ class NodeLinkDD extends View {
 
         this.drawEntities(d3el, transition);
         this.drawArcs(d3el, transition);
-        if (DEBUG) {
+        if (DEBUG_FORCES) {
           this.drawDebuggingLayers(d3el);
         }
       }
@@ -243,7 +250,7 @@ Z`);
         });
         el.select('path').attr('d', ARC_CURVE(arcPoints));
       });
-      if (DEBUG) {
+      if (DEBUG_FORCES) {
         d3el.select('#ghostNodes').selectAll('.node')
           .attr('r', 5)
           .attr('cx', d => d.x)
@@ -291,42 +298,34 @@ Z`);
     };
     let firstVisibleId;
     let lastVisibleId;
-    ascendingIds.forEach((id, index) => {
+    let tryToAddJunction = (id, index) => {
       let entityId = this.graph.entityLookup[id];
       if (entityId !== undefined) {
-        arc.ascentVisible = true;
+        let entity = this.graph.entities[entityId];
         if (!firstVisibleId) {
           firstVisibleId = id;
         }
         lastVisibleId = id;
-        if (index === 0) {
-          arc.sourceVisible = true;
-        }
         let junctionId = this.addGhostNode({
           id: arc.id + '[' + id + ']',
-          type: GHOST_NODE_TYPES.JUNCTION
+          type: entity.type + '_JUNCTION'
         });
         arc.junctions.push(junctionId);
         this.graph.entities[entityId].junctions.push(junctionId);
+        return true;
+      }
+      return false;
+    };
+    ascendingIds.forEach((id, index) => {
+      arc.ascentVisible = tryToAddJunction(id, index) || arc.ascentVisible;
+      if (arc.ascentVisible && index === 0) {
+        arc.sourceVisible = true;
       }
     });
     descendingIds.forEach((id, index) => {
-      let entityId = this.graph.entityLookup[id];
-      if (entityId !== undefined) {
+      arc.descentVisible = tryToAddJunction(id, index) || arc.descentVisible;
+      if (arc.descentVisible && index === descendingIds.length - 1) {
         arc.descentVisible = true;
-        if (!firstVisibleId) {
-          firstVisibleId = id;
-        }
-        lastVisibleId = id;
-        if (index === descendingIds.length - 1) {
-          arc.targetVisible = true;
-        }
-        let junctionId = this.addGhostNode({
-          id: arc.id + '[' + id + ']',
-          type: GHOST_NODE_TYPES.JUNCTION
-        });
-        arc.junctions.push(junctionId);
-        this.graph.entities[entityId].junctions.push(junctionId);
       }
     });
     if (arc.junctions.length < 2) {
@@ -421,15 +420,17 @@ Z`);
     return false;
   }
   addEntity (obj, { forceEdge = false } = {}) {
-    let entity = this.createEntity(obj);
-    entity.type = forceEdge ? ENTITY_TYPES.EDGE : ENTITY_TYPES.NODE;
+    let type = forceEdge ? ENTITY_TYPES.EDGE : ENTITY_TYPES.NODE;
+    let entity = this.createEntity(obj, type);
 
     let valueType = typeof obj.value;
     if (valueType === 'string') {
       // Test if this is actually a reference (always interpret reference values
-      // as "edges")
+      // as "edges"); if so, override its type
       if (this.addReference(obj)) {
         entity.type = ENTITY_TYPES.EDGE;
+        let center = this.graph.ghostNodes[this.graph.ghostLookup[entity.center]];
+        center.type = 'EDGE_CENTER';
       }
     } else if (valueType === 'object') {
       // Collect any references that this entity contains one level down
@@ -451,8 +452,7 @@ Z`);
     return entity.id;
   }
   addSuperNode (obj) {
-    let entity = this.createEntity(obj);
-    entity.type = ENTITY_TYPES.SUPERNODE;
+    let entity = this.createEntity(obj, ENTITY_TYPES.SUPERNODE);
     entity.children = [];
 
     // add each superNode's immediate children
@@ -473,9 +473,10 @@ Z`);
     this.graph.entities.push(entity);
     return entity.id;
   }
-  createEntity (obj) {
+  createEntity (obj, type) {
     let entity = {
       id: obj.path.join('.'),
+      type,
       docSelector: obj.path[0],
       label: obj.path[obj.path.length - 1],
       value: obj.value,
@@ -483,21 +484,12 @@ Z`);
     };
     entity.center = this.addGhostNode({
       id: entity.id + '>center',
-      type: GHOST_NODE_TYPES.CENTER,
+      type: type + '_CENTER',
       entity
     });
     return entity;
   }
   addGhostNode (node) {
-    if (!node) {
-      do {
-        node = {
-          id: 'external' + EXTERNAL_INDEX,
-          type: GHOST_NODE_TYPES.EXTERNAL
-        };
-        EXTERNAL_INDEX += 1;
-      } while (this.graph.ghostNodes[node.id]);
-    }
     this.graph.ghostNodeLookup[node.id] = this.graph.ghostNodes.length;
     this.graph.ghostNodes.push(node);
     return node.id;
@@ -505,7 +497,7 @@ Z`);
   addGhostEdge (a, b) {
     a = this.graph.ghostNodes[this.graph.ghostNodeLookup[a]];
     b = this.graph.ghostNodes[this.graph.ghostNodeLookup[b]];
-    let type = a.type + '_' + b.type;
+    let type = a.type + '>>' + b.type;
     let edge = {
       id: a.id + '>>' + b.id,
       source: a.id,
