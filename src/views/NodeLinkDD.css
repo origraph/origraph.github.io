@@ -1,7 +1,12 @@
 .NodeLinkDD .entity .border {
   stroke: black;
   stroke-width: 1px;
-  fill: white;
+  fill: rgba(0,50,0,0.1);
+}
+.NodeLinkDD .arc path {
+  stroke: black;
+  stroke-width: 1px;
+  fill: none;
 }
 .NodeLinkDD #ghostNodes .node {
   fill: #1b9e77;

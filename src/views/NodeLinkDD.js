@@ -1,7 +1,7 @@
 /* globals d3 */
 import { View } from '../uki.es.js';
 
-let DEBUG = false;
+let DEBUG = true;
 
 function createEnum (entries) {
   let temp = {};
@@ -33,8 +33,11 @@ let SPINNER_SIZE = {
   height: 400
 };
 
-let NODE_RADIUS = 7;
+let NODE_RADIUS = 14;
 let STANDARD_CIRCLE = getCirclePath(NODE_RADIUS);
+
+let ARC_CURVE = d3.line().curve(d3.curveCatmullRom.alpha(1));
+let SUPERNODE_CURVE = d3.line().curve(d3.curveCatmullRomClosed.alpha(1));
 
 let EXTERNAL_INDEX = 0;
 
@@ -54,9 +57,12 @@ class NodeLinkDD extends View {
   constructor (selection) {
     super();
     this.graph = undefined;
+    let linkForce = d3.forceLink()
+      .id(d => d.id);
+    let manyBodyForce = d3.forceManyBody();
     this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink().id(d => d.id))
-      .force('charge', d3.forceManyBody())
+      .force('link', linkForce)
+      .force('charge', manyBodyForce)
       .force('center', d3.forceCenter());
     this.setSelection(selection);
   }
@@ -102,7 +108,7 @@ class NodeLinkDD extends View {
 
     this.visualEntities = d3.select('#entities')
       .selectAll('.entity');
-    this.visualLinks = d3.select('#arcs')
+    this.visualArcs = d3.select('#arcs')
       .selectAll('.arc');
 
     this.simulation.on('tick', () => { this.simulationTick(d3el); });
@@ -190,11 +196,20 @@ Z`);
       return [ghost.x - centerOffset.x, ghost.y - centerOffset.y];
     }));
     let hull = d3.polygonHull(allPoints);
-    return 'M' + hull.map(n => n[0] + ',' + n[1]).join('L') + 'Z';
-    // return 'M' + allPoints.map(n => n[0] + ',' + n[1]).join('L') + 'Z';
+    return SUPERNODE_CURVE(hull);
   }
   drawArcs (d3el, transition) {
-    // TODO
+    this.visualArcs = d3el.select('#arcs')
+      .selectAll('.arc').data(this.graph.arcs);
+    this.visualArcs.exit()
+      .transition()
+      .attr('opacity', 0)
+      .remove();
+    let arcsEnter = this.visualArcs.enter().append('g')
+      .classed('arc', true);
+    this.visualArcs = this.visualArcs.merge(arcsEnter);
+
+    arcsEnter.append('path');
   }
   simulationTick (d3el) {
     if (this.graph) {
@@ -208,9 +223,26 @@ Z`);
           if (dString !== null) {
             el.select('.border').attr('d', dString);
           }
+        } else if (d.type === ENTITY_TYPES.NODE) {
+          // constrain all junctions such that they are within NODE_RADIUS
+          d.junctions.forEach(id => {
+            let junction = self.graph.ghostNodes[self.graph.ghostNodeLookup[id]];
+            let dx = junction.x - center.x;
+            let dy = junction.y - center.y;
+            let dinv = NODE_RADIUS / Math.sqrt(dx ** 2 + dy ** 2);
+            junction.x = (1 - dinv) * center.x + dinv * junction.x;
+            junction.y = (1 - dinv) * center.y + dinv * junction.y;
+          });
         }
       });
-      // TODO: update arcs
+      this.visualArcs.each(function (d) {
+        let el = d3.select(this);
+        let arcPoints = d.junctions.map(id => {
+          let junction = self.graph.ghostNodes[self.graph.ghostNodeLookup[id]];
+          return [junction.x, junction.y];
+        });
+        el.select('path').attr('d', ARC_CURVE(arcPoints));
+      });
       if (DEBUG) {
         d3el.select('#ghostNodes').selectAll('.node')
           .attr('r', 5)
