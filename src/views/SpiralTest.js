@@ -14,8 +14,7 @@ class SpiralTest extends View {
       verticalSpacing: { min: 1, max: 100, value: 40, step: 1 },
       horizontalSpacing: { min: 1, max: 100, value: 40, step: 1 },
       nodeRadius: { min: 1, max: 20, value: 10, step: 1 },
-      cycles: { min: 1, max: 10, value: 5, step: 1 },
-      extraRoots: { min: 0, max: 10, value: 3, step: 1 }
+      cycles: { min: 1, max: 10, value: 5, step: 1 }
     };
   }
   setup (d3el) {
@@ -68,18 +67,10 @@ class SpiralTest extends View {
     let thetamax = this.parameters.cycles.value * 2 * Math.PI;
     let smax = 0.5 * b * thetamax * thetamax;
     let points = [];
-    for (let i = 1; i * this.parameters.horizontalSpacing.value <= smax; i += 1) {
+    for (let i = 0; i * this.parameters.horizontalSpacing.value <= smax; i += 1) {
       let theta = Math.sqrt(2 * i * this.parameters.horizontalSpacing.value / b);
-      let parent = null;
-      let root = null;
-      if (i > this.parameters.extraRoots.value + 1 && (i + this.parameters.extraRoots.value) % 2 === 0) {
-        parent = (i + this.parameters.extraRoots.value) / 2 - this.parameters.extraRoots.value;
-        if (points[parent] !== null) {
-          root = points[parent].root;
-        }
-      } else {
-        root = i;
-      }
+      let parent = null; // TODO: figure out way to determine parent
+      let root = parent === null ? i : points[parent].root;
       let point = {
         x: b * theta * Math.cos(theta),
         y: b * theta * Math.sin(theta),
