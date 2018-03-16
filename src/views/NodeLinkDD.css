@@ -3,3 +3,16 @@
   stroke-width: 1px;
   fill: white;
 }
+.NodeLinkDD #ghostNodes .node {
+  fill: #1b9e77;
+}
+.NodeLinkDD #ghostNodes .node:hover {
+  fill: #d95f02;
+}
+.NodeLinkDD #ghostEdges .edge {
+  stroke-width: 2;
+  stroke: #7570b3;
+}
+.NodeLinkDD #ghostEdges .edge:hover {
+  stroke: #d95f02;
+}

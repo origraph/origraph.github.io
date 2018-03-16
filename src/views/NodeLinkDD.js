@@ -1,10 +1,31 @@
 /* globals d3 */
 import { View } from '../uki.es.js';
 
+let DEBUG = false;
+
 function createEnum (entries) {
   let temp = {};
   entries.forEach(entry => { temp[entry] = entry; });
   return Object.freeze(temp);
+}
+
+function getCirclePath (radius) {
+  let cubicOffset = 5 * radius / 9;
+  return `
+M0,${-radius}
+C${cubicOffset},${-radius},
+${radius},${-cubicOffset},
+${radius},0,
+C${radius},${cubicOffset},
+${cubicOffset},${radius},
+0,${radius},
+C${-cubicOffset},${radius},
+${-radius},${cubicOffset},
+${-radius},0,
+C${-radius},${-cubicOffset},
+${-cubicOffset},${-radius},
+0,${-radius}
+Z`;
 }
 
 let SPINNER_SIZE = {
@@ -13,7 +34,7 @@ let SPINNER_SIZE = {
 };
 
 let NODE_RADIUS = 7;
-let CIRCLE_NODE_CUBIC_OFFSET = 5 * NODE_RADIUS / 9; // for approximating circles with cubic paths
+let STANDARD_CIRCLE = getCirclePath(NODE_RADIUS);
 
 let EXTERNAL_INDEX = 0;
 
@@ -23,15 +44,6 @@ let GHOST_NODE_TYPES = createEnum([
   'EXTERNAL'
 ]);
 
-let GHOST_EDGE_TYPES = createEnum([
-
-]);
-//  AC, // child node center to super node center
-//  AB, // child node center to child node junction
-//  BD, // child node junction to super node junction
-//  DD, // super node junction to super node junction
-//  DE  // super node junction to external
-
 let ENTITY_TYPES = createEnum([
   'NODE', // primitive values
   'SUPERNODE', // objects
@@ -39,15 +51,32 @@ let ENTITY_TYPES = createEnum([
 ]);
 
 class NodeLinkDD extends View {
-  constructor (selection = null) {
+  constructor (selection) {
     super();
-    this.selection = selection;
-    this.updateGraph();
+    this.graph = undefined;
+    this.simulation = d3.forceSimulation()
+      .force('link', d3.forceLink().id(d => d.id))
+      .force('charge', d3.forceManyBody())
+      .force('center', d3.forceCenter());
+    this.setSelection(selection);
   }
-  setSelection (selection) {
+  async setSelection (selection = null) {
     this.selection = selection;
-    this.render();
-    this.updateGraph();
+    this.graph = undefined;
+    if (this.d3el) {
+      this.render(); // show the spinner before updating the graph
+    }
+    this.simulation.stop();
+    await this.updateGraph();
+    if (this.graph) {
+      this.simulation.nodes(this.graph.ghostNodes);
+      this.simulation.force('link')
+        .links(this.graph.ghostEdges);
+      this.simulation.restart();
+    } else {
+      this.simulation.nodes([]);
+      this.simulation.force('link').links([]);
+    }
   }
   setup (d3el) {
     if (d3el.select('#arcs').size() === 0) {
@@ -55,6 +84,14 @@ class NodeLinkDD extends View {
     }
     if (d3el.select('#entities').size() === 0) {
       d3el.append('g').attr('id', 'entities');
+    }
+    if (DEBUG) {
+      if (d3el.select('#ghostEdges').size() === 0) {
+        d3el.append('g').attr('id', 'ghostEdges');
+      }
+      if (d3el.select('#ghostNodes').size() === 0) {
+        d3el.append('g').attr('id', 'ghostNodes');
+      }
     }
     if (d3el.select('#spinner').size() === 0) {
       d3el.append('image').attr('id', 'spinner')
@@ -68,11 +105,7 @@ class NodeLinkDD extends View {
     this.visualLinks = d3.select('#arcs')
       .selectAll('.arc');
 
-    this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink().id(d => d.id))
-      .force('charge', d3.forceManyBody())
-      .force('center', d3.forceCenter())
-      .on('tick', () => { this.simulationTick(d3el); });
+    this.simulation.on('tick', () => { this.simulationTick(d3el); });
   }
   draw (d3el) {
     let bounds = d3el.node().getBoundingClientRect();
@@ -80,19 +113,22 @@ class NodeLinkDD extends View {
       .x(bounds.width / 2)
       .y(bounds.height / 2);
 
-    if (this.graph === null) {
+    if (this.graph === undefined) {
       this.showSpinner(d3el, bounds);
     } else {
       this.hideSpinner(d3el);
 
-      this.simulation.nodes(this.graph.ghostNodes);
-      this.simulation.force('link')
-        .links(this.graph.ghostEdges);
+      if (this.graph === null) {
+        // TODO: show message saying that no graph is loaded
+      } else {
+        let transition = d3.transition().duration(200);
 
-      let transition = d3.transition().duration(200);
-
-      this.drawEntities(d3el, transition);
-      this.drawArcs(d3el, transition);
+        this.drawEntities(d3el, transition);
+        this.drawArcs(d3el, transition);
+        if (DEBUG) {
+          this.drawDebuggingLayers(d3el);
+        }
+      }
     }
   }
   drawEntities (d3el, transition) {
@@ -109,27 +145,14 @@ class NodeLinkDD extends View {
     enterEntities.append('path')
       .classed('border', true)
       .attr('d', '');
+    let self = this;
     this.visualEntities.each(function (d) {
       let el = d3.select(this);
       if (d.type === ENTITY_TYPES.NODE) {
         el.select('.border')
           .transition(transition)
-          .attr('d', `
-M0,${-NODE_RADIUS}
-C${CIRCLE_NODE_CUBIC_OFFSET},${-NODE_RADIUS},
-${NODE_RADIUS},${-CIRCLE_NODE_CUBIC_OFFSET},
-${NODE_RADIUS},0,
-C${NODE_RADIUS},${CIRCLE_NODE_CUBIC_OFFSET},
-${CIRCLE_NODE_CUBIC_OFFSET},${NODE_RADIUS},
-0,${NODE_RADIUS},
-C${-CIRCLE_NODE_CUBIC_OFFSET},${NODE_RADIUS},
-${-NODE_RADIUS},${CIRCLE_NODE_CUBIC_OFFSET},
-${-NODE_RADIUS},0,
-C${-NODE_RADIUS},${-CIRCLE_NODE_CUBIC_OFFSET},
-${-CIRCLE_NODE_CUBIC_OFFSET},${-NODE_RADIUS},
-0,${-NODE_RADIUS}
-Z`);
-} else if (d.type === ENTITY_TYPES.EDGE) {
+          .attr('d', STANDARD_CIRCLE);
+      } else if (d.type === ENTITY_TYPES.EDGE) {
         el.select('.border')
           .transition(transition)
           .attr('d', `
@@ -139,56 +162,210 @@ L0,${NODE_RADIUS}
 L${-NODE_RADIUS},0
 Z`);
       } else if (d.type === ENTITY_TYPES.SUPERNODE) {
-        // TODO
-        el.select('.border')
-          .transition('transition')
-          .attr('d', '');
+        let dString = self.getSuperNodeHull(d);
+        if (dString !== null) {
+          el.select('.border')
+            .transition('transition')
+            .attr('d', dString);
+        }
+        // put supernodes on the bottom
+        let firstChild = this.parentNode.firstChild;
+        if (firstChild) {
+          this.parentNode.insertBefore(this, firstChild);
+        }
       }
     });
+  }
+  getSuperNodeHull (d) {
+    let centerOffset = this.graph.ghostNodes[this.graph.ghostNodeLookup[d.center]];
+    if (centerOffset.x === undefined || centerOffset.y === undefined) {
+      return null;
+    }
+    let allPoints = d.junctions.map(id => {
+      let ghost = this.graph.ghostNodes[this.graph.ghostNodeLookup[id]];
+      return [ghost.x - centerOffset.x, ghost.y - centerOffset.y];
+    }).concat(d.children.map(id => {
+      let child = this.graph.entities[this.graph.entityLookup[id]];
+      let ghost = this.graph.ghostNodes[this.graph.ghostNodeLookup[child.center]];
+      return [ghost.x - centerOffset.x, ghost.y - centerOffset.y];
+    }));
+    let hull = d3.polygonHull(allPoints);
+    return 'M' + hull.map(n => n[0] + ',' + n[1]).join('L') + 'Z';
+    // return 'M' + allPoints.map(n => n[0] + ',' + n[1]).join('L') + 'Z';
   }
   drawArcs (d3el, transition) {
     // TODO
   }
   simulationTick (d3el) {
-    let self = this;
-    this.visualEntities.each(function (d) {
-      let el = d3.select(this);
-      let center = self.graph.ghostNodes[self.graph.ghostNodeLookup[d.center]];
-      el.attr('transform', 'translate(' + center.x + ',' + center.y + ')');
-    });
-    // TODO: update arcs
+    if (this.graph) {
+      let self = this;
+      this.visualEntities.each(function (d) {
+        let el = d3.select(this);
+        let center = self.graph.ghostNodes[self.graph.ghostNodeLookup[d.center]];
+        el.attr('transform', 'translate(' + center.x + ',' + center.y + ')');
+        if (d.type === ENTITY_TYPES.SUPERNODE) {
+          let dString = self.getSuperNodeHull(d);
+          if (dString !== null) {
+            el.select('.border').attr('d', dString);
+          }
+        }
+      });
+      // TODO: update arcs
+      if (DEBUG) {
+        d3el.select('#ghostNodes').selectAll('.node')
+          .attr('r', 5)
+          .attr('cx', d => d.x)
+          .attr('cy', d => d.y);
+        d3el.select('#ghostEdges').selectAll('.edge')
+          .attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y);
+      }
+    }
+  }
+  drawDebuggingLayers (d3el) {
+    let nodes = d3el.select('#ghostNodes')
+      .selectAll('.node').data(this.graph.ghostNodes);
+    let edges = d3el.select('#ghostEdges')
+      .selectAll('.edge').data(this.graph.ghostEdges);
+
+    let nodesEnter = nodes.enter()
+      .append('circle').classed('node', true);
+    nodes = nodes.merge(nodesEnter);
+    nodes.on('click', d => { console.log(d.type, d.id); });
+    let edgesEnter = edges.enter()
+      .append('line').classed('edge', true);
+    edges = edges.merge(edgesEnter);
+    edges.on('click', d => { console.log(d.type, d.id); });
   }
   hideSpinner (d3el) {
     d3el.select('#spinner')
       .style('visibility', 'hidden');
   }
-  addArc (sourceId, junctionIds, targetId) {
-    console.log(sourceId, junctionIds, targetId);
+  addArc (ascendingIds, descendingIds) {
+    let firstId = ascendingIds.length > 0 ? ascendingIds[0] : descendingIds[0];
+    let lastId = descendingIds.length > 0
+      ? descendingIds[descendingIds.length - 1]
+      : ascendingIds[ascendingIds.length - 1];
+    let arc = {
+      id: firstId + '>' + lastId,
+      junctions: [],
+      ghostEdges: [],
+      sourceVisible: false,
+      ascentVisible: false,
+      descentVisible: false,
+      targetVisible: false
+    };
+    let firstVisibleId;
+    let lastVisibleId;
+    ascendingIds.forEach((id, index) => {
+      let entityId = this.graph.entityLookup[id];
+      if (entityId !== undefined) {
+        arc.ascentVisible = true;
+        if (!firstVisibleId) {
+          firstVisibleId = id;
+        }
+        lastVisibleId = id;
+        if (index === 0) {
+          arc.sourceVisible = true;
+        }
+        let junctionId = this.addGhostNode({
+          id: arc.id + '[' + id + ']',
+          type: GHOST_NODE_TYPES.JUNCTION
+        });
+        arc.junctions.push(junctionId);
+        this.graph.entities[entityId].junctions.push(junctionId);
+      }
+    });
+    descendingIds.forEach((id, index) => {
+      let entityId = this.graph.entityLookup[id];
+      if (entityId !== undefined) {
+        arc.descentVisible = true;
+        if (!firstVisibleId) {
+          firstVisibleId = id;
+        }
+        lastVisibleId = id;
+        if (index === descendingIds.length - 1) {
+          arc.targetVisible = true;
+        }
+        let junctionId = this.addGhostNode({
+          id: arc.id + '[' + id + ']',
+          type: GHOST_NODE_TYPES.JUNCTION
+        });
+        arc.junctions.push(junctionId);
+        this.graph.entities[entityId].junctions.push(junctionId);
+      }
+    });
+    if (arc.junctions.length < 2) {
+      // the arc isn't even visible; don't add it
+      return null;
+    }
+    // If either end is pointing up the hierarchy beyond where we can see, we
+    // need to add a loose node
+    if (!arc.ascentVisible) {
+      let externalId = this.addGhostNode({
+        id: arc.id + '[ascent]',
+        type: GHOST_NODE_TYPES.EXTERNAL
+      });
+      arc.junctions.unshift(externalId);
+    }
+    if (!arc.descentVisible) {
+      let externalId = this.addGhostNode({
+        id: arc.id + '[descent]',
+        type: GHOST_NODE_TYPES.EXTERNAL
+      });
+      arc.junctions.push(externalId);
+    }
+    // Okay, now that we know about our ghost junctions,
+    // create ghost edges between them
+    for (let i = 0; i < arc.junctions.length - 1; i++) {
+      let a = arc.junctions[i];
+      let b = arc.junctions[i + 1];
+      let ghostEdgeId = this.addGhostEdge(a, b);
+      arc.ghostEdges.push(ghostEdgeId);
+    }
+    // Add the first and last ghost edges (external edges will already have been
+    // created)
+    if (arc.ascentVisible) {
+      let firstCenter = this.graph.entities[this.graph.entityLookup[firstVisibleId]].center;
+      let firstGhostId = this.addGhostEdge(firstCenter, arc.junctions[0]);
+      arc.ghostEdges.unshift(firstGhostId);
+    }
+    if (arc.descentVisible) {
+      let lastCenter = this.graph.entities[this.graph.entityLookup[lastVisibleId]].center;
+      let lastGhostId = this.addGhostEdge(arc.junctions[arc.junctions.length - 1], lastCenter);
+      arc.ghostEdges.push(lastGhostId);
+    }
+
+    // Finally, add the arc
+    this.graph.arcLookup[arc.id] = this.graph.arcs.length;
+    this.graph.arcs.push(arc);
+    return arc.id;
   }
   async resolveReferences () {
     while (this.graph.unresolvedReferences.length > 0) {
       let source = this.graph.unresolvedReferences.shift();
-      let sourceId = source.path.join('.');
       let targets = await source.selection.nodes();
       targets.forEach(target => {
-        let targetId = target.path.join('.');
-        let junctionIds = [];
-        // Start at the source's parent, and collect ids until
+        // Start at the source, and collect ids until
         // we encounter the deepest common ancestor
+        let ascendingIds = [];
         let i = source.path.length - 1;
-        while (i >= 1 && source.path[i - 1] !== target.path[i - 1]) {
-          junctionIds.push(source.path.slice(i - 1).join('.'));
+        while (i >= 0 && source.path[i] !== target.path[i]) {
+          ascendingIds.push(source.path.slice(0, i + 1).join('.'));
           i -= 1;
         }
         // We're at the deepest common ancestor (or the link is pointing
         // to itself or a direct descendant)... we want the arc to route from
         // sibling to sibling, not through the parent, so just start down
         // the target path
-        while (i < target.path.length - 1) {
-          junctionIds.push(target.path.slice(i).join('.'));
+        let descendingIds = [];
+        while (i <= target.path.length - 1) {
+          descendingIds.push(target.path.slice(0, i + 1).join('.'));
           i += 1;
         }
-        this.addArc(sourceId, junctionIds, targetId);
+        this.addArc(ascendingIds, descendingIds);
       });
     }
   }
@@ -256,6 +433,8 @@ Z`);
         value: childValue
       });
       entity.children.push(childEntityId);
+      let child = this.graph.entities[this.graph.entityLookup[childEntityId]];
+      this.addGhostEdge(entity.center, child.center);
     });
 
     this.graph.entityLookup[entity.id] = this.graph.entities.length;
@@ -268,10 +447,10 @@ Z`);
       docSelector: obj.path[0],
       label: obj.path[obj.path.length - 1],
       value: obj.value,
-      junctions: {}
+      junctions: []
     };
     entity.center = this.addGhostNode({
-      id: entity.id + '>g>center',
+      id: entity.id + '>center',
       type: GHOST_NODE_TYPES.CENTER,
       entity
     });
@@ -290,6 +469,20 @@ Z`);
     this.graph.ghostNodeLookup[node.id] = this.graph.ghostNodes.length;
     this.graph.ghostNodes.push(node);
     return node.id;
+  }
+  addGhostEdge (a, b) {
+    a = this.graph.ghostNodes[this.graph.ghostNodeLookup[a]];
+    b = this.graph.ghostNodes[this.graph.ghostNodeLookup[b]];
+    let type = a.type + '_' + b.type;
+    let edge = {
+      id: a.id + '>>' + b.id,
+      source: a.id,
+      target: b.id,
+      type
+    };
+    this.graph.ghostEdgeLookup[edge.id] = this.graph.ghostEdges.length;
+    this.graph.ghostEdges.push(edge);
+    return edge.id;
   }
   async updateGraph () {
     if (this.selection === null) {
@@ -334,6 +527,10 @@ Z`);
     // First create the nodes and their associated ghostNodes
     // (populates graph.unresolvedReferences)
     let firstLevelObjects = await this.selection.nodes();
+    if (firstLevelObjects.length === 0) {
+      this.graph = null;
+      return;
+    }
     firstLevelObjects.forEach(obj => {
       if (typeof obj.value === 'object') {
         // TODO: add / check metadata to see whether this should actually be
