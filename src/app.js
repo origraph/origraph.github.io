@@ -1,9 +1,11 @@
 /* globals d3, mure */
 
 import NodeLinkDD from './views/NodeLinkDD.js';
+import SpiralTest from './views/SpiralTest.js';
 
 let views = {
-  'NodeLinkDD': NodeLinkDD
+  'NodeLinkDD': NodeLinkDD,
+  'SpiralTest': SpiralTest
 };
 
 console.log('d3 version:', d3.version);
