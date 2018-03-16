@@ -11,8 +11,8 @@ class SpiralTest extends View {
     this.colorMap = d3.schemeDark2;
 
     this.parameters = {
-      verticalSpacing: { min: 1, max: 100, value: 40, step: 1 },
-      horizontalSpacing: { min: 1, max: 100, value: 40, step: 1 },
+      verticalSpacing: { min: 1, max: 100, value: 20, step: 1 },
+      horizontalSpacing: { min: 1, max: 100, value: 20, step: 1 },
       nodeRadius: { min: 1, max: 20, value: 10, step: 1 },
       cycles: { min: 1, max: 10, value: 5, step: 1 }
     };
@@ -67,15 +67,18 @@ class SpiralTest extends View {
     let thetamax = this.parameters.cycles.value * 2 * Math.PI;
     let smax = 0.5 * b * thetamax * thetamax;
     let points = [];
-    for (let i = 0; i * this.parameters.horizontalSpacing.value <= smax; i += 1) {
+    for (let i = 1; i * this.parameters.horizontalSpacing.value <= smax; i += 1) {
       let theta = Math.sqrt(2 * i * this.parameters.horizontalSpacing.value / b);
+      let thetaNorm = Math.atan2(Math.sin(theta), Math.cos(theta)) + Math.PI;
+      let segment = Math.floor(thetaNorm * 8 / (2 * Math.PI));
       let parent = null; // TODO: figure out way to determine parent
       let root = parent === null ? i : points[parent].root;
       let point = {
         x: b * theta * Math.cos(theta),
         y: b * theta * Math.sin(theta),
         parent,
-        root
+        root,
+        segment
       };
       points.push(point);
     }
@@ -111,7 +114,7 @@ class SpiralTest extends View {
     nodes.attr('r', this.parameters.nodeRadius.value)
       .attr('cx', d => center.x + d.x)
       .attr('cy', d => center.y + d.y)
-      .attr('fill', d => this.colorMap[d.root])
+      .attr('fill', (d, i) => this.colorMap[d.segment])
       .on('click', d => { console.log(d); });
   }
 }
