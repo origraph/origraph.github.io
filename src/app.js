@@ -2,10 +2,12 @@
 
 import NodeLinkDD from './views/NodeLinkDD.js';
 import SpiralTest from './views/SpiralTest.js';
+import PartitionTest from './views/PartitionTest.js';
 
 let views = {
-  'NodeLinkDD': NodeLinkDD,
-  'SpiralTest': SpiralTest
+  NodeLinkDD,
+  SpiralTest,
+  PartitionTest
 };
 
 console.log('d3 version:', d3.version);
