@@ -1,8 +1,6 @@
 /* globals d3 */
 import { View } from '../uki.es.js';
 
-let DEBUG_FORCES = true;
-
 function createEnum (entries) {
   let temp = {};
   entries.forEach(entry => { temp[entry] = entry; });
@@ -28,6 +26,8 @@ ${-cubicOffset},${-radius},
 Z`;
 }
 
+let DEBUG_GHOSTS = true;
+
 let SPINNER_SIZE = {
   width: 550,
   height: 400
@@ -35,6 +35,12 @@ let SPINNER_SIZE = {
 
 let NODE_RADIUS = 14;
 let STANDARD_CIRCLE = getCirclePath(NODE_RADIUS);
+let STANDARD_DIAMOND = `
+M0,${-NODE_RADIUS}
+L${NODE_RADIUS},0
+L0,${NODE_RADIUS}
+L${-NODE_RADIUS},0
+Z`;
 
 let ARC_CURVE = d3.line().curve(d3.curveCatmullRom.alpha(1));
 let SUPERNODE_CURVE = d3.line().curve(d3.curveCatmullRomClosed.alpha(1));
@@ -58,47 +64,20 @@ let ENTITY_TYPES = createEnum([
 class NodeLinkDD extends View {
   constructor (selection) {
     super();
-    this.graph = undefined;
-    let linkForce = d3.forceLink()
-      .id(d => d.id)
-      .distance(NODE_RADIUS);
-    let manyBodyForce = d3.forceManyBody()
-      .strength(-50);
-    this.simulation = d3.forceSimulation()
-      .force('link', linkForce)
-      .force('charge', manyBodyForce)
-      .force('center', d3.forceCenter());
-    this.setSelection(selection);
-  }
-  async setSelection (selection = null) {
-    this.selection = selection;
-    this.graph = undefined;
-    if (this.d3el) {
-      this.render(); // show the spinner before updating the graph
-    }
-    this.simulation.stop();
-    await this.updateGraph();
-    if (this.graph) {
-      this.simulation.nodes(this.graph.ghostNodes);
-      // Don't include the segments between supernodes in the simulation
-      let forceEdges = this.graph.ghostEdges
-        .filter(edge => edge.type !== 'SUPERNODE_JUNCTION>>SUPERNODE_JUNCTION');
-      this.simulation.force('link')
-        .links(forceEdges);
-      this.simulation.restart();
-    } else {
-      this.simulation.nodes([]);
-      this.simulation.force('link').links([]);
-    }
+    this.updateGraph(selection);
   }
   setup (d3el) {
+    this.bounds = d3el.node().getBoundingClientRect();
+    if (d3el.select('#superNodes').size() === 0) {
+      d3el.append('g').attr('id', 'arcs');
+    }
     if (d3el.select('#arcs').size() === 0) {
       d3el.append('g').attr('id', 'arcs');
     }
     if (d3el.select('#entities').size() === 0) {
       d3el.append('g').attr('id', 'entities');
     }
-    if (DEBUG_FORCES) {
+    if (DEBUG_GHOSTS) {
       if (d3el.select('#ghostEdges').size() === 0) {
         d3el.append('g').attr('id', 'ghostEdges');
       }
@@ -106,88 +85,107 @@ class NodeLinkDD extends View {
         d3el.append('g').attr('id', 'ghostNodes');
       }
     }
+    if (d3el.select('#message').size() === 0) {
+      d3el.append('text').attr('id', 'message');
+    }
     if (d3el.select('#spinner').size() === 0) {
       d3el.append('image').attr('id', 'spinner')
         .attr('width', SPINNER_SIZE.width)
         .attr('height', SPINNER_SIZE.height)
         .attr('href', 'spinner.gif');
     }
-
-    this.visualEntities = d3.select('#entities')
-      .selectAll('.entity');
-    this.visualArcs = d3.select('#arcs')
-      .selectAll('.arc');
-
-    this.simulation.on('tick', () => { this.simulationTick(d3el); });
   }
   draw (d3el) {
-    let bounds = d3el.node().getBoundingClientRect();
-    this.simulation.force('center')
-      .x(bounds.width / 2)
-      .y(bounds.height / 2);
+    this.bounds = d3el.node().getBoundingClientRect();
 
     if (this.graph === undefined) {
-      this.showSpinner(d3el, bounds);
-    } else {
+      this.showMessage(d3el, 'Loading graph...');
+      this.showSpinner(d3el);
+    } else if (this.graph === null) {
+      this.showMessage(d3el, 'No data selected');
       this.hideSpinner(d3el);
-
-      if (this.graph === null) {
-        // TODO: show message saying that no graph is loaded
-      } else {
-        let transition = d3.transition().duration(200);
-
-        this.drawEntities(d3el, transition);
-        this.drawArcs(d3el, transition);
-        if (DEBUG_FORCES) {
-          this.drawDebuggingLayers(d3el);
-        }
+    } else if (this.layoutReady === false) {
+      this.showMessage(d3el, 'Computing graph layout...');
+      this.showSpinner(d3el);
+      this.updateLayout();
+    } else {
+      this.hideMessage(d3el);
+      this.hideSpinner(d3el);
+      let transition = d3.transition().duration(200);
+      this.drawEntities(d3el, transition);
+      this.drawArcs(d3el, transition);
+      if (DEBUG_GHOSTS) {
+        this.drawDebuggingLayers(d3el, transition);
       }
     }
   }
+  showMessage (d3el, message) {
+    d3el.select('#message')
+      .text(message)
+      .attr('x', this.bounds.width / 2)
+      .attr('y', this.bounds.height / 2)
+      .style('visibility', null);
+  }
+  hideMessage (d3el) {
+    d3el.select('#message')
+      .style('visiblity', 'hidden');
+  }
+  showSpinner (d3el) {
+    let spinner = d3el.select('#spinner');
+    d3el.select('#spinner')
+      .style('visibility', null);
+    spinner
+      .attr('x', this.bounds.width / 2 - SPINNER_SIZE.width / 2)
+      .attr('y', this.bounds.height / 2 - SPINNER_SIZE.height / 2);
+  }
+  hideSpinner (d3el) {
+    d3el.select('#spinner')
+      .style('visibility', 'hidden');
+  }
   drawEntities (d3el, transition) {
-    this.visualEntities = d3el.select('#entities')
-      .selectAll('.entity').data(this.graph.entities, d => d.id);
-    this.visualEntities.exit()
-      .transition(transition)
-      .attr('opacity', 0)
-      .remove();
-    let enterEntities = this.visualEntities.enter()
-      .append('g').classed('entity', true);
-    this.visualEntities = this.visualEntities.merge(enterEntities);
-
-    enterEntities.append('path')
-      .classed('border', true)
-      .attr('d', '');
-    let self = this;
-    this.visualEntities.each(function (d) {
-      let el = d3.select(this);
-      if (d.type === ENTITY_TYPES.NODE) {
-        el.select('.border')
-          .transition(transition)
-          .attr('d', STANDARD_CIRCLE);
-      } else if (d.type === ENTITY_TYPES.EDGE) {
-        el.select('.border')
-          .transition(transition)
-          .attr('d', `
-M0,${-NODE_RADIUS}
-L${NODE_RADIUS},0
-L0,${NODE_RADIUS}
-L${-NODE_RADIUS},0
-Z`);
-      } else if (d.type === ENTITY_TYPES.SUPERNODE) {
-        let dString = self.getSuperNodeHull(d);
-        if (dString !== null) {
-          el.select('.border')
-            .transition('transition')
-            .attr('d', dString);
-        }
-        // put supernodes on the bottom
-        let firstChild = this.parentNode.firstChild;
-        if (firstChild) {
-          this.parentNode.insertBefore(this, firstChild);
-        }
+    let superNodes = [];
+    let otherEntities = [];
+    this.graph.entities.forEach(entity => {
+      if (entity.type === ENTITY_TYPES.SUPERNODE) {
+        superNodes.push(entity);
+      } else {
+        otherEntities.push(entity);
       }
     });
+
+    superNodes = d3el.select('#superNodes')
+      .selectAll('.entity').data(superNodes, d => d.id);
+    otherEntities = d3el.select('#entities')
+      .selectAll('.entity').data(otherEntities, d => d.id);
+
+    superNodes.exit().transition(transition).attr('opacity', 0).remove();
+    let superNodesEnter = superNodes.enter()
+      .append('g').classed('entity', true);
+    superNodes = superNodes.merge(superNodesEnter);
+
+    otherEntities.exit().transition(transition).attr('opacity', 0).remove();
+    let otherEntitiesEnter = otherEntities.enter()
+      .append('g').classed('entity', true);
+
+    let allEntitiesEnter = superNodesEnter.merge(otherEntitiesEnter);
+    let allEntities = superNodes.merge(otherEntities);
+
+    allEntitiesEnter.attr('opacity', 0).transition(transition).attr('opacity', 1);
+    allEntitiesEnter.append('path').classed('border', true).attr('d', '');
+
+    allEntities.transition(transition)
+      .attr('transform', d => {
+        let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[d.center]];
+        return 'translate(' + center.x + ',' + center.y + ')';
+      }).attr('d', d => {
+        if (d.type === ENTITY_TYPES.NODE) {
+          return STANDARD_CIRCLE;
+        } else if (d.type === ENTITY_TYPES.EDGE) {
+          return STANDARD_DIAMOND;
+        } else if (d.type === ENTITY_TYPES.SUPERNODE) {
+          return this.getSuperNodeHull(d);
+        }
+      });
   }
   getSuperNodeHull (d) {
     let centerOffset = this.graph.ghostNodes[this.graph.ghostNodeLookup[d.center]];
@@ -206,64 +204,24 @@ Z`);
     return SUPERNODE_CURVE(hull);
   }
   drawArcs (d3el, transition) {
-    this.visualArcs = d3el.select('#arcs')
-      .selectAll('.arc').data(this.graph.arcs);
-    this.visualArcs.exit()
-      .transition()
-      .attr('opacity', 0)
-      .remove();
-    let arcsEnter = this.visualArcs.enter().append('g')
-      .classed('arc', true);
-    this.visualArcs = this.visualArcs.merge(arcsEnter);
+    let arcs = d3el.select('#arcs')
+      .selectAll('.arc').data(this.graph.arcs, d => d.id);
+    arcs.exit().transition(transition).attr('opacity', 0).remove();
+    let arcsEnter = arcs.enter().append('g').classed('arc', true);
+    arcs = arcs.merge(arcsEnter);
 
+    arcsEnter.attr('opacity', 0).transition(transition).attr('opacity', 1);
     arcsEnter.append('path');
-  }
-  simulationTick (d3el) {
-    if (this.graph) {
-      let self = this;
-      this.visualEntities.each(function (d) {
-        let el = d3.select(this);
-        let center = self.graph.ghostNodes[self.graph.ghostNodeLookup[d.center]];
-        el.attr('transform', 'translate(' + center.x + ',' + center.y + ')');
-        if (d.type === ENTITY_TYPES.SUPERNODE) {
-          let dString = self.getSuperNodeHull(d);
-          if (dString !== null) {
-            el.select('.border').attr('d', dString);
-          }
-        } else if (d.type === ENTITY_TYPES.NODE) {
-          // constrain all junctions such that they are within NODE_RADIUS
-          d.junctions.forEach(id => {
-            let junction = self.graph.ghostNodes[self.graph.ghostNodeLookup[id]];
-            let dx = junction.x - center.x;
-            let dy = junction.y - center.y;
-            let dinv = NODE_RADIUS / Math.sqrt(dx ** 2 + dy ** 2);
-            junction.x = (1 - dinv) * center.x + dinv * junction.x;
-            junction.y = (1 - dinv) * center.y + dinv * junction.y;
-          });
-        }
+
+    arcs.transition(transition).attr('d', d => {
+      let arcPoints = d.junctions.map(id => {
+        let junction = this.graph.ghostNodes[this.graph.ghostNodeLookup[id]];
+        return [junction.x, junction.y];
       });
-      this.visualArcs.each(function (d) {
-        let el = d3.select(this);
-        let arcPoints = d.junctions.map(id => {
-          let junction = self.graph.ghostNodes[self.graph.ghostNodeLookup[id]];
-          return [junction.x, junction.y];
-        });
-        el.select('path').attr('d', ARC_CURVE(arcPoints));
-      });
-      if (DEBUG_FORCES) {
-        d3el.select('#ghostNodes').selectAll('.node')
-          .attr('r', 5)
-          .attr('cx', d => d.x)
-          .attr('cy', d => d.y);
-        d3el.select('#ghostEdges').selectAll('.edge')
-          .attr('x1', d => d.source.x)
-          .attr('y1', d => d.source.y)
-          .attr('x2', d => d.target.x)
-          .attr('y2', d => d.target.y);
-      }
-    }
+      return ARC_CURVE(arcPoints);
+    });
   }
-  drawDebuggingLayers (d3el) {
+  drawDebuggingLayers (d3el, transition) {
     let nodes = d3el.select('#ghostNodes')
       .selectAll('.node').data(this.graph.ghostNodes);
     let edges = d3el.select('#ghostEdges')
@@ -277,10 +235,62 @@ Z`);
       .append('line').classed('edge', true);
     edges = edges.merge(edgesEnter);
     edges.on('click', d => { console.log(d.type, d.id); });
+
+    nodes.transition(transition)
+      .attr('r', 5)
+      .attr('cx', d => d.x)
+      .attr('cy', d => d.y);
+    edges.selectAll('.edge')
+      .transition(transition)
+      .attr('x1', d => d.source.x)
+      .attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x)
+      .attr('y2', d => d.target.y);
   }
-  hideSpinner (d3el) {
-    d3el.select('#spinner')
-      .style('visibility', 'hidden');
+  async updateLayout () {
+    if (this.layoutReady) {
+      // redundant call; we can exit early
+      return true;
+    }
+    if (!this.bounds) {
+      // we don't have an element to render to yet; wait for draw() to call this
+      // function again before figuring out the layout
+      this.layoutReady = false;
+      return false;
+    }
+    // TODO
+    return true;
+  }
+  async resolveReferences () {
+    while (this.graph.unresolvedReferences.length > 0) {
+      let source = this.graph.unresolvedReferences.shift();
+      let targets = await source.selection.nodes();
+      targets.forEach(target => {
+        // Start at the source, and collect ids until
+        // we encounter the deepest common ancestor
+        let ascendingIds = [];
+        let i = source.path.length - 1;
+        while (i >= 0 && source.path[i] !== target.path[i]) {
+          ascendingIds.push(source.path.slice(0, i + 1).join('.'));
+          i -= 1;
+        }
+        // We're at the deepest common ancestor (or the link is pointing
+        // to itself or a direct descendant)... we want the arc to route from
+        // sibling to sibling, not through the parent, so just start down
+        // the target path
+        let descendingIds = [];
+        while (i <= target.path.length - 1) {
+          descendingIds.push(target.path.slice(0, i + 1).join('.'));
+          i += 1;
+        }
+        this.addArc(ascendingIds, descendingIds);
+      });
+    }
+    // After resolving a set of references, we need to update the layout
+    // (but don't bother waiting around for it to finish to signal that
+    // we've finished resolving the references)
+    this.updateLayout();
+    return true;
   }
   addArc (ascendingIds, descendingIds) {
     let firstId = ascendingIds.length > 0 ? ascendingIds[0] : descendingIds[0];
@@ -374,41 +384,12 @@ Z`);
     this.graph.arcs.push(arc);
     return arc.id;
   }
-  async resolveReferences () {
-    while (this.graph.unresolvedReferences.length > 0) {
-      let source = this.graph.unresolvedReferences.shift();
-      let targets = await source.selection.nodes();
-      targets.forEach(target => {
-        // Start at the source, and collect ids until
-        // we encounter the deepest common ancestor
-        let ascendingIds = [];
-        let i = source.path.length - 1;
-        while (i >= 0 && source.path[i] !== target.path[i]) {
-          ascendingIds.push(source.path.slice(0, i + 1).join('.'));
-          i -= 1;
-        }
-        // We're at the deepest common ancestor (or the link is pointing
-        // to itself or a direct descendant)... we want the arc to route from
-        // sibling to sibling, not through the parent, so just start down
-        // the target path
-        let descendingIds = [];
-        while (i <= target.path.length - 1) {
-          descendingIds.push(target.path.slice(0, i + 1).join('.'));
-          i += 1;
-        }
-        this.addArc(ascendingIds, descendingIds);
-      });
-    }
-  }
-  showSpinner (d3el, windowBounds) {
-    let spinner = d3el.select('#spinner');
-    d3el.select('#spinner')
-      .style('visibility', null);
-    spinner
-      .attr('x', windowBounds.width / 2 - SPINNER_SIZE.width / 2)
-      .attr('y', windowBounds.height / 2 - SPINNER_SIZE.height / 2);
-  }
   addReference ({ path, value }) {
+    // TODO: for now, this function is only called internally with the references
+    // that we encounter while drawing them directly. In the future, I should initiate
+    // a background task that lazily calls this function for all references in all
+    // datasets, and fire resolveReferences() in batches to add the results to
+    // the view
     try {
       let selection = this.selection.selectAll(value);
       this.graph.unresolvedReferences.push({
@@ -508,7 +489,13 @@ Z`);
     this.graph.ghostEdges.push(edge);
     return edge.id;
   }
-  async updateGraph () {
+  async updateGraph (selection = null) {
+    this.selection = selection;
+    this.graph = undefined;
+    this.layoutReady = false;
+    if (this.d3el) {
+      this.render(); // show the spinner before updating the graph
+    }
     if (this.selection === null) {
       this.graph = null;
       return;
@@ -567,8 +554,7 @@ Z`);
     });
     // Resolve any references we encountered to create arcs and their
     // associated ghostEdges
-    await this.resolveReferences();
-    this.render();
+    return this.resolveReferences();
   }
 }
 export default NodeLinkDD;

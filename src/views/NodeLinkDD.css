@@ -1,3 +1,6 @@
+.NodeLinkDD #message {
+  text-anchor: middle;
+}
 .NodeLinkDD .entity .border {
   stroke: black;
   stroke-width: 1px;
