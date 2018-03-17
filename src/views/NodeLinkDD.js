@@ -43,7 +43,7 @@ L0,${MIN_NODE_RADIUS}
 L${-MIN_NODE_RADIUS},0
 Z`;
 
-let ARC_CURVE = d3.line().curve(d3.curveCatmullRom.alpha(1));
+let ARC_CURVE = d3.line().curve(d3.curveCatmullRom.alpha(0.1));
 let SUPERNODE_CURVE = d3.line().curve(d3.curveCatmullRomClosed.alpha(1));
 
 let GHOST_NODE_TYPES = createEnum([
@@ -171,14 +171,23 @@ class NodeLinkDD extends View {
     if (centerOffset.x === undefined || centerOffset.y === undefined) {
       return null;
     }
-    let allPoints = d.junctions.map(id => {
-      let ghost = this.graph.ghostNodes[this.graph.ghostNodeLookup[id]];
-      return [ghost.x - centerOffset.x, ghost.y - centerOffset.y];
-    }).concat(d.children.map(id => {
+    let allPoints = d.children.reduce((agg, id) => {
       let child = this.graph.entities[this.graph.entityLookup[id]];
-      let ghost = this.graph.ghostNodes[this.graph.ghostNodeLookup[child.center]];
-      return [ghost.x - centerOffset.x, ghost.y - centerOffset.y];
-    }));
+      if (child.junctions.length >= 3) {
+        return agg.concat(child.junctions.map(junctionId => {
+          let ghost = this.graph.ghostNodes[this.graph.ghostNodeLookup[junctionId]];
+          return [ghost.x - centerOffset.x, ghost.y - centerOffset.y];
+        }));
+      } else {
+        let ghost = this.graph.ghostNodes[this.graph.ghostNodeLookup[child.center]];
+        let dx = ghost.x - centerOffset.x;
+        let dy = ghost.y - centerOffset.y;
+        let r = Math.sqrt(dx ** 2, dy ** 2) + MIN_NODE_RADIUS + MIN_JUNCTION_SPACING;
+        let theta = Math.atan2(dy, dx);
+        agg.push([r * Math.cos(theta), r * Math.sin(theta)]);
+        return agg;
+      }
+    }, []);
     let hull = d3.polygonHull(allPoints);
     return SUPERNODE_CURVE(hull);
   }
@@ -192,7 +201,7 @@ class NodeLinkDD extends View {
     arcsEnter.attr('opacity', 0).transition(transition).attr('opacity', 1);
     arcsEnter.append('path');
 
-    arcs.transition(transition).attr('d', d => {
+    arcs.transition(transition).select('path').attr('d', d => {
       let arcPoints = d.junctions.map(id => {
         let junction = this.graph.ghostNodes[this.graph.ghostNodeLookup[id]];
         return [junction.x, junction.y];
