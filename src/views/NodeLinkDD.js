@@ -33,8 +33,8 @@ let SPINNER_SIZE = {
   height: 400
 };
 
-let MIN_NODE_RADIUS = 7;
-let MIN_JUNCTION_SPACING = 21;
+let MIN_NODE_RADIUS = 10;
+let MIN_JUNCTION_SPACING = 30;
 let STANDARD_CIRCLE = getCirclePath(MIN_NODE_RADIUS);
 let STANDARD_DIAMOND = `
 M0,${-MIN_NODE_RADIUS}
@@ -228,12 +228,17 @@ class NodeLinkDD extends View {
       .attr('r', 5)
       .attr('cx', d => d.x)
       .attr('cy', d => d.y);
-    edges.selectAll('.edge')
-      .transition(transition)
-      .attr('x1', d => d.source.x)
-      .attr('y1', d => d.source.y)
-      .attr('x2', d => d.target.x)
-      .attr('y2', d => d.target.y);
+    let self = this;
+    edges.transition(transition)
+      .each(function (d) {
+        let source = self.graph.ghostNodes[self.graph.ghostNodeLookup[d.source]];
+        let target = self.graph.ghostNodes[self.graph.ghostNodeLookup[d.target]];
+        d3.select(this)
+          .attr('x1', source.x)
+          .attr('y1', source.y)
+          .attr('x2', target.x)
+          .attr('y2', target.y);
+      });
   }
   async updateLayout () {
     if (this.layoutReady) {
@@ -254,95 +259,112 @@ class NodeLinkDD extends View {
 
     // First figure out in what order each ghostNode should appear, and sum up
     // the amount of space each node and supernode will need
-    let rootOrder = [];
-    let totalPseudoCircumference = 0;
-    let maxSuperNodeRadius = 0;
+    let rootPositions = [];
+    let rootPolygonBorderLength = 0;
+    let maxSuperNodeDiameter = 0;
     this.graph.entities.forEach(entity => {
       // supernode
       if (entity.children) {
         // leaf node
-        let superNodeOrder = {
-          center: entity.center,
+        let superNodePosition = {
+          centerId: entity.center,
           junctionOrder: [],
           childOrder: []
         };
-        let pseudoCircumference = 0;
-        let maxChildRadius = 0;
+        let polygonBorderLength = 0;
+        let maxChildDiameter = 0;
         entity.children.forEach(childId => {
           let child = this.graph.entities[this.graph.entityLookup[childId]];
-          let childOrder = {
-            center: child.center,
-            junctionOrder: Array.from(child.junctions),
-            radius: (MIN_JUNCTION_SPACING * child.junctions.length) / (2 * Math.PI)
+          let childPosition = {
+            centerId: child.center,
+            junctionOrder: Array.from(child.junctions)
           };
-          childOrder.radius = Math.max(MIN_NODE_RADIUS, childOrder.radius);
-          // For now, each child is laid out in a subcircle; the diameter of each
-          // child should be added to create a polygon that approximates the
-          // circumference of the parent
-          pseudoCircumference += childOrder.radius * 2 + MIN_JUNCTION_SPACING;
-          maxChildRadius = Math.max(maxChildRadius, childOrder.radius);
-          superNodeOrder.childOrder.push(childOrder);
           child.junctions.forEach(childJunctionId => {
             let childJunction = this.graph.ghostNodes[this.graph.ghostNodeLookup[childJunctionId]];
-            superNodeOrder.junctionOrder.push(childJunction.superJunction);
+            superNodePosition.junctionOrder.push(childJunction.superJunction);
           });
+          childPosition.diameter = (MIN_JUNCTION_SPACING * child.junctions.length) / Math.PI;
+          childPosition.diameter = Math.max(2 * MIN_NODE_RADIUS, childPosition.diameter);
+          childPosition.diameter += MIN_JUNCTION_SPACING;
+          polygonBorderLength += childPosition.diameter;
+          maxChildDiameter = Math.max(childPosition.diameter, maxChildDiameter);
+          superNodePosition.childOrder.push(childPosition);
         });
-        superNodeOrder.radius = pseudoCircumference / (2 * Math.PI) +
-          maxChildRadius + MIN_JUNCTION_SPACING;
-        superNodeOrder.radius = Math.max(MIN_NODE_RADIUS, superNodeOrder.radius);
+        // Now that we know how big each child circle will be, determine the
+        // angular space that it needs, and its distance from the center
+        superNodePosition.childOrder.forEach(childPosition => {
+          let halfAngle = Math.PI * childPosition.diameter /
+            polygonBorderLength;
+          childPosition.angle = 2 * halfAngle;
+          childPosition.distance = childPosition.diameter * Math.cos(halfAngle) /
+            (2 * Math.sin(halfAngle));
+        });
+        superNodePosition.diameter = Math.PI * maxChildDiameter /
+          (Math.sin(Math.PI / entity.children.length));
 
-        totalPseudoCircumference += superNodeOrder.radius * 2 + MIN_JUNCTION_SPACING;
-        maxSuperNodeRadius = Math.max(maxSuperNodeRadius, superNodeOrder.radius);
-        rootOrder.push(superNodeOrder);
+        rootPolygonBorderLength += superNodePosition.diameter;
+        maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, superNodePosition.diameter);
+        rootPositions.push(superNodePosition);
       } else if (!entity.parent) {
         // loose leaf nodes not wrapped by a supernode
-        let orderObj = {
-          center: entity.center,
-          junctionOrder: Array.from(entity.junctions),
-          radius: (MIN_JUNCTION_SPACING * entity.junctions.length) / (2 * Math.PI)
+        let nodePosition = {
+          centerId: entity.center,
+          junctionOrder: Array.from(entity.junctions)
         };
-        orderObj.radius = Math.max(MIN_NODE_RADIUS, orderObj.radius);
-        totalPseudoCircumference += orderObj.radius * 2 + MIN_JUNCTION_SPACING;
-        maxSuperNodeRadius = Math.max(maxSuperNodeRadius, orderObj.radius);
-        rootOrder.push(orderObj);
+        nodePosition.diameter = (MIN_JUNCTION_SPACING * entity.junctions.length) / Math.PI;
+        nodePosition.diameter = Math.max(2 * MIN_NODE_RADIUS, nodePosition.diameter);
+        nodePosition.diameter += MIN_JUNCTION_SPACING;
+
+        rootPolygonBorderLength += nodePosition.diameter;
+        maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, nodePosition.diameter);
+        rootPositions.push(nodePosition);
       }
     });
-    let totalRadius = totalPseudoCircumference / (2 * Math.PI) +
-      maxSuperNodeRadius + MIN_JUNCTION_SPACING;
+    // Assign root positions their angular space and distance as well
+    rootPositions.forEach(position => {
+      let halfAngle = Math.PI * position.diameter / rootPolygonBorderLength;
+      position.angle = 2 * halfAngle;
+      position.distance = position.diameter * Math.cos(halfAngle) /
+        (2 * Math.sin(halfAngle));
+    });
 
-    // Now that we know in what order things should be drawn, and how much space
-    // each thing needs, we can calculate ghostNode positions
-    let layoutCircles = (orderObjs, bigCenter, bigRadius) => {
+    // Now that we know in what order things should be drawn, and how much
+    // angular space each thing needs, we can calculate ghostNode positions
+    let layoutCircles = (positions, bigCenter) => {
       let bigTheta = 0;
-      orderObjs.forEach(orderObj => {
+      positions.forEach(position => {
+        // Rotate halfway to point to the node's center
+        // bigTheta += position.angle / 2;
+
         // Place the center of each node
-        let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[orderObj.center]];
-        let trueRadius = bigRadius - MIN_JUNCTION_SPACING - orderObj.radius;
-        let halfAngle = Math.atan2(orderObj.radius, trueRadius);
-        center.x = bigCenter.x + trueRadius * Math.cos(bigTheta + halfAngle);
-        center.y = bigCenter.y + trueRadius * Math.sin(bigTheta + halfAngle);
+        let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[position.centerId]];
+        center.x = bigCenter.x + position.distance * Math.cos(bigTheta);
+        center.y = bigCenter.y + position.distance * Math.sin(bigTheta);
 
         // Place node's junctions
-        if (orderObj.junctionOrder.length > 0) {
+        if (position.junctionOrder.length > 0) {
           let smallTheta = 0;
-          let smallThetaIncrement = Math.PI * 2 / orderObj.junctionOrder.length;
-          orderObj.junctionOrder.forEach(junctionId => {
+          let smallThetaIncrement = Math.PI * 2 / position.junctionOrder.length;
+          let smallRadius = position.diameter / 2;
+          position.junctionOrder.forEach(junctionId => {
             let junction = this.graph.ghostNodes[this.graph.ghostNodeLookup[junctionId]];
-            junction.x = center.x + orderObj.radius * Math.cos(smallTheta);
-            junction.y = center.y + orderObj.radius * Math.sin(smallTheta);
+            junction.x = center.x + smallRadius * Math.cos(smallTheta);
+            junction.y = center.y + smallRadius * Math.sin(smallTheta);
             smallTheta += smallThetaIncrement;
           });
         }
 
         // Recursively place child node centers and their junctions
-        if (orderObj.childOrder) {
-          layoutCircles(orderObj.childOrder, center, orderObj.radius);
+        if (position.childOrder) {
+          layoutCircles(position.childOrder, center);
         }
-        bigTheta += 2 * Math.atan2(orderObj.radius + MIN_JUNCTION_SPACING, trueRadius);
+
+        // Finish rotating to set up the next node
+        bigTheta += position.angle;
       });
     };
     let windowCenter = { x: this.bounds.width / 2, y: this.bounds.height / 2 };
-    layoutCircles(rootOrder, windowCenter, totalRadius);
+    layoutCircles(rootPositions, windowCenter);
 
     this.layoutReady = true;
     this.render();
