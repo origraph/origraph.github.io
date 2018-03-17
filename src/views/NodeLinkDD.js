@@ -33,14 +33,14 @@ let SPINNER_SIZE = {
   height: 400
 };
 
-let NODE_RADIUS = 7;
-let RADIAL_PADDING_PER_JUNCTION = 2;
-let STANDARD_CIRCLE = getCirclePath(NODE_RADIUS);
+let MIN_NODE_RADIUS = 7;
+let MIN_JUNCTION_SPACING = 21;
+let STANDARD_CIRCLE = getCirclePath(MIN_NODE_RADIUS);
 let STANDARD_DIAMOND = `
-M0,${-NODE_RADIUS}
-L${NODE_RADIUS},0
-L0,${NODE_RADIUS}
-L${-NODE_RADIUS},0
+M0,${-MIN_NODE_RADIUS}
+L${MIN_NODE_RADIUS},0
+L0,${MIN_NODE_RADIUS}
+L${-MIN_NODE_RADIUS},0
 Z`;
 
 let ARC_CURVE = d3.line().curve(d3.curveCatmullRom.alpha(1));
@@ -247,46 +247,60 @@ class NodeLinkDD extends View {
     // the amount of space each node and supernode will need
     let rootOrder = [];
     let totalPseudoCircumference = 0;
+    let maxSuperNodeRadius = 0;
     this.graph.entities.forEach(entity => {
+      // supernode
       if (entity.children) {
+        // leaf node
         let superNodeOrder = {
           center: entity.center,
           junctionOrder: [],
           childOrder: []
         };
         let pseudoCircumference = 0;
+        let maxChildRadius = 0;
         entity.children.forEach(childId => {
           let child = this.graph.entities[this.graph.entityLookup[childId]];
           let childOrder = {
             center: child.center,
             junctionOrder: Array.from(child.junctions),
-            radius: NODE_RADIUS + child.junctions.length * RADIAL_PADDING_PER_JUNCTION
+            radius: (MIN_JUNCTION_SPACING * child.junctions.length) / (2 * Math.PI)
           };
+          childOrder.radius = Math.max(MIN_NODE_RADIUS, childOrder.radius);
           // For now, each child is laid out in a subcircle; the diameter of each
           // child should be added to create a polygon that approximates the
           // circumference of the parent
-          pseudoCircumference += childOrder.radius * 2;
+          pseudoCircumference += childOrder.radius * 2 + MIN_JUNCTION_SPACING;
+          maxChildRadius = Math.max(maxChildRadius, childOrder.radius);
           superNodeOrder.childOrder.push(childOrder);
           child.junctions.forEach(childJunctionId => {
             let childJunction = this.graph.ghostNodes[this.graph.ghostNodeLookup[childJunctionId]];
             superNodeOrder.junctionOrder.push(childJunction.superJunction);
           });
         });
-        superNodeOrder.radius = pseudoCircumference / (2 * Math.PI);
-        superNodeOrder.radius += superNodeOrder.junctionOrder.length * RADIAL_PADDING_PER_JUNCTION;
+        superNodeOrder.radius = pseudoCircumference / (2 * Math.PI) +
+          maxChildRadius + MIN_JUNCTION_SPACING;
+        superNodeOrder.radius = Math.max(MIN_NODE_RADIUS, superNodeOrder.radius);
 
-        totalPseudoCircumference += superNodeOrder.radius * 2;
+        totalPseudoCircumference += superNodeOrder.radius * 2 + MIN_JUNCTION_SPACING;
+        maxSuperNodeRadius = Math.max(maxSuperNodeRadius, superNodeOrder.radius);
         rootOrder.push(superNodeOrder);
       } else if (!entity.parent) {
+        // loose leaf nodes not wrapped by a supernode
         let orderObj = {
           center: entity.center,
           junctionOrder: Array.from(entity.junctions),
-          radius: NODE_RADIUS + entity.junctions.length * RADIAL_PADDING_PER_JUNCTION
+          radius: (MIN_JUNCTION_SPACING * entity.junctions.length) / (2 * Math.PI)
         };
-        totalPseudoCircumference += orderObj.radius * 2;
+        orderObj.radius = Math.max(MIN_NODE_RADIUS, orderObj.radius);
+        totalPseudoCircumference += orderObj.radius * 2 + MIN_JUNCTION_SPACING;
+        maxSuperNodeRadius = Math.max(maxSuperNodeRadius, orderObj.radius);
         rootOrder.push(orderObj);
       }
     });
+    let totalRadius = totalPseudoCircumference / (2 * Math.PI) +
+      maxSuperNodeRadius + MIN_JUNCTION_SPACING;
+
     // Now that we know in what order things should be drawn, and how much space
     // each thing needs, we can calculate ghostNode positions
     let layoutCircles = (orderObjs, bigCenter, bigRadius) => {
@@ -294,7 +308,7 @@ class NodeLinkDD extends View {
       orderObjs.forEach(orderObj => {
         // Place the center of each node
         let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[orderObj.center]];
-        let trueRadius = Math.sqrt(orderObj.radius ** 2 + bigRadius ** 2);
+        let trueRadius = bigRadius - MIN_JUNCTION_SPACING - orderObj.radius;
         let halfAngle = Math.atan2(orderObj.radius, trueRadius);
         center.x = bigCenter.x + trueRadius * Math.cos(bigTheta + halfAngle);
         center.y = bigCenter.y + trueRadius * Math.sin(bigTheta + halfAngle);
@@ -315,11 +329,11 @@ class NodeLinkDD extends View {
         if (orderObj.childOrder) {
           layoutCircles(orderObj.childOrder, center, orderObj.radius);
         }
-        bigTheta += 2 * halfAngle;
+        bigTheta += 2 * Math.atan2(orderObj.radius + MIN_JUNCTION_SPACING, trueRadius);
       });
     };
     let windowCenter = { x: this.bounds.width / 2, y: this.bounds.height / 2 };
-    layoutCircles(rootOrder, windowCenter, totalPseudoCircumference / (2 * Math.PI));
+    layoutCircles(rootOrder, windowCenter, totalRadius);
 
     this.layoutReady = true;
     this.render();
