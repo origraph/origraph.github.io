@@ -33,7 +33,8 @@ let SPINNER_SIZE = {
   height: 400
 };
 
-let NODE_RADIUS = 14;
+let NODE_RADIUS = 7;
+let RADIAL_PADDING_PER_JUNCTION = 2;
 let STANDARD_CIRCLE = getCirclePath(NODE_RADIUS);
 let STANDARD_DIAMOND = `
 M0,${-NODE_RADIUS}
@@ -68,14 +69,11 @@ class NodeLinkDD extends View {
   }
   setup (d3el) {
     this.bounds = d3el.node().getBoundingClientRect();
-    if (d3el.select('#superNodes').size() === 0) {
-      d3el.append('g').attr('id', 'arcs');
+    if (d3el.select('#entities').size() === 0) {
+      d3el.append('g').attr('id', 'entities');
     }
     if (d3el.select('#arcs').size() === 0) {
       d3el.append('g').attr('id', 'arcs');
-    }
-    if (d3el.select('#entities').size() === 0) {
-      d3el.append('g').attr('id', 'entities');
     }
     if (DEBUG_GHOSTS) {
       if (d3el.select('#ghostEdges').size() === 0) {
@@ -101,13 +99,13 @@ class NodeLinkDD extends View {
     if (this.graph === undefined) {
       this.showMessage(d3el, 'Loading graph...');
       this.showSpinner(d3el);
-    } else if (this.graph === null) {
-      this.showMessage(d3el, 'No data selected');
-      this.hideSpinner(d3el);
     } else if (this.layoutReady === false) {
       this.showMessage(d3el, 'Computing graph layout...');
       this.showSpinner(d3el);
       this.updateLayout();
+    } else if (this.graph.entities.length === 0) {
+      this.showMessage(d3el, 'No data selected');
+      this.hideSpinner(d3el);
     } else {
       this.hideMessage(d3el);
       this.hideSpinner(d3el);
@@ -128,7 +126,7 @@ class NodeLinkDD extends View {
   }
   hideMessage (d3el) {
     d3el.select('#message')
-      .style('visiblity', 'hidden');
+      .style('visibility', 'hidden');
   }
   showSpinner (d3el) {
     let spinner = d3el.select('#spinner');
@@ -143,41 +141,22 @@ class NodeLinkDD extends View {
       .style('visibility', 'hidden');
   }
   drawEntities (d3el, transition) {
-    let superNodes = [];
-    let otherEntities = [];
-    this.graph.entities.forEach(entity => {
-      if (entity.type === ENTITY_TYPES.SUPERNODE) {
-        superNodes.push(entity);
-      } else {
-        otherEntities.push(entity);
-      }
-    });
+    let entities = d3el.select('#entities')
+      .selectAll('.entity').data(this.graph.entities, d => d.id);
 
-    superNodes = d3el.select('#superNodes')
-      .selectAll('.entity').data(superNodes, d => d.id);
-    otherEntities = d3el.select('#entities')
-      .selectAll('.entity').data(otherEntities, d => d.id);
-
-    superNodes.exit().transition(transition).attr('opacity', 0).remove();
-    let superNodesEnter = superNodes.enter()
+    entities.exit().transition(transition).attr('opacity', 0).remove();
+    let entitiesEnter = entities.enter()
       .append('g').classed('entity', true);
-    superNodes = superNodes.merge(superNodesEnter);
+    entities = entities.merge(entitiesEnter);
 
-    otherEntities.exit().transition(transition).attr('opacity', 0).remove();
-    let otherEntitiesEnter = otherEntities.enter()
-      .append('g').classed('entity', true);
+    entitiesEnter.attr('opacity', 0).transition(transition).attr('opacity', 1);
+    entitiesEnter.append('path').classed('border', true).attr('d', '');
 
-    let allEntitiesEnter = superNodesEnter.merge(otherEntitiesEnter);
-    let allEntities = superNodes.merge(otherEntities);
-
-    allEntitiesEnter.attr('opacity', 0).transition(transition).attr('opacity', 1);
-    allEntitiesEnter.append('path').classed('border', true).attr('d', '');
-
-    allEntities.transition(transition)
+    entities.transition(transition)
       .attr('transform', d => {
         let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[d.center]];
         return 'translate(' + center.x + ',' + center.y + ')';
-      }).attr('d', d => {
+      }).select('.border').attr('d', d => {
         if (d.type === ENTITY_TYPES.NODE) {
           return STANDARD_CIRCLE;
         } else if (d.type === ENTITY_TYPES.EDGE) {
@@ -258,7 +237,92 @@ class NodeLinkDD extends View {
       this.layoutReady = false;
       return false;
     }
-    // TODO
+    if (!this.graph || this.graph.entities.length === 0) {
+      // the graph hasn't been initialized yet (or it's empty); wait for
+      // updateGraph() to call this function again to figure out the layout
+      return false;
+    }
+
+    // First figure out in what order each ghostNode should appear, and sum up
+    // the amount of space each node and supernode will need
+    let rootOrder = [];
+    let totalPseudoCircumference = 0;
+    this.graph.entities.forEach(entity => {
+      if (entity.children) {
+        let superNodeOrder = {
+          center: entity.center,
+          junctionOrder: [],
+          childOrder: []
+        };
+        let pseudoCircumference = 0;
+        entity.children.forEach(childId => {
+          let child = this.graph.entities[this.graph.entityLookup[childId]];
+          let childOrder = {
+            center: child.center,
+            junctionOrder: Array.from(child.junctions),
+            radius: NODE_RADIUS + child.junctions.length * RADIAL_PADDING_PER_JUNCTION
+          };
+          // For now, each child is laid out in a subcircle; the diameter of each
+          // child should be added to create a polygon that approximates the
+          // circumference of the parent
+          pseudoCircumference += childOrder.radius * 2;
+          superNodeOrder.childOrder.push(childOrder);
+          child.junctions.forEach(childJunctionId => {
+            let childJunction = this.graph.ghostNodes[this.graph.ghostNodeLookup[childJunctionId]];
+            superNodeOrder.junctionOrder.push(childJunction.superJunction);
+          });
+        });
+        superNodeOrder.radius = pseudoCircumference / (2 * Math.PI);
+        superNodeOrder.radius += superNodeOrder.junctionOrder.length * RADIAL_PADDING_PER_JUNCTION;
+
+        totalPseudoCircumference += superNodeOrder.radius * 2;
+        rootOrder.push(superNodeOrder);
+      } else if (!entity.parent) {
+        let orderObj = {
+          center: entity.center,
+          junctionOrder: Array.from(entity.junctions),
+          radius: NODE_RADIUS + entity.junctions.length * RADIAL_PADDING_PER_JUNCTION
+        };
+        totalPseudoCircumference += orderObj.radius * 2;
+        rootOrder.push(orderObj);
+      }
+    });
+    // Now that we know in what order things should be drawn, and how much space
+    // each thing needs, we can calculate ghostNode positions
+    let layoutCircles = (orderObjs, bigCenter, bigRadius) => {
+      let bigTheta = 0;
+      orderObjs.forEach(orderObj => {
+        // Place the center of each node
+        let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[orderObj.center]];
+        let trueRadius = Math.sqrt(orderObj.radius ** 2 + bigRadius ** 2);
+        let halfAngle = Math.atan2(orderObj.radius, trueRadius);
+        center.x = bigCenter.x + trueRadius * Math.cos(bigTheta + halfAngle);
+        center.y = bigCenter.y + trueRadius * Math.sin(bigTheta + halfAngle);
+
+        // Place node's junctions
+        if (orderObj.junctionOrder.length > 0) {
+          let smallTheta = 0;
+          let smallThetaIncrement = Math.PI * 2 / orderObj.junctionOrder.length;
+          orderObj.junctionOrder.forEach(junctionId => {
+            let junction = this.graph.ghostNodes[this.graph.ghostNodeLookup[junctionId]];
+            junction.x = center.x + orderObj.radius * Math.cos(smallTheta);
+            junction.y = center.y + orderObj.radius * Math.sin(smallTheta);
+            smallTheta += smallThetaIncrement;
+          });
+        }
+
+        // Recursively place child node centers and their junctions
+        if (orderObj.childOrder) {
+          layoutCircles(orderObj.childOrder, center, orderObj.radius);
+        }
+        bigTheta += 2 * halfAngle;
+      });
+    };
+    let windowCenter = { x: this.bounds.width / 2, y: this.bounds.height / 2 };
+    layoutCircles(rootOrder, windowCenter, totalPseudoCircumference / (2 * Math.PI));
+
+    this.layoutReady = true;
+    this.render();
     return true;
   }
   async resolveReferences () {
@@ -309,19 +373,20 @@ class NodeLinkDD extends View {
     let firstVisibleId;
     let lastVisibleId;
     let tryToAddJunction = (id, index) => {
-      let entityId = this.graph.entityLookup[id];
-      if (entityId !== undefined) {
-        let entity = this.graph.entities[entityId];
+      let entityIndex = this.graph.entityLookup[id];
+      if (entityIndex !== undefined) {
+        let entity = this.graph.entities[entityIndex];
         if (!firstVisibleId) {
           firstVisibleId = id;
         }
         lastVisibleId = id;
         let junctionId = this.addGhostNode({
           id: arc.id + '[' + id + ']',
-          type: entity.type + '_JUNCTION'
+          type: entity.type + '_JUNCTION',
+          entityId: entity.id
         });
         arc.junctions.push(junctionId);
-        this.graph.entities[entityId].junctions.push(junctionId);
+        entity.junctions.push(junctionId);
         return true;
       }
       return false;
@@ -400,9 +465,10 @@ class NodeLinkDD extends View {
     } catch (err) { if (!err.INVALID_SELECTOR) { throw err; } }
     return false;
   }
-  addEntity (obj, { forceEdge = false } = {}) {
+  addEntity (obj, { forceEdge = false, parent = null } = {}) {
     let type = forceEdge ? ENTITY_TYPES.EDGE : ENTITY_TYPES.NODE;
     let entity = this.createEntity(obj, type);
+    if (parent) { entity.parent = parent; }
 
     let valueType = typeof obj.value;
     if (valueType === 'string') {
@@ -444,7 +510,7 @@ class NodeLinkDD extends View {
       let childEntityId = this.addEntity({
         path: childPath,
         value: childValue
-      });
+      }, { parent: entity.id });
       entity.children.push(childEntityId);
       let child = this.graph.entities[this.graph.entityLookup[childEntityId]];
       this.addGhostEdge(entity.center, child.center);
@@ -466,7 +532,7 @@ class NodeLinkDD extends View {
     entity.center = this.addGhostNode({
       id: entity.id + '>center',
       type: type + '_CENTER',
-      entity
+      entityId: entity.id
     });
     return entity;
   }
@@ -485,6 +551,18 @@ class NodeLinkDD extends View {
       target: b.id,
       type
     };
+    if (type === 'NODE_JUNCTION>>SUPERNODE_JUNCTION') {
+      let aEntity = this.graph.entities[this.graph.entityLookup[a.entityId]];
+      if (aEntity.parent === b.entityId) {
+        a.superJunction = b.id;
+      }
+    }
+    if (type === 'SUPERNODE_JUNCTION>>NODE_JUNCTION') {
+      let bEntity = this.graph.entities[this.graph.entityLookup[b.entityId]];
+      if (bEntity.parent === a.entityId) {
+        b.superJunction = a.id;
+      }
+    }
     this.graph.ghostEdgeLookup[edge.id] = this.graph.ghostEdges.length;
     this.graph.ghostEdges.push(edge);
     return edge.id;
@@ -495,10 +573,6 @@ class NodeLinkDD extends View {
     this.layoutReady = false;
     if (this.d3el) {
       this.render(); // show the spinner before updating the graph
-    }
-    if (this.selection === null) {
-      this.graph = null;
-      return;
     }
     /*
      * The nomenclature in this code is SUPER overloaded. There are THREE
@@ -534,6 +608,9 @@ class NodeLinkDD extends View {
        */
       unresolvedReferences: []
     };
+    if (this.selection === null) {
+      return;
+    }
 
     // First create the nodes and their associated ghostNodes
     // (populates graph.unresolvedReferences)
