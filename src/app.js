@@ -3,11 +3,13 @@
 import NodeLinkDD from './views/NodeLinkDD.js';
 import SpiralTest from './views/SpiralTest.js';
 import PartitionTest from './views/PartitionTest.js';
+import StaggeredTest from './views/StaggeredTest.js';
 
 let views = {
   NodeLinkDD,
   SpiralTest,
-  PartitionTest
+  PartitionTest,
+  StaggeredTest
 };
 
 console.log('d3 version:', d3.version);
