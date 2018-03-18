@@ -26,7 +26,7 @@ ${-cubicOffset},${-radius},
 Z`;
 }
 
-let DEBUG_GHOSTS = false;
+let DEBUG_GHOSTS = true;
 
 let SPINNER_SIZE = {
   width: 550,
@@ -35,6 +35,7 @@ let SPINNER_SIZE = {
 
 let MIN_NODE_RADIUS = 10;
 let MIN_JUNCTION_SPACING = 15;
+let SUPERNODE_PADDING = 30;
 let STANDARD_CIRCLE = getCirclePath(MIN_NODE_RADIUS);
 let STANDARD_DIAMOND = `
 M0,${-MIN_NODE_RADIUS}
@@ -283,28 +284,33 @@ class NodeLinkDD extends View {
             let childJunction = this.graph.ghostNodes[this.graph.ghostNodeLookup[childJunctionId]];
             superNodePosition.junctionOrder.push(childJunction.superJunction);
           });
+          // The child's diameter is the the space required to lay out its
+          // junctions, or in the event it has no junctions, the minimum node radius.
           childPosition.diameter = (MIN_JUNCTION_SPACING * child.junctions.length) / Math.PI;
           childPosition.diameter = Math.max(2 * MIN_NODE_RADIUS, childPosition.diameter);
-          childPosition.diameter += MIN_JUNCTION_SPACING;
-          polygonBorderLength += childPosition.diameter;
-          maxChildDiameter = Math.max(childPosition.diameter, maxChildDiameter);
+          childPosition.paddedDiameter = childPosition.diameter + 2 * MIN_JUNCTION_SPACING;
+          polygonBorderLength += childPosition.paddedDiameter;
+          maxChildDiameter = Math.max(childPosition.paddedDiameter, maxChildDiameter);
           superNodePosition.childOrder.push(childPosition);
         });
-        // Now we can figure out how big the supernode needs to be
+        // Now we can figure out how big the supernode needs to be; assuming a regular
+        // n-gon (n = the number of children) with side length (s = maxChildDiameter),
+        // its radius is s / (2 * sin( pi / n ) );
         superNodePosition.diameter = Math.PI * (maxChildDiameter) /
-          (2 * Math.sin(Math.PI / entity.children.length)) + 2 * MIN_JUNCTION_SPACING;
+          (2 * Math.sin(Math.PI / entity.children.length));
+        superNodePosition.paddedDiameter = superNodePosition.diameter + 2 * SUPERNODE_PADDING;
         // Now that we know how big each child circle will be, determine the
         // angular space that it needs, and its distance from the center
         superNodePosition.childOrder.forEach(childPosition => {
-          let halfAngle = Math.PI * childPosition.diameter /
+          let halfAngle = Math.PI * childPosition.paddedDiameter /
             polygonBorderLength;
           childPosition.angle = 2 * halfAngle;
           childPosition.distance = (superNodePosition.diameter / 2) -
-            MIN_JUNCTION_SPACING - (childPosition.diameter / 2);
+            (childPosition.paddedDiameter / 2);
         });
 
-        rootPolygonBorderLength += superNodePosition.diameter;
-        maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, superNodePosition.diameter);
+        rootPolygonBorderLength += superNodePosition.paddedDiameter;
+        maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, superNodePosition.paddedDiameter);
         rootPositions.push(superNodePosition);
       } else if (!entity.parent) {
         // loose leaf nodes not wrapped by a supernode
@@ -314,22 +320,24 @@ class NodeLinkDD extends View {
         };
         nodePosition.diameter = (MIN_JUNCTION_SPACING * entity.junctions.length) / Math.PI;
         nodePosition.diameter = Math.max(2 * MIN_NODE_RADIUS, nodePosition.diameter);
-        nodePosition.diameter += MIN_JUNCTION_SPACING;
+        nodePosition.paddedDiameter = nodePosition.diameter + 2 * MIN_JUNCTION_SPACING;
 
-        rootPolygonBorderLength += nodePosition.diameter;
-        maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, nodePosition.diameter);
+        rootPolygonBorderLength += nodePosition.paddedDiameter;
+        maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, nodePosition.paddedDiameter);
         rootPositions.push(nodePosition);
       }
     });
-    // Now we can figure out how much space we need overall
+    // Now we can figure out how much space we need overall; assuming a regular
+    // n-gon (n = the number of entities) with side length (s = maxSuperNodeDiameter),
+    // its radius is s / (2 * sin( pi / n ) );
     let rootDiameter = Math.PI * maxSuperNodeDiameter /
       (2 * Math.sin(Math.PI / rootPositions.length));
-    // Assign root positions their angular space and distance as well
+      // Now that we know how big each entity will be, determine the
+      // angular space that it needs, and its distance from the center
     rootPositions.forEach(position => {
-      let halfAngle = Math.PI * position.diameter / rootPolygonBorderLength;
+      let halfAngle = Math.PI * position.paddedDiameter / rootPolygonBorderLength;
       position.angle = 2 * halfAngle;
-      position.distance = (rootDiameter / 2) - (position.diameter / 2) +
-        2 * MIN_JUNCTION_SPACING;
+      position.distance = (rootDiameter / 2) - (position.paddedDiameter / 2);
     });
 
     // Now that we know in what order things should be drawn, and how much
