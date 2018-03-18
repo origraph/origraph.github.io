@@ -1,0 +1,10 @@
+.SpiralTest #backbone {
+  fill: none;
+  stroke: #666666;
+  stroke-width: 1;
+}
+.RandomSizeTest .arc,
+.StaggeredTest .arc {
+  stroke-width: 1px;
+  stroke: grey;
+}
