@@ -26,7 +26,7 @@ ${-cubicOffset},${-radius},
 Z`;
 }
 
-let DEBUG_GHOSTS = true;
+let DEBUG_GHOSTS = false;
 
 let SPINNER_SIZE = {
   width: 550,
@@ -34,7 +34,7 @@ let SPINNER_SIZE = {
 };
 
 let MIN_NODE_RADIUS = 10;
-let MIN_JUNCTION_SPACING = 30;
+let MIN_JUNCTION_SPACING = 15;
 let STANDARD_CIRCLE = getCirclePath(MIN_NODE_RADIUS);
 let STANDARD_DIAMOND = `
 M0,${-MIN_NODE_RADIUS}
@@ -290,17 +290,18 @@ class NodeLinkDD extends View {
           maxChildDiameter = Math.max(childPosition.diameter, maxChildDiameter);
           superNodePosition.childOrder.push(childPosition);
         });
+        // Now we can figure out how big the supernode needs to be
+        superNodePosition.diameter = Math.PI * (maxChildDiameter) /
+          (2 * Math.sin(Math.PI / entity.children.length)) + 2 * MIN_JUNCTION_SPACING;
         // Now that we know how big each child circle will be, determine the
         // angular space that it needs, and its distance from the center
         superNodePosition.childOrder.forEach(childPosition => {
           let halfAngle = Math.PI * childPosition.diameter /
             polygonBorderLength;
           childPosition.angle = 2 * halfAngle;
-          childPosition.distance = childPosition.diameter * Math.cos(halfAngle) /
-            (2 * Math.sin(halfAngle));
+          childPosition.distance = (superNodePosition.diameter / 2) -
+            MIN_JUNCTION_SPACING - (childPosition.diameter / 2);
         });
-        superNodePosition.diameter = Math.PI * maxChildDiameter /
-          (Math.sin(Math.PI / entity.children.length));
 
         rootPolygonBorderLength += superNodePosition.diameter;
         maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, superNodePosition.diameter);
@@ -320,12 +321,15 @@ class NodeLinkDD extends View {
         rootPositions.push(nodePosition);
       }
     });
+    // Now we can figure out how much space we need overall
+    let rootDiameter = Math.PI * maxSuperNodeDiameter /
+      (2 * Math.sin(Math.PI / rootPositions.length));
     // Assign root positions their angular space and distance as well
     rootPositions.forEach(position => {
       let halfAngle = Math.PI * position.diameter / rootPolygonBorderLength;
       position.angle = 2 * halfAngle;
-      position.distance = position.diameter * Math.cos(halfAngle) /
-        (2 * Math.sin(halfAngle));
+      position.distance = (rootDiameter / 2) - (position.diameter / 2) +
+        2 * MIN_JUNCTION_SPACING;
     });
 
     // Now that we know in what order things should be drawn, and how much
