@@ -1,11 +1,16 @@
 /* globals d3 */
 import { View } from '../uki.es.js';
 
-function createEnum (entries) {
-  let temp = {};
-  entries.forEach(entry => { temp[entry] = entry; });
-  return Object.freeze(temp);
-}
+let DEBUG_GHOSTS = false;
+
+let SPINNER_SIZE = {
+  width: 550,
+  height: 400
+};
+
+let MIN_NODE_RADIUS = 10;
+let MIN_JUNCTION_SPACING = 15;
+let SUPERNODE_PADDING = 30;
 
 function getCirclePath (radius) {
   let cubicOffset = 5 * radius / 9;
@@ -25,27 +30,26 @@ ${-cubicOffset},${-radius},
 0,${-radius}
 Z`;
 }
+function getDiamondPath (radius) {
+  return `
+  M0,${-radius}
+  L${radius},0
+  L0,${radius}
+  L${-radius},0
+  Z`;
+}
 
-let DEBUG_GHOSTS = true;
-
-let SPINNER_SIZE = {
-  width: 550,
-  height: 400
-};
-
-let MIN_NODE_RADIUS = 10;
-let MIN_JUNCTION_SPACING = 15;
-let SUPERNODE_PADDING = 30;
 let STANDARD_CIRCLE = getCirclePath(MIN_NODE_RADIUS);
-let STANDARD_DIAMOND = `
-M0,${-MIN_NODE_RADIUS}
-L${MIN_NODE_RADIUS},0
-L0,${MIN_NODE_RADIUS}
-L${-MIN_NODE_RADIUS},0
-Z`;
+let STANDARD_DIAMOND = getDiamondPath(MIN_NODE_RADIUS);
 
 let ARC_CURVE = d3.line().curve(d3.curveCatmullRom.alpha(0.1));
 let SUPERNODE_CURVE = d3.line().curve(d3.curveCatmullRomClosed.alpha(1));
+
+function createEnum (entries) {
+  let temp = {};
+  entries.forEach(entry => { temp[entry] = entry; });
+  return Object.freeze(temp);
+}
 
 let GHOST_NODE_TYPES = createEnum([
   'NODE_CENTER',
@@ -289,6 +293,10 @@ class NodeLinkDD extends View {
           childPosition.diameter = (MIN_JUNCTION_SPACING * child.junctions.length) / Math.PI;
           childPosition.diameter = Math.max(2 * MIN_NODE_RADIUS, childPosition.diameter);
           childPosition.paddedDiameter = childPosition.diameter + 2 * MIN_JUNCTION_SPACING;
+          // For rendering purposes, tell the child node how big it needs to be
+          child.radius = childPosition.diameter / 2;
+          // Track how much space this child took for later steps, and store it
+          // in order
           polygonBorderLength += childPosition.paddedDiameter;
           maxChildDiameter = Math.max(childPosition.paddedDiameter, maxChildDiameter);
           superNodePosition.childOrder.push(childPosition);
@@ -321,6 +329,7 @@ class NodeLinkDD extends View {
         nodePosition.diameter = (MIN_JUNCTION_SPACING * entity.junctions.length) / Math.PI;
         nodePosition.diameter = Math.max(2 * MIN_NODE_RADIUS, nodePosition.diameter);
         nodePosition.paddedDiameter = nodePosition.diameter + 2 * MIN_JUNCTION_SPACING;
+        entity.radius = entity.diameter / 2;
 
         rootPolygonBorderLength += nodePosition.paddedDiameter;
         maxSuperNodeDiameter = Math.max(maxSuperNodeDiameter, nodePosition.paddedDiameter);
