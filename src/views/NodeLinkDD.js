@@ -1,7 +1,7 @@
 /* globals d3 */
 import { View } from '../uki.es.js';
 
-let DEBUG_GHOSTS = true;
+let DEBUG_GHOSTS = false;
 
 let SPINNER_SIZE = {
   width: 550,
@@ -67,17 +67,6 @@ let ENTITY_TYPES = createEnum([
   'SUPERNODE', // objects
   'EDGE' // reference or object containing references that has been flagged by the user as an edge
 ]);
-
-let IDEAL_EDGE_LENGTHS = {
-  // 'SUPERNODE_JUNCTION>>NODE_JUNCTION': 30,
-  // 'SUPERNODE_JUNCTION>>EDGE_JUNCTION': 30,
-  // 'NODE_JUNCTION>>SUPERNODE_JUNCTION': 30,
-  // 'EDGE_JUNCTION>>SUPERNODE_JUNCTION': 30,
-  'SUPERNODE_CENTER>>NODE_CENTER': 10,
-  'SUPERNODE_CENTER>>EDGE_CENTER': 10,
-  'NODE_CENTER>>SUPERNODE_CENTER': 10,
-  'EDGE_CENTER>>SUPERNODE_CENTER': 10
-};
 
 class NodeLinkDD extends View {
   constructor (selection) {
@@ -177,11 +166,11 @@ class NodeLinkDD extends View {
     entitiesEnter.attr('opacity', 0).transition(transition).attr('opacity', 1);
     entitiesEnter.append('path').classed('border', true).attr('d', '');
 
-    entities.transition(transition)
-      .attr('transform', d => {
-        let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[d.center]];
-        return 'translate(' + center.x + ',' + center.y + ')';
-      }).select('.border').attr('d', d => {
+    entities.attr('transform', d => {
+      let center = this.graph.ghostNodes[this.graph.ghostNodeLookup[d.center]];
+      return 'translate(' + center.x + ',' + center.y + ')';
+    }).transition(transition)
+      .select('.border').attr('d', d => {
         if (d.type === ENTITY_TYPES.NODE) {
           return STANDARD_CIRCLE;
         } else if (d.type === ENTITY_TYPES.EDGE) {
@@ -341,27 +330,30 @@ class NodeLinkDD extends View {
     };
     let forces = {
       // all ghostNodes should exert a local repulsion
-      repulsion: d3.forceManyBody()
+      generalRepulsion: d3.forceManyBody()
         .distanceMax(REPULSE_DISTANCE_MAX),
       // root centers should be drawn toward the center of the screen
       /* center: d3.forceCenter([
         this.bounds.width / 2,
         this.bounds.height / 2
       ]), */
+      // exert forces where an ideal edge length has bee specified
+      link: d3.forceLink(this.graph.ghostEdges)
+        .id(node => node.id),
       // root bubbles should not overlap
       collideRoots: isolateForce(
-        d3.forceCollide(d => d.r),
-        d => d.isRoot),
+        d3.forceCollide(d => {
+          return d.r;
+        }),
+        d => {
+          return d.isRoot;
+        }),
       // non-supernodes should not overlap
       collideNonSuperNodes: isolateForce(
-        d3.forceCollide(d => d.r),
-        d => d.type === 'NODE_CENTER' || d.type === 'EDGE_CENTER'),
-      // exert forces where an ideal edge length has bee specified
-      link: d3.forceLink(this.graph.ghostEdges
-        .filter(edge => IDEAL_EDGE_LENGTHS[edge.type] !== undefined))
-        .id(node => node.id)
-        .iterations(2)
-        .distance(edge => IDEAL_EDGE_LENGTHS[edge.type])
+        d3.forceCollide(d => {
+          return d.r;
+        }),
+        d => d.type === 'NODE_CENTER' || d.type === 'EDGE_CENTER')
     };
     // Add the forces to the (initially stopped) simulation
     let simulation = d3.forceSimulation(this.graph.ghostNodes).stop();
@@ -576,7 +568,7 @@ class NodeLinkDD extends View {
     return entity.id;
   }
   addSuperNode (obj) {
-    let entity = this.createEntity(obj, ENTITY_TYPES.SUPERNODE);
+    let entity = this.createEntity(obj, ENTITY_TYPES.SUPERNODE, { isRoot: true });
     entity.children = [];
 
     // add each superNode's immediate children
@@ -601,7 +593,6 @@ class NodeLinkDD extends View {
     let entity = {
       id: obj.path.join('.'),
       type,
-      isRoot,
       docSelector: obj.path[0],
       label: obj.path[obj.path.length - 1],
       value: obj.value,
@@ -610,7 +601,8 @@ class NodeLinkDD extends View {
     entity.center = this.addGhostNode({
       id: entity.id + '>center',
       type: type + '_CENTER',
-      entityId: entity.id
+      entityId: entity.id,
+      isRoot
     });
     return entity;
   }
