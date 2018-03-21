@@ -1,4 +1,4 @@
-/* globals d3 */
+/* globals Handsontable */
 import { View } from '../../lib/uki.esm.js';
 
 class TableView extends View {
@@ -26,16 +26,23 @@ class TableView extends View {
       this.showMessage(d3el, 'No data selected');
       this.hideSpinner(d3el);
     } else {
+      this.hideMessage(d3el);
       this.showSpinner(d3el);
       await this.drawTables(d3el);
       this.hideSpinner(d3el);
     }
   }
   async drawTables (d3el) {
+    if (!this.handsontables) {
+      this.handsontables = {};
+    }
+
     let layer1 = this.model.entities.filter(d => d.layer === 1);
     let tables = d3el.select('#contents')
       .selectAll('.layer1').data(layer1, d => d.id);
-    tables.exit().remove();
+    tables.exit()
+      .each(d => { delete this.handsontables[d.id]; })
+      .remove();
     let tablesEnter = tables.enter().append('div')
       .classed('layer1', true);
     tables = tables.merge(tablesEnter);
@@ -54,6 +61,21 @@ class TableView extends View {
 
     // TODO: Main table section
     tablesEnter.append('div').classed('mainTable', true);
+    let self = this;
+    tables.select('.mainTable').each(function (d) {
+      let table = self.model.getTable(d.id);
+      let settings = {
+        data: table.data,
+        rowHeaders: table.rows,
+        colHeaders: table.columns,
+        contextMenu: true
+      };
+      if (!self.handsontables[d.id]) {
+        self.handsontables[d.id] = new Handsontable(this, settings);
+      } else {
+        self.handsontables[d.id].updateSettings(settings);
+      }
+    });
   }
   showMessage (d3el, message) {
     d3el.select('#message')

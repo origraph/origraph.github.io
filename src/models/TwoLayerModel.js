@@ -330,6 +330,29 @@ class TwoLayerModel extends Model {
       return null;
     }
   }
+  getTable (entityId) {
+    let entity = this.entities[this.entityLookup[entityId]];
+    if (!entity.layer === 1) {
+      throw new Error("Can't create low-level table; try navigating instead");
+    }
+    let children = entity.children.map(childId => {
+      return this.entities[this.entityLookup[childId]];
+    });
+    let columns = children.reduce((agg, child) => {
+      return agg.concat(Object.keys(child.attributes)
+        .filter(d => agg.indexOf(d) === -1));
+    }, []);
+    let data = [];
+    let rows = [];
+    children.forEach(child => {
+      rows.push(child.label);
+      data.push(columns.map(attr => {
+        return child.attributes[attr];
+      }));
+    });
+
+    return { data, columns };
+  }
 }
 TwoLayerModel.ENTITY_TYPES = ENTITY_TYPES;
 TwoLayerModel.ENTITY_INTERPRETATIONS = ENTITY_INTERPRETATIONS;
