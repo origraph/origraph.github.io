@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css?family=Josefin+Sans:700|Josefin+Slab:400');
+html, body {
+  padding: 0;
+  margin: 0;
+}
+body {
+  overflow: hidden;
+  font-family: 'Josefin Slab', serif;
+  font-weight: 400;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 700;
+}
+
+#contents,
+#message,
+#spinner {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  height: 100vh;
+}
+
+#message, #spinner {
+  background-color: rgba(255,255,255,0.5);
+}
+#message .center,
+#spinner .center {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+#message .center {
+  top: 35%;
+}
+#spinner .center {
+  top: 55%;
+  width: 4em;
+  height: 4em;
+}

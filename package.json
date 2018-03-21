@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/alex-r-bigelow/origraph#readme",
   "dependencies": {
+    "handsontable": "^0.38.1",
     "serve": "^6.5.1"
   }
 }

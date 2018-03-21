@@ -1,27 +1,11 @@
 /* globals d3, mure */
 
-import NodeLinkDD from './views/NodeLinkDD.js';
-import SpiralTest from './views/SpiralTest.js';
-import PartitionTest from './views/PartitionTest.js';
-import StaggeredTest from './views/StaggeredTest.js';
-import RandomSizeTest from './views/RandomSizeTest.js';
+import TwoLayerModel from './models/TwoLayerModel.js';
+import TableView from './views/TableView/TableView.js';
 
 let views = {
-  NodeLinkDD,
-  SpiralTest,
-  PartitionTest,
-  StaggeredTest,
-  RandomSizeTest
+  TableView
 };
-
-console.log('d3 version:', d3.version);
-console.log('mure version:', mure.version);
-
-function resize () {
-  d3.select('svg')
-    .attr('width', window.innerWidth)
-    .attr('height', window.innerHeight);
-}
 
 function getLocation () {
   let result = {};
@@ -34,21 +18,17 @@ function getLocation () {
 
 async function navigate () {
   let location = getLocation();
-  let selection;
-  if (location.selection) {
-    selection = mure.selectAll(location.selection);
+  window.model = new TwoLayerModel(mure.selectAll(location.selection));
+  let body = d3.select('body');
+  let viewName = views[location.view] ? location.view : 'TableView';
+  if (!window.view || !(window.view instanceof views[viewName])) {
+    window.view = new views[viewName](body, window.model);
   } else {
-    // TODO
-    selection = mure.selectAll('@ { "_id": "application/json;blackJack_round2.json" }');
-    // selection = mure.selectAllDocs();
+    window.view.setModel(window.model);
   }
-  if (!window.currentView) {
-    let viewName = views[location.view] ? location.view : 'NodeLinkDD';
-    d3.select('svg').attr('class', viewName);
-    window.currentView = new views[viewName](selection);
-  }
-  window.currentView.render(d3.select('svg'));
+  body.attr('class', viewName);
+  window.view.render();
+  window.onresize = () => { window.view.render(); };
 }
 
-window.onload = () => { resize(); navigate(); };
-window.onresize = resize;
+window.onload = navigate;
