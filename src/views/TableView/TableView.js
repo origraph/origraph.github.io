@@ -1,4 +1,4 @@
-/* globals Handsontable */
+/* globals Handsontable, d3 */
 import { View } from '../../lib/uki.esm.js';
 
 class TableView extends View {
@@ -85,6 +85,11 @@ class TableView extends View {
           columns: [{ renderer: 'generic' }]
         };
       }
+
+      let idealHeight = settings.data.length * 1.8 * self.emSize;
+      idealHeight = Math.max(idealHeight, 6 * self.emSize);
+      idealHeight = Math.min(idealHeight, window.innerHeight);
+      d3.select(this).style('height', idealHeight + 'px');
 
       if (!self.handsontables[d.id]) {
         self.handsontables[d.id] = new Handsontable(this, settings);
