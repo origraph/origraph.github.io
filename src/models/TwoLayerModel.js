@@ -2,14 +2,14 @@
 import { Model } from '../lib/uki.esm.js';
 import createEnum from '../utils/createEnum.js';
 
-let ENTITY_TYPES = createEnum([
-  'PRIMITIVE', 'REFERENCE', 'CONTAINER'
+let TYPES = createEnum([
+  'boolean', 'number', 'string', 'date', 'undefined', 'null', 'reference', 'container', 'histogram'
 ]);
-let ENTITY_INTERPRETATIONS = createEnum([
-  'NODE', 'EDGE', 'SUPERNODE', 'HYPEREDGE'
+let INTERPRETATIONS = createEnum([
+  'node', 'edge', 'supernode', 'hyperedge'
 ]);
 let HISTOGRAM_TYPES = createEnum([
-  'CATEGORICAL', 'QUANTITATIVE', 'TYPE'
+  'categorical', 'quantitative', 'type'
 ]);
 
 class TwoLayerModel extends Model {
@@ -65,6 +65,28 @@ class TwoLayerModel extends Model {
     this.trigger('update');
     return true;
   }
+  evaluateType ({ path, value }) {
+    let jsType = typeof value;
+    if (TYPES[jsType]) {
+      if (jsType === 'string' && value[0] === '@') {
+        if (this.addReference({ path, value })) {
+          return TYPES.reference;
+        } else {
+          return TYPES.string;
+        }
+      } else {
+        return TYPES[jsType];
+      }
+    } else if (value === null) {
+      return TYPES.null;
+    } else if (value instanceof Date) {
+      return TYPES.date;
+    } else if (jsType === 'function' || jsType === 'symbol' || value instanceof Array) {
+      throw new Error('invalid value: ' + value);
+    } else {
+      return TYPES.container;
+    }
+  }
   async addEntity (selectionResult, layer) {
     let entity = {
       id: selectionResult.path.join('.'),
@@ -72,14 +94,13 @@ class TwoLayerModel extends Model {
       path: selectionResult.path,
       label: selectionResult.path[selectionResult.path.length - 1],
       value: selectionResult.value,
-      rawType: selectionResult.value === null ? 'null' : typeof selectionResult.value,
+      type: this.evaluateType(selectionResult),
       sourceOfArcs: [],
       targetOfArcs: [],
       upRoutingArcs: [],
       downRoutingArcs: []
     };
     // Start with basic assumptions that may be overridden
-    entity.type = ENTITY_TYPES.PRIMITIVE;
     let interpretAsEdge = selectionResult.metadata &&
       selectionResult.metadata.origraph &&
       selectionResult.metadata.origraph.edge === true;
@@ -87,26 +108,21 @@ class TwoLayerModel extends Model {
       // if the entity points to or contains more than one
       // other thing, this will be overridden as a hyperedge later when
       // we resolveReferences()
-      entity.interpretation = ENTITY_INTERPRETATIONS.EDGE;
+      entity.interpretation = INTERPRETATIONS.edge;
     } else {
-      entity.interpretation = ENTITY_INTERPRETATIONS.NODE;
+      entity.interpretation = INTERPRETATIONS.node;
     }
-    if (entity.rawType === 'string') {
-      if (this.addReference(selectionResult)) {
-        // References should always be interpreted as edges. As above, this may
-        // still be overridden as a hyperedge after we resolveReferences()
-        entity.type = ENTITY_TYPES.REFERENCE;
-        entity.interpretation = ENTITY_INTERPRETATIONS.EDGE;
-      }
-    } else if (entity.rawType === 'object') {
-      // We know this thing is at least a container...
-      entity.type = ENTITY_TYPES.CONTAINER;
+    if (entity.type === TYPES.reference) {
+      // References should always be interpreted as edges. As above, this may
+      // still be overridden as a hyperedge after we resolveReferences()
+      entity.interpretation = INTERPRETATIONS.edge;
+    } else if (entity.type === TYPES.container) {
       if (layer === 1 && !interpretAsEdge) {
         // At the root level, interpret objects as supernodes. If this object
         // has been flagged as an edge, it isn't necessarily a hyperedge; for
         // that it must reference more than one element, and we only know that
         // after we resolveReferences()
-        entity.interpretation = ENTITY_INTERPRETATIONS.SUPERNODE;
+        entity.interpretation = INTERPRETATIONS.supernode;
       }
       let children = [];
       if (layer <= 3) {
@@ -130,13 +146,17 @@ class TwoLayerModel extends Model {
       if (layer === 3) {
         // If we're an object at layer 3, replace our value with a
         // summary histogram of the layer 4 values
+        entity.type = TYPES.histogram;
         entity.value = this.computeHistogram(children);
       } else if (layer === 2) {
         // Collect the attributes and values of objects at layer 2
         // (if those values are objects, they're converted to histograms)
         entity.attributes = {};
         children.forEach(child => {
-          entity.attributes[child.label] = child.value;
+          entity.attributes[child.label] = {
+            type: child.type,
+            value: child.value
+          };
         });
       } else if (layer === 1) {
         // At layer 1, keep references to each layer 2 child entity
@@ -183,20 +203,13 @@ class TwoLayerModel extends Model {
     let numericRange = {};
     let typeBins = {};
     entityArray.forEach(entity => {
-      if (entity.type !== ENTITY_TYPES.PRIMITIVE) {
+      if (entity.type === TYPES.container || entity.type === TYPES.reference) {
         // We encountered a reference or a container, so both categoricalBins
         // and numericRange are invalid
         categoricalBins = numericRange = null;
-        if (entity.type === ENTITY_TYPES.REFERENCE) {
-          typeBins.reference = (typeBins.reference || 0) + 1;
-        } else {
-          // TODO: bin by node / supernode / edge status? Could be messy, as we
-          // have no way of knowing hyperedge status yet...
-          typeBins.container = (typeBins.container || 0) + 1;
-        }
-      } else {
-        typeBins[entity.rawType] = (typeBins[entity.rawType] || 0) + 1;
       }
+      // TODO: bin by interpretation as well as type?
+      typeBins[entity.type] = (typeBins[entity.type] || 0) + 1;
       if (categoricalBins !== null) {
         if (Object.keys(categoricalBins).length <= numBins) {
           // categorical bins haven't been ruled out yet; count this value
@@ -207,7 +220,7 @@ class TwoLayerModel extends Model {
         }
       }
       if (numericRange !== null) {
-        if (entity.rawType === 'number') {
+        if (entity.type === TYPES.number) {
           // numeric ranges have not yet been ruled out by a non-numeric value;
           // collect the min and max numbers seen
           if (numericRange.low === undefined) {
@@ -225,7 +238,7 @@ class TwoLayerModel extends Model {
     if (categoricalBins) {
       // In order of preference, we prefer categorical bins first:
       return {
-        type: HISTOGRAM_TYPES.CATEGORICAL,
+        histogramType: HISTOGRAM_TYPES.categorical,
         bins: categoricalBins
       };
     } else if (numericRange) {
@@ -243,13 +256,13 @@ class TwoLayerModel extends Model {
         numericBins[index].count++;
       });
       return {
-        type: HISTOGRAM_TYPES.QUANTITATIVE,
+        histogramType: HISTOGRAM_TYPES.quantitative,
         bins: numericBins
       };
     } else {
       // ... and bins by type last:
       return {
-        type: HISTOGRAM_TYPES.TYPE,
+        histogramType: HISTOGRAM_TYPES.type,
         bins: typeBins
       };
     }
@@ -332,8 +345,8 @@ class TwoLayerModel extends Model {
   }
   getTable (entityId) {
     let entity = this.entities[this.entityLookup[entityId]];
-    if (!entity.layer === 1) {
-      throw new Error("Can't create low-level table; try navigating instead");
+    if (!entity.children) {
+      return null;
     }
     let children = entity.children.map(childId => {
       return this.entities[this.entityLookup[childId]];
@@ -351,10 +364,15 @@ class TwoLayerModel extends Model {
       }));
     });
 
-    return { data, columns };
+    return { data, rows, columns };
+  }
+  getVector (entityId) {
+    let entity = this.entities[this.entityLookup[entityId]];
+    return entity.attributes || null;
   }
 }
-TwoLayerModel.ENTITY_TYPES = ENTITY_TYPES;
-TwoLayerModel.ENTITY_INTERPRETATIONS = ENTITY_INTERPRETATIONS;
+TwoLayerModel.TYPES = TYPES;
+TwoLayerModel.INTERPRETATIONS = INTERPRETATIONS;
+TwoLayerModel.HISTOGRAM_TYPES = HISTOGRAM_TYPES;
 
 export default TwoLayerModel;

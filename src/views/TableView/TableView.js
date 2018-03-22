@@ -9,6 +9,9 @@ class TableView extends View {
     });
 
     this.setModel(twoLayerModel);
+
+    Handsontable.renderers.registerRenderer('generic',
+      (...args) => { this.drawCell(...args); });
   }
   setModel (twoLayerModel) {
     this.model = twoLayerModel;
@@ -63,19 +66,38 @@ class TableView extends View {
     tablesEnter.append('div').classed('mainTable', true);
     let self = this;
     tables.select('.mainTable').each(function (d) {
+      let settings;
       let table = self.model.getTable(d.id);
-      let settings = {
-        data: table.data,
-        rowHeaders: table.rows,
-        colHeaders: table.columns,
-        contextMenu: true
-      };
+      if (table) {
+        settings = {
+          data: table.data,
+          rowHeaders: table.rows,
+          colHeaders: table.columns,
+          columns: table.columns.map(d => { return { renderer: 'generic' }; })
+        };
+      } else {
+        let vector = self.model.getVector(d.id);
+        let rows = Object.keys(vector);
+        settings = {
+          data: rows.map(attr => vector[attr]),
+          rowHeaders: rows,
+          colHeaders: ['value'],
+          columns: [{ renderer: 'generic' }]
+        };
+      }
+
       if (!self.handsontables[d.id]) {
         self.handsontables[d.id] = new Handsontable(this, settings);
       } else {
         self.handsontables[d.id].updateSettings(settings);
       }
     });
+  }
+  drawCell (hotInstance, td, row, column, prop, value, cellProperties) {
+    // Apply the classes that enable default selection, etc
+    Handsontable.renderers.BaseRenderer(
+      hotInstance, td, row, column, prop, value, cellProperties);
+    console.log(arguments);
   }
   showMessage (d3el, message) {
     d3el.select('#message')
