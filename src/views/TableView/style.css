@@ -64,3 +64,13 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   overflow: hidden;
 }
+#contents .mainTable .histogram {
+  position: relative;
+  padding: 0px;
+}
+#contents .mainTable .histogram .bar {
+  position: absolute;
+  bottom: 0px;
+  border: 1px solid white;
+  background-color: #333333;
+}

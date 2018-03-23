@@ -42,6 +42,7 @@ class TwoLayerModel extends Model {
     this.unresolvedReferences = [];
 
     this.isLoading = true;
+    this.maxHistogramCount = 0;
 
     if (this.selection === null) {
       this.isLoading = false;
@@ -236,6 +237,8 @@ class TwoLayerModel extends Model {
       }
     });
     if (categoricalBins) {
+      this.maxHistogramCount = Math.max(this.maxHistogramCount,
+        ...Object.keys(categoricalBins).map(k => categoricalBins[k]));
       // In order of preference, we prefer categorical bins first:
       return {
         histogramType: HISTOGRAM_TYPES.categorical,
@@ -254,12 +257,16 @@ class TwoLayerModel extends Model {
       entityArray.forEach(child => {
         let index = Math.floor((child.value - numericRange.low) / rangeSize);
         numericBins[index].count++;
+        this.maxHistogramCount = Math.max(this.maxHistogramCount,
+          numericBins[index].count);
       });
       return {
         histogramType: HISTOGRAM_TYPES.quantitative,
         bins: numericBins
       };
     } else {
+      this.maxHistogramCount = Math.max(this.maxHistogramCount,
+        ...Object.keys(typeBins).map(k => typeBins[k]));
       // ... and bins by type last:
       return {
         histogramType: HISTOGRAM_TYPES.type,

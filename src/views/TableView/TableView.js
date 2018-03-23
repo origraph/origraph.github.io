@@ -1,5 +1,6 @@
 /* globals Handsontable, d3 */
 import { View } from '../../lib/uki.esm.js';
+import TwoLayerModel from '../../models/TwoLayerModel.js';
 
 class TableView extends View {
   constructor (d3el, twoLayerModel) {
@@ -40,6 +41,11 @@ class TableView extends View {
       this.handsontables = {};
     }
 
+    this.barColorMap = d3.scaleOrdinal(d3.schemeDark2);
+    this.histogramScale = d3.scaleLinear()
+      .domain([0, this.model.maxHistogramCount])
+      .range([0, 20]); // TODO: hard-coding size of cells... ?
+
     let layer1 = this.model.entities.filter(d => d.layer === 1);
     let tables = d3el.select('#contents')
       .selectAll('.layer1').data(layer1, d => d.id);
@@ -64,6 +70,7 @@ class TableView extends View {
 
     // TODO: Main table section
     tablesEnter.append('div').classed('mainTable', true);
+
     let self = this;
     tables.select('.mainTable').each(function (d) {
       let settings;
@@ -100,9 +107,57 @@ class TableView extends View {
   }
   drawCell (hotInstance, td, row, column, prop, value, cellProperties) {
     // Apply the classes that enable default selection, etc
-    Handsontable.renderers.BaseRenderer(
-      hotInstance, td, row, column, prop, value, cellProperties);
-    console.log(arguments);
+    Handsontable.renderers.BaseRenderer(...arguments);
+    let container = d3.select(td).attr('class', null);
+    if (value === undefined) {
+      Handsontable.renderers.TextRenderer(...arguments);
+    } else {
+      switch (value.type) {
+        case TwoLayerModel.TYPES.boolean:
+          Handsontable.renderers.CheckboxRenderer(...arguments);
+          break;
+        case TwoLayerModel.TYPES.number:
+          Handsontable.renderers.NumericRenderer(...arguments);
+          break;
+        case TwoLayerModel.TYPES.date:
+          Handsontable.renderers.DateRenderer(...arguments);
+          break;
+        case TwoLayerModel.TYPES.reference:
+          this.drawReference(container.classed('reference', true), value);
+          break;
+        case TwoLayerModel.TYPES.histogram:
+          this.drawHistogram(container.classed('histogram', true), value);
+          break;
+        case TwoLayerModel.TYPES.container:
+          throw new Error('Attempted to render a container instead of a histogram');
+        case TwoLayerModel.TYPES.string:
+        case TwoLayerModel.TYPES.undefined:
+        case TwoLayerModel.TYPES.null:
+        default:
+          Handsontable.renderers.TextRenderer(...arguments);
+      }
+    }
+  }
+  drawReference (td, value) {
+    console.log('todo', td, value);
+  }
+  drawHistogram (container, value) {
+    let bounds = container.node().getBoundingClientRect();
+    let bins = d3.entries(value.value.bins);
+    let barWidth = (bounds.width - 1) / bins.length;
+
+    let bars = container.selectAll('.bar')
+      .data(bins);
+    bars.exit().remove();
+    let barsEnter = bars.enter().append('div').classed('bar', true);
+    bars = bars.merge(barsEnter);
+
+    bars
+      .style('width', barWidth + 'px')
+      .style('left', (d, i) => i * barWidth + 'px')
+      .style('height', d => {
+        return this.histogramScale(d.value.count !== undefined ? d.value.count : d.value) + 'px';
+      });
   }
   showMessage (d3el, message) {
     d3el.select('#message')
