@@ -59,6 +59,11 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.25em;
   color: white;
   font-size: 0.75em;
+  cursor: pointer;
+}
+#contents .breadcrumb .chunk:hover {
+  background: white;
+  color: #666666;
 }
 #contents .mainTable {
   width: 100%;

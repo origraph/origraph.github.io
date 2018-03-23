@@ -16,7 +16,9 @@ class TableView extends View {
   }
   setModel (twoLayerModel) {
     this.model = twoLayerModel;
-    this.model.on('update', () => { this.render(); });
+    this.model.on('update', () => {
+      this.render();
+    });
     this.render();
   }
   setup (d3el) {
@@ -60,13 +62,18 @@ class TableView extends View {
     tablesEnter.append('div').classed('breadcrumb', true);
 
     let breadcrumbChunks = tables.select('.breadcrumb')
-      .selectAll('.chunk').data(d => d.path);
+      .selectAll('.chunk').data(d => d.path.map((p, i) => {
+        return { lastChunk: p, fullPath: d.id }; // .path.slice(0, i + 1) };
+      }));
     breadcrumbChunks.exit().remove();
     let breadcrumbChunksEnter = breadcrumbChunks.enter().append('div')
       .classed('chunk', true);
     breadcrumbChunks = breadcrumbChunks.merge(breadcrumbChunksEnter);
 
-    breadcrumbChunks.text(d => d);
+    breadcrumbChunks.text(d => d.lastChunk)
+      .on('click', d => {
+        window.mainApp.navigate({ selection: d.fullPath });
+      });
 
     // TODO: Main table section
     tablesEnter.append('div').classed('mainTable', true);

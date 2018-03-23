@@ -90,7 +90,7 @@ class TwoLayerModel extends Model {
   }
   async addEntity (selectionResult, layer) {
     let entity = {
-      id: selectionResult.path.join('.'),
+      id: selectionResult.uniqueSelector,
       layer,
       path: selectionResult.path,
       label: selectionResult.path[selectionResult.path.length - 1],
@@ -136,6 +136,7 @@ class TwoLayerModel extends Model {
           let childPath = Array.from(selectionResult.path);
           childPath.push(childKey);
           let fakeResult = {
+            uniqueSelector: mure.pathToSelector(childPath),
             path: childPath,
             value: selectionResult.value[childKey]
           };
@@ -204,13 +205,13 @@ class TwoLayerModel extends Model {
     let numericRange = {};
     let typeBins = {};
     entityArray.forEach(entity => {
+      // TODO: bin by interpretation as well as type?
+      typeBins[entity.type] = (typeBins[entity.type] || 0) + 1;
       if (entity.type === TYPES.container || entity.type === TYPES.reference) {
         // We encountered a reference or a container, so both categoricalBins
         // and numericRange are invalid
         categoricalBins = numericRange = null;
       }
-      // TODO: bin by interpretation as well as type?
-      typeBins[entity.type] = (typeBins[entity.type] || 0) + 1;
       if (categoricalBins !== null) {
         if (Object.keys(categoricalBins).length <= numBins) {
           // categorical bins haven't been ruled out yet; count this value
