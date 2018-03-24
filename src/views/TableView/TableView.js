@@ -12,7 +12,7 @@ class TableView extends View {
     this.setModel(twoLayerModel);
 
     Handsontable.renderers.registerRenderer('generic',
-      (...args) => { this.drawCell(...args); });
+      (...argList) => { this.drawCell(...argList); });
   }
   setModel (twoLayerModel) {
     this.model = twoLayerModel;
@@ -80,25 +80,18 @@ class TableView extends View {
 
     let self = this;
     tables.select('.mainTable').each(function (d) {
-      let settings;
-      let table = self.model.getTable(d.id);
-      if (table) {
-        settings = {
-          data: table.data,
-          rowHeaders: table.rows,
-          colHeaders: table.columns,
-          columns: table.columns.map(d => { return { renderer: 'generic' }; })
-        };
-      } else {
-        let vector = self.model.getVector(d.id);
-        let rows = Object.keys(vector);
-        settings = {
-          data: rows.map(attr => vector[attr]),
-          rowHeaders: rows,
-          colHeaders: ['value'],
-          columns: [{ renderer: 'generic' }]
-        };
-      }
+      let table = self.model.getTable(d.id) || self.model.getVector(d.id);
+      let settings = {
+        data: table.data,
+        colHeaders: table.columnHeaders,
+        rowHeaders: table.rowHeaders,
+        cells: () => { return { renderer: 'generic' }; },
+        manualColumnResize: true,
+        manualRowResize: true,
+        manualColumnMove: true,
+        manualRowMove: true,
+        rowHeaderWidth: 100
+      };
 
       let idealHeight = settings.data.length * 1.8 * self.emSize;
       idealHeight = Math.max(idealHeight, 6 * self.emSize);
@@ -112,37 +105,37 @@ class TableView extends View {
       }
     });
   }
-  drawCell (hotInstance, td, row, column, prop, value, cellProperties) {
+  drawCell (...argList) {
     // Apply the classes that enable default selection, etc
-    Handsontable.renderers.BaseRenderer(...arguments);
+    let td = argList[1];
+    let content = argList[5] || { type: TwoLayerModel.TYPES.undefined };
+    argList[5] = content.value;
+    Handsontable.renderers.BaseRenderer(...argList);
     let container = d3.select(td).attr('class', null);
-    if (value === undefined) {
-      Handsontable.renderers.TextRenderer(...arguments);
-    } else {
-      switch (value.type) {
-        case TwoLayerModel.TYPES.boolean:
-          Handsontable.renderers.CheckboxRenderer(...arguments);
-          break;
-        case TwoLayerModel.TYPES.number:
-          Handsontable.renderers.NumericRenderer(...arguments);
-          break;
-        case TwoLayerModel.TYPES.date:
-          Handsontable.renderers.DateRenderer(...arguments);
-          break;
-        case TwoLayerModel.TYPES.reference:
-          this.drawReference(container.classed('reference', true), value);
-          break;
-        case TwoLayerModel.TYPES.histogram:
-          this.drawHistogram(container.classed('histogram', true), value);
-          break;
-        case TwoLayerModel.TYPES.container:
-          throw new Error('Attempted to render a container instead of a histogram');
-        case TwoLayerModel.TYPES.string:
-        case TwoLayerModel.TYPES.undefined:
-        case TwoLayerModel.TYPES.null:
-        default:
-          Handsontable.renderers.TextRenderer(...arguments);
-      }
+    switch (content.type) {
+      case TwoLayerModel.TYPES.boolean:
+        Handsontable.renderers.CheckboxRenderer(...argList);
+        break;
+      case TwoLayerModel.TYPES.number:
+        Handsontable.renderers.NumericRenderer(...argList);
+        break;
+      case TwoLayerModel.TYPES.date:
+        Handsontable.renderers.DateRenderer(...argList);
+        break;
+      case TwoLayerModel.TYPES.reference:
+        this.drawReference(container.classed('reference', true), content.value);
+        break;
+      case TwoLayerModel.TYPES.histogram:
+        this.drawHistogram(container.classed('histogram', true), content.value);
+        break;
+      case TwoLayerModel.TYPES.container:
+        throw new Error('Attempted to render a container instead of a histogram');
+      case TwoLayerModel.TYPES.key:
+      case TwoLayerModel.TYPES.string:
+      case TwoLayerModel.TYPES.undefined:
+      case TwoLayerModel.TYPES.null:
+      default:
+        Handsontable.renderers.TextRenderer(...argList);
     }
   }
   drawReference (td, value) {
@@ -150,7 +143,7 @@ class TableView extends View {
   }
   drawHistogram (container, value) {
     let bounds = container.node().getBoundingClientRect();
-    let bins = d3.entries(value.value.bins);
+    let bins = d3.entries(value.bins);
     let barWidth = (bounds.width - 1) / bins.length;
 
     let bars = container.selectAll('.bar')

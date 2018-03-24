@@ -3,7 +3,7 @@ import { Model } from '../lib/uki.esm.js';
 import createEnum from '../utils/createEnum.js';
 
 let TYPES = createEnum([
-  'boolean', 'number', 'string', 'date', 'undefined', 'null', 'reference', 'container', 'histogram'
+  'boolean', 'number', 'string', 'date', 'undefined', 'null', 'reference', 'container', 'key', 'histogram'
 ]);
 let INTERPRETATIONS = createEnum([
   'node', 'edge', 'supernode', 'hyperedge'
@@ -359,24 +359,32 @@ class TwoLayerModel extends Model {
     let children = entity.children.map(childId => {
       return this.entities[this.entityLookup[childId]];
     });
-    let columns = children.reduce((agg, child) => {
+    let columnHeaders = children.reduce((agg, child) => {
       return agg.concat(Object.keys(child.attributes)
         .filter(d => agg.indexOf(d) === -1));
     }, []);
     let data = [];
-    let rows = [];
+    let rowHeaders = [];
     children.forEach(child => {
-      rows.push(child.label);
-      data.push(columns.map(attr => {
+      rowHeaders.push(child.label);
+      let row = columnHeaders.map(attr => {
         return child.attributes[attr];
-      }));
+      });
+      data.push(row);
     });
 
-    return { data, rows, columns };
+    return { data, columnHeaders, rowHeaders };
   }
   getVector (entityId) {
     let entity = this.entities[this.entityLookup[entityId]];
-    return entity.attributes || null;
+    let columnHeaders = ['Value'];
+    let data = [];
+    let rowHeaders = [];
+    Object.keys(entity.attributes).forEach(label => {
+      rowHeaders.push(label);
+      data.push(entity.attributes[label]);
+    });
+    return { data, columnHeaders, rowHeaders };
   }
 }
 TwoLayerModel.TYPES = TYPES;

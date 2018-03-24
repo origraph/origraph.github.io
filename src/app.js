@@ -36,7 +36,7 @@ class MainApp {
     let url = window.location.origin + window.location.pathname + '?' +
       'viewName=' + encodeURIComponent(this.viewName);
     if (this.selection) {
-      url += '&' + encodeURIComponent(this.selection);
+      url += '&' + 'selection=' + encodeURIComponent(this.selection);
     }
     return url;
   }
