@@ -3,7 +3,7 @@ import { Model } from '../lib/uki.esm.js';
 import createEnum from '../utils/createEnum.js';
 
 let TYPES = createEnum([
-  'boolean', 'number', 'string', 'date', 'undefined', 'null', 'reference', 'container', 'key', 'histogram'
+  'boolean', 'number', 'string', 'date', 'undefined', 'null', 'reference', 'container', 'openContainer', 'histogram'
 ]);
 let INTERPRETATIONS = createEnum([
   'node', 'edge', 'supernode', 'hyperedge'
@@ -375,36 +375,69 @@ class TwoLayerModel extends Model {
   getTable (entityId) {
     let entity = this.entities[this.entityLookup[entityId]];
     if (!entity.children) {
-      return null;
+      // This is a raw value
+      return {
+        data: [[{ type: entity.type, value: entity.value }]],
+        columnHeaders: [''],
+        rowHeaders: [entity.label]
+      };
     }
     let children = entity.children.map(childId => {
       return this.entities[this.entityLookup[childId]];
     });
     let columnHeaders = children.reduce((agg, child) => {
-      return agg.concat(Object.keys(child.attributes)
-        .filter(d => agg.indexOf(d) === -1));
+      if (!child.attributes) {
+        // The child is a raw value
+        return agg;
+      } else {
+        return agg.concat(Object.keys(child.attributes)
+          .filter(d => agg.indexOf(d) === -1));
+      }
     }, []);
+    columnHeaders.unshift('');
     let data = [];
     let rowHeaders = [];
     children.forEach(child => {
       rowHeaders.push(child.label);
-      let row = columnHeaders.map(attr => {
-        return child.attributes[attr];
+      let row = columnHeaders.map((attr, i) => {
+        if (i === 0) {
+          if (!child.attributes) {
+            return { type: child.type, value: child.value };
+          } else {
+            return { type: TYPES.openContainer };
+          }
+        } else {
+          if (!child.attributes) {
+            return { type: TYPES.undefined, value: undefined };
+          } else {
+            return child.attributes[attr];
+          }
+        }
       });
       data.push(row);
     });
 
     return { data, columnHeaders, rowHeaders };
   }
-  getVector (entityId) {
+  getTabularVector (entityId) {
     let entity = this.entities[this.entityLookup[entityId]];
+    if (!entity.attributes) {
+      return this.getTabularValue(entityId);
+    }
     let columnHeaders = ['Value'];
     let data = [];
     let rowHeaders = [];
     Object.keys(entity.attributes).forEach(label => {
       rowHeaders.push(label);
-      data.push(entity.attributes[label]);
+      data.push([entity.attributes[label]]);
     });
+    return { data, columnHeaders, rowHeaders };
+  }
+  getTabularValue (entityId) {
+    let entity = this.entities[this.entityLookup[entityId]];
+    let columnHeaders = ['Value'];
+    let data = [entity.value];
+    let rowHeaders = [entity.label];
     return { data, columnHeaders, rowHeaders };
   }
 }

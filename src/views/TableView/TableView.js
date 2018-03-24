@@ -84,7 +84,7 @@ class TableView extends View {
 
     let self = this;
     tables.select('.mainTable').each(function (d) {
-      let table = self.model.getTable(d.id) || self.model.getVector(d.id);
+      let table = self.model.getTable(d.id);
       let settings = {
         data: table.data,
         colHeaders: table.columnHeaders,
@@ -94,7 +94,8 @@ class TableView extends View {
         manualRowResize: true,
         manualColumnMove: true,
         manualRowMove: true,
-        rowHeaderWidth: 100
+        rowHeaderWidth: 100,
+        fixedColumnsLeft: 1
       };
 
       let idealHeight = Math.max(4, settings.data.length + 1) *
@@ -126,6 +127,9 @@ class TableView extends View {
       case TwoLayerModel.TYPES.date:
         Handsontable.renderers.DateRenderer(...argList);
         break;
+      case TwoLayerModel.TYPES.openContainer:
+        this.drawOpenContainer(container.classed('openContainer', true));
+        break;
       case TwoLayerModel.TYPES.reference:
         this.drawReference(container.classed('reference', true), content.value);
         break;
@@ -141,6 +145,9 @@ class TableView extends View {
       default:
         Handsontable.renderers.TextRenderer(...argList);
     }
+  }
+  drawOpenContainer (container) {
+    container.text('{→}');
   }
   drawReference (container, value) {
     container.text('↗');
