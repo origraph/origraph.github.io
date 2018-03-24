@@ -14,7 +14,7 @@ class MainApp {
     this.selection = selection || null;
     this.saveState();
     window.onpopstate = event => {
-      this.navigate(event.state);
+      this.navigate(event.state || {});
     };
     this.navigate();
   }

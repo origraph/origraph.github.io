@@ -16,8 +16,7 @@ h1, h2, h3, h4, h5, h6 {
 
 
 #contents,
-#message,
-#spinner {
+#overlay {
   position: absolute;
   left: 0px;
   top: 0px;
@@ -25,25 +24,21 @@ h1, h2, h3, h4, h5, h6 {
   height: 100vh;
 }
 
-#message {
+#overlay {
   background-color: rgba(51, 51, 51 ,0.75);
   z-index: 4;
 }
-#spinner {
-  z-index: 5;
-}
-#message .center,
-#spinner .center {
+#overlay .center {
   position: absolute;
   left: 50%;
+  top: 50%;
   transform: translate(-50%, -50%);
+  text-align: center;
 }
-#message .center {
-  top: 35%;
+#overlay .message {
   color: white;
 }
-#spinner .center {
-  top: 55%;
+#overlay .spinner {
   width: 4em;
   height: 4em;
 }

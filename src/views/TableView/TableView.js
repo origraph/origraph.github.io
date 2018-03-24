@@ -26,16 +26,22 @@ class TableView extends View {
   }
   async draw (d3el) {
     if (this.model.isLoading) {
-      this.showMessage(d3el, 'Loading tables...');
-      this.showSpinner(d3el);
+      this.showOverlay(d3el, {
+        message: 'Loading tables...',
+        spinner: true
+      });
     } else if (this.model.entities.length === 0) {
-      this.showMessage(d3el, 'No data selected');
-      this.hideSpinner(d3el);
+      this.showOverlay(d3el, {
+        message: 'No data selected',
+        spinner: false
+      });
     } else {
-      this.hideMessage(d3el);
-      this.showSpinner(d3el);
+      this.showOverlay(d3el, {
+        message: '',
+        spinner: true
+      });
       await this.drawTables(d3el);
-      this.hideSpinner(d3el);
+      this.hideOverlay(d3el);
     }
   }
   async drawTables (d3el) {
@@ -164,23 +170,16 @@ class TableView extends View {
         return this.histogramScale(d.value.count !== undefined ? d.value.count : d.value) + 'px';
       });
   }
-  showMessage (d3el, message) {
-    d3el.select('#message')
-      .style('display', null)
-      .select('.center')
+  showOverlay (d3el, { message = '', spinner = false } = {}) {
+    let overlay = d3el.select('#overlay')
+      .style('display', message || spinner ? null : 'none');
+    overlay.select('.message')
       .text(message);
+    overlay.select('.spinner')
+      .style('display', spinner ? null : 'none');
   }
-  hideMessage (d3el) {
-    d3el.select('#message')
-      .style('display', 'none');
-  }
-  showSpinner (d3el) {
-    d3el.select('#spinner')
-      .style('display', null);
-  }
-  hideSpinner (d3el) {
-    d3el.select('#spinner')
-      .style('display', 'none');
+  hideOverlay (d3el) {
+    this.showOverlay(d3el);
   }
 }
 
