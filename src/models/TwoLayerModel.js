@@ -187,9 +187,9 @@ class TwoLayerModel extends Model {
       // to be evaluated relative to their containing document; evaluating
       // .nodes() already gives us an explicit document selector (by id) as the
       // first item in the path
-      let docSelection = mure.select(path[0]);
+      let docSelection = mure.select('@' + path[0]);
       let selection = docSelection.selectAll(value);
-      this.graph.unresolvedReferences.push({
+      this.unresolvedReferences.push({
         path,
         selection
       });

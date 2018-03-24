@@ -138,8 +138,8 @@ class TableView extends View {
         Handsontable.renderers.TextRenderer(...argList);
     }
   }
-  drawReference (td, value) {
-    console.log('todo', td, value);
+  drawReference (container, value) {
+    container.text('↗');
   }
   drawHistogram (container, value) {
     let bounds = container.node().getBoundingClientRect();
