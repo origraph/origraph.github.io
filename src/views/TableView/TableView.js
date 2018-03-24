@@ -91,8 +91,8 @@ class TableView extends View {
         rowHeaderWidth: 100
       };
 
-      let idealHeight = settings.data.length * 1.8 * self.emSize;
-      idealHeight = Math.max(idealHeight, 6 * self.emSize);
+      let idealHeight = Math.max(4, settings.data.length + 1) *
+        1.8 * self.emSize;
       idealHeight = Math.min(idealHeight, window.innerHeight);
       d3.select(this).style('height', idealHeight + 'px');
 
@@ -141,7 +141,14 @@ class TableView extends View {
   }
   drawHistogram (container, value) {
     let bounds = container.node().getBoundingClientRect();
-    let bins = d3.entries(value.bins);
+    let bins;
+    if (value.histogramType === TwoLayerModel.HISTOGRAM_TYPES.type) {
+      bins = Object.getOwnPropertySymbols(value.bins).map(key => {
+        return { key, value: value.bins[key] };
+      });
+    } else {
+      bins = d3.entries(value.bins);
+    }
     let barWidth = (bounds.width - 1) / bins.length;
 
     let bars = container.selectAll('.bar')

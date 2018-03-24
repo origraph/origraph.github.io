@@ -267,7 +267,7 @@ class TwoLayerModel extends Model {
       };
     } else {
       this.maxHistogramCount = Math.max(this.maxHistogramCount,
-        ...Object.keys(typeBins).map(k => typeBins[k]));
+        ...Object.getOwnPropertySymbols(typeBins).map(k => typeBins[k]));
       // ... and bins by type last:
       return {
         histogramType: HISTOGRAM_TYPES.type,
