@@ -25,8 +25,12 @@ h1, h2, h3, h4, h5, h6 {
   height: 100vh;
 }
 
-#message, #spinner {
-  background-color: rgba(255,255,255,0.5);
+#message {
+  background-color: rgba(51, 51, 51 ,0.75);
+  z-index: 4;
+}
+#spinner {
+  z-index: 5;
 }
 #message .center,
 #spinner .center {
@@ -36,6 +40,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 #message .center {
   top: 35%;
+  color: white;
 }
 #spinner .center {
   top: 55%;

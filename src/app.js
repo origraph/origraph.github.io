@@ -56,6 +56,7 @@ class MainApp {
       this.view = new views[this.viewName](body, this.model);
       window.onresize = () => { this.view.render(); };
     } else {
+      this.view.render(); // show the spinner
       await this.model.update(selectionObj);
     }
     this.view.render();
