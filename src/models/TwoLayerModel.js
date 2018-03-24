@@ -351,6 +351,27 @@ class TwoLayerModel extends Model {
       return null;
     }
   }
+  getBreadcrumb (entityId) {
+    let entity = this.entities[this.entityLookup[entityId]];
+    let entries = [{
+      humanReadable: 'All Documents',
+      selector: null
+    }];
+    entity.path.forEach((chunk, i) => {
+      if (chunk !== '$') {
+        let entry = {
+          selector: mure.pathToSelector(entity.path.slice(0, i + 1))
+        };
+        if (i === 0) {
+          entry.humanReadable = /{.*;(.*)"}/.exec(chunk)[1];
+        } else {
+          entry.humanReadable = chunk;
+        }
+        entries.push(entry);
+      }
+    });
+    return entries;
+  }
   getTable (entityId) {
     let entity = this.entities[this.entityLookup[entityId]];
     if (!entity.children) {

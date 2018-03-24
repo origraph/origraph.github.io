@@ -62,17 +62,15 @@ class TableView extends View {
     tablesEnter.append('div').classed('breadcrumb', true);
 
     let breadcrumbChunks = tables.select('.breadcrumb')
-      .selectAll('.chunk').data(d => d.path.map((p, i) => {
-        return { lastChunk: p, fullPath: d.id }; // .path.slice(0, i + 1) };
-      }));
+      .selectAll('.chunk').data(d => this.model.getBreadcrumb(d.id));
     breadcrumbChunks.exit().remove();
     let breadcrumbChunksEnter = breadcrumbChunks.enter().append('div')
       .classed('chunk', true);
     breadcrumbChunks = breadcrumbChunks.merge(breadcrumbChunksEnter);
 
-    breadcrumbChunks.text(d => d.lastChunk)
+    breadcrumbChunks.text(d => d.humanReadable)
       .on('click', d => {
-        window.mainApp.navigate({ selection: d.fullPath });
+        window.mainApp.navigate({ selection: d.selector });
       });
 
     // TODO: Main table section
