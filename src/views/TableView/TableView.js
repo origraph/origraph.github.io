@@ -116,7 +116,8 @@ class TableView extends View {
     let content = argList[5] || { type: TwoLayerModel.TYPES.undefined };
     argList[5] = content.value;
     Handsontable.renderers.BaseRenderer(...argList);
-    let container = d3.select(td).attr('class', null);
+    let container = d3.select(td)
+      .attr('class', null);
     switch (content.type) {
       case TwoLayerModel.TYPES.boolean:
         Handsontable.renderers.CheckboxRenderer(...argList);
@@ -170,11 +171,20 @@ class TableView extends View {
     let barsEnter = bars.enter().append('div').classed('bar', true);
     bars = bars.merge(barsEnter);
 
+    let self = this;
     bars
       .style('width', barWidth + 'px')
       .style('left', (d, i) => i * barWidth + 'px')
       .style('height', d => {
         return this.histogramScale(d.value.count !== undefined ? d.value.count : d.value) + 'px';
+      })
+      .on('mouseenter', function (d) {
+        self.showTooltip(this.getBoundingClientRect(),
+          'Value: ' + d.key.toString() + '<br/>' +
+          'Count: ' + (d.value.count !== undefined ? d.value.count : d.value));
+      })
+      .on('mouseleave', d => {
+        self.hideTooltip();
       });
   }
   showOverlay (d3el, { message = '', spinner = false } = {}) {
@@ -187,6 +197,27 @@ class TableView extends View {
   }
   hideOverlay (d3el) {
     this.showOverlay(d3el);
+  }
+  showTooltip (targetBounds = {}, content = '') {
+    let tooltip = this.d3el.select('#tooltip')
+      .style('display', content ? null : 'none')
+      .html(content);
+    if (content) {
+      let tooltipBounds = tooltip.node().getBoundingClientRect();
+      let left = targetBounds.left ? targetBounds.left - tooltipBounds.width : 0;
+      if (left < 0) {
+        left = targetBounds.right;
+      }
+      let top = targetBounds.top ? targetBounds.top - tooltipBounds.height : 0;
+      if (top < 0) {
+        top = targetBounds.bottom;
+      }
+      tooltip.style('left', left + 'px')
+        .style('top', top + 'px');
+    }
+  }
+  hideTooltip () {
+    this.showTooltip();
   }
 }
 
