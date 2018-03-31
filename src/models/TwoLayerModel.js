@@ -3,7 +3,7 @@ import { Model } from '../lib/uki.esm.js';
 import createEnum from '../utils/createEnum.js';
 
 let TYPES = createEnum([
-  'boolean', 'number', 'string', 'date', 'undefined', 'null', 'reference', 'container', 'openContainer', 'histogram'
+  'boolean', 'number', 'string', 'date', 'undefined', 'null', 'reference', 'container', 'containerPlaceholder', 'histogram'
 ]);
 let INTERPRETATIONS = createEnum([
   'node', 'edge', 'supernode', 'hyperedge'
@@ -19,7 +19,12 @@ class TwoLayerModel extends Model {
     this.update(selection);
   }
   async update (selection = null) {
+    // TODO: there's probably a more efficient way to update only marginally
+    // different selections
     this.selection = selection;
+    this.selection.on('change', () => {
+      this.update(this.selection);
+    });
     /*
      * The nomenclature in this app is SUPER overloaded. There are THREE
      * different possible interpretations for what you might call an "edge": at
@@ -351,6 +356,38 @@ class TwoLayerModel extends Model {
       return null;
     }
   }
+  getOptions (entityIds) {
+    let entities = entityIds.map(id => this.entities[this.entityLookup[id]]);
+
+    let selectedContainers = entities.filter(entity => entity.type === TYPES.container);
+
+    return {
+      select: [
+        {
+          label: 'Select children',
+          enabled: selectedContainers.length > 0,
+          action: () => {
+            let newSelection = mure.pathsToSelector(selectedContainers.map(d => d.path));
+            mure.set(newSelection);
+          }
+        }
+      ],
+      navigate: [
+        {
+          label: 'Navigate to selection',
+          enabled: entityIds.length > 0,
+          action: () => {
+            let newSelection = mure.pathsToSelector(entities.map(d => d.path));
+            newSelection = mure.selectAll(newSelection);
+            return this.update(newSelection);
+          }
+        }
+      ],
+      group: [],
+      join: [],
+      link: []
+    };
+  }
   getBreadcrumb (entityId) {
     let entity = this.entities[this.entityLookup[entityId]];
     let entries = [{
@@ -404,7 +441,7 @@ class TwoLayerModel extends Model {
           if (!child.attributes) {
             return { type: child.type, value: child.value };
           } else {
-            return { type: TYPES.openContainer };
+            return { type: TYPES.containerPlaceholder };
           }
         } else {
           if (!child.attributes) {
@@ -417,27 +454,6 @@ class TwoLayerModel extends Model {
       data.push(row);
     });
 
-    return { data, columnHeaders, rowHeaders };
-  }
-  getTabularVector (entityId) {
-    let entity = this.entities[this.entityLookup[entityId]];
-    if (!entity.attributes) {
-      return this.getTabularValue(entityId);
-    }
-    let columnHeaders = ['Value'];
-    let data = [];
-    let rowHeaders = [];
-    Object.keys(entity.attributes).forEach(label => {
-      rowHeaders.push(label);
-      data.push([entity.attributes[label]]);
-    });
-    return { data, columnHeaders, rowHeaders };
-  }
-  getTabularValue (entityId) {
-    let entity = this.entities[this.entityLookup[entityId]];
-    let columnHeaders = ['Value'];
-    let data = [entity.value];
-    let rowHeaders = [entity.label];
     return { data, columnHeaders, rowHeaders };
   }
 }

@@ -25,6 +25,7 @@ class TableView extends View {
     d3el.html(this.resources.text);
   }
   async draw (d3el) {
+    this.hideTooltip();
     if (this.model.isLoading) {
       this.showOverlay(d3el, {
         message: 'Loading tables...',
@@ -128,8 +129,8 @@ class TableView extends View {
       case TwoLayerModel.TYPES.date:
         Handsontable.renderers.DateRenderer(...argList);
         break;
-      case TwoLayerModel.TYPES.openContainer:
-        this.drawOpenContainer(container.classed('openContainer', true));
+      case TwoLayerModel.TYPES.containerPlaceholder:
+        this.drawOpenContainer(container.classed('containerPlaceholder', true));
         break;
       case TwoLayerModel.TYPES.reference:
         this.drawReference(container.classed('reference', true), content.value);
