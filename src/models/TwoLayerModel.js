@@ -392,7 +392,7 @@ class TwoLayerModel extends Model {
     let entity = this.entities[this.entityLookup[entityId]];
     let entries = [{
       humanReadable: 'All Documents',
-      selector: null
+      selector: '@'
     }];
     entity.path.forEach((chunk, i) => {
       if (chunk !== '$') {

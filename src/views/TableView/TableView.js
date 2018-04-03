@@ -23,6 +23,11 @@ class TableView extends View {
   }
   setup (d3el) {
     d3el.html(this.resources.text);
+    this.hideTooltip();
+    this.showOverlay(d3el, {
+      message: 'Loading assets...',
+      spinner: true
+    });
   }
   async draw (d3el) {
     this.hideTooltip();
@@ -38,7 +43,7 @@ class TableView extends View {
       });
     } else {
       this.showOverlay(d3el, {
-        message: '',
+        message: 'Drawing tables...',
         spinner: true
       });
       await this.drawTables(d3el);
@@ -93,8 +98,6 @@ class TableView extends View {
         cells: () => { return { renderer: 'generic' }; },
         manualColumnResize: true,
         manualRowResize: true,
-        manualColumnMove: true,
-        manualRowMove: true,
         rowHeaderWidth: 100,
         fixedColumnsLeft: 1
       };
