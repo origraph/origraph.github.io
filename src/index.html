@@ -7,11 +7,20 @@
         <!--script src="https://d3js.org/d3.v5.min.js"></script-->
         <!--script src="https://cdn.jsdelivr.net/npm/mure@0.2.3/dist/mure.umd.min.js"></script-->
         <script src="./lib/mure.umd.js"></script>
-        <script src="./lib/handsontable/handsontable.full.min.js"></script>
         <script type="module" src="./app.js"></script>
         <link rel="stylesheet" href="./style.css"/>
-        <link rel="stylesheet" href="./lib/handsontable/handsontable.full.min.css"/>
     </head>
     <body>
+      <div id="contents">
+        <svg></svg>
+      </div>
+      <div id="menu"></div>
+      <div id="tooltip"></div>
+      <div id="overlay">
+        <div class="center">
+          <h2 class="message"></h2>
+          <img class="spinner" src="/img/spinner.gif"/>
+        </div>
+      </div>
     </body>
 </html>

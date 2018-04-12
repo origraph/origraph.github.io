@@ -1,7 +1,6 @@
-/* globals d3, mure */
+/* globals d3 */
 
-import TwoLayerModel from './models/TwoLayerModel.js';
-import TableView from './views/TableView/TableView.js';
+import TableView from './views/TableView.js';
 
 let views = {
   TableView
@@ -9,9 +8,8 @@ let views = {
 
 class MainApp {
   constructor () {
-    let { viewName, selection } = this.parseLocation();
+    let { viewName } = this.parseLocation();
     this.viewName = views[viewName] ? viewName : 'TableView';
-    this.selection = selection || null;
     this.saveState();
     window.onpopstate = event => {
       this.navigate(event.state || {});
@@ -20,8 +18,7 @@ class MainApp {
   }
   saveState () {
     window.history.pushState({
-      viewName: this.viewName,
-      selection: this.selection
+      viewName: this.viewName
     }, '', this.getUrl());
   }
   parseLocation () {
@@ -35,31 +32,21 @@ class MainApp {
   getUrl () {
     let url = window.location.origin + window.location.pathname + '?' +
       'viewName=' + encodeURIComponent(this.viewName);
-    if (this.selection) {
-      url += '&' + 'selection=' + encodeURIComponent(this.selection);
-    }
     return url;
   }
-  async navigate ({ viewName = this.viewName, selection = this.selection } = {}) {
+  async navigate ({ viewName = this.viewName } = {}) {
     viewName = views[viewName] ? viewName : this.viewName;
-    if (selection !== this.selection || viewName !== this.viewName) {
-      this.selection = selection;
+    if (viewName !== this.viewName) {
       this.viewName = viewName;
       this.saveState();
     }
-    // We use a null selection to store state, but to actually get the
-    // root selection, we have to revert it back to undefined
-    let selectionObj = mure.selectAll(this.selection || undefined);
     let body = d3.select('body').attr('class', this.viewName);
-    if (!this.model || !this.view) {
-      this.model = new TwoLayerModel(selectionObj);
+    if (!this.view) {
       this.view = new views[this.viewName](body, this.model);
       window.onresize = () => { this.view.render(); };
     } else {
-      this.view.render(); // show the spinner
-      await this.model.update(selectionObj);
+      this.view.render();
     }
-    this.view.render();
   }
 }
 
