@@ -2,24 +2,26 @@ import SlicedGraphView from './SlicedGraphView.js';
 
 class TableView extends SlicedGraphView {
   async update (linkedViewSpec) {
-    this.histograms = null;
-    await super.update(linkedViewSpec);
+    this.histograms = this.tableLayout = null;
+    await super.update(linkedViewSpec); // 'Computing table layout...' spinner will be showing
+    this.tableLayout = await this.computeTableLayout();
     this.render(); // 'Computing histograms...' spinner
     this.histograms = await this.computeHistograms();
+    this.render();
   }
-  async draw (d3el) {
-    await super.draw(d3el);
-    if (!this.histograms) {
+  drawContents (d3el) {
+    if (!this.tableLayout) {
+      this.showOverlay(d3el, {
+        message: 'Computing table layout...',
+        spinner: true
+      });
+    } else if (!this.histograms) {
       this.showOverlay(d3el, {
         message: 'Computing histograms...',
         spinner: true
       });
     } else {
-      this.showOverlay(d3el, {
-        message: 'Computing table layout...',
-        spinner: true
-      });
-      await this.computeTableLayout();
+      this.drawTables();
       this.hideOverlay();
     }
   }

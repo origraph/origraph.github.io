@@ -1,15 +1,17 @@
 /* globals d3 */
 
-import TableView from './views/TableView.js';
+import SchemaView from './views/SchemaView.js';
+// import TableView from './views/TableView.js';
 
 let views = {
-  TableView
+  // TableView,
+  SchemaView
 };
 
 class MainApp {
   constructor () {
     let { viewName } = this.parseLocation();
-    this.viewName = views[viewName] ? viewName : 'TableView';
+    this.viewName = views[viewName] ? viewName : 'SchemaView';
     this.saveState();
     window.onpopstate = event => {
       this.navigate(event.state || {});
