@@ -1,10 +1,10 @@
 /* globals d3, mure, GoldenLayout */
 import { View } from '../lib/uki.esm.js';
-import MenuView from './views/MenuView.js';
-import NetworkModelView from './views/NetworkModelView.js';
-import InstanceView from './views/InstanceView.js';
-import SetView from './views/SetView.js';
-import TableView from './views/TableView.js';
+import MenuView from './MenuView.js';
+import NetworkModelView from './NetworkModelView.js';
+import InstanceView from './InstanceView.js';
+import SetView from './SetView.js';
+import TableView from './TableView.js';
 
 const viewClasses = {
   NetworkModelView,
@@ -56,25 +56,22 @@ class MainView extends View {
     // user pasted a link), do it (this will trigger the docChange event and and
     // reset on its own)... otherwise, we need to call reset ourselves (but
     // don't pushState)
-    const urlSettings = this.getUrlSettings();
-    if (urlSettings.view) {
+    const urlView = this.getUrlViewSelection();
+    if (urlView) {
       this.viewSpec = null;
       this.render(); // 'Connecting...' spinner
-      mure.setLinkedViews({ view: urlSettings.view });
+      mure.setLinkedViews({ view: urlView });
     } else {
       this.reset();
     }
   }
-  /**
-   * Get any settings the user may have pasted in a URL when loading the page
-   */
-  getUrlSettings () {
-    let result;
+  getUrlViewSelection () {
+    let result = null;
     window.location.search.substr(1).split('&').forEach(chunk => {
       let [key, value] = chunk.split('=');
       if (key === 'viewSelectors') {
         try {
-          result.view = { view: mure.selectAll(decodeURIComponent(value)) };
+          result = mure.selectAll(decodeURIComponent(value));
         } catch (err) {
           if (!err.INVALID_SELECTOR) {
             throw err;

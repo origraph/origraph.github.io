@@ -10,5 +10,6 @@ class SubView extends View {
   setup () {
     this.d3el.text('TODO: view not implemented');
   }
+  draw () {}
 }
 export default SubView;

@@ -8,5 +8,6 @@ class MenuView extends View {
   setup () {
     this.d3el.text('TODO: view not implemented');
   }
+  draw () {}
 }
 export default MenuView;
