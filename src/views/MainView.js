@@ -1,16 +1,43 @@
-/* globals d3, mure */
+/* globals d3, mure, GoldenLayout */
 import { View } from '../lib/uki.esm.js';
+import MenuView from './views/MenuView.js';
 import NetworkModelView from './views/NetworkModelView.js';
 import InstanceView from './views/InstanceView.js';
 import SetView from './views/SetView.js';
 import TableView from './views/TableView.js';
 
-let viewClasses = {
+const viewClasses = {
   NetworkModelView,
   InstanceView,
   SetView,
   TableView
 };
+
+const defaultLayout = { content: [
+  {
+    type: 'row',
+    content: [{
+      type: 'component',
+      componentName: 'NetworkModelView',
+      componentState: {}
+    }, {
+      type: 'component',
+      componentName: 'InstanceView',
+      componentState: {}
+    }]
+  }, {
+    type: 'row',
+    content: [{
+      type: 'component',
+      componentName: 'SetView',
+      componentState: {}
+    }, {
+      type: 'component',
+      componentName: 'TableView',
+      componentState: {}
+    }]
+  }
+]};
 
 class MainView extends View {
   constructor (d3el) {
@@ -24,78 +51,73 @@ class MainView extends View {
       // if our selection doesn't refer to the changed document
       this.reset();
     });
-    window.onpopstate = event => {
-      mure.setLinkedViews({ view: mure.selectAll(event.state) });
-    };
-
-    this.handleGivenUrl();
-  }
-  handleGivenUrl () {
-    // Parse the url we were given...
-    const locationParameters = this.parseLocation();
-    let tempViewSpec = null;
-    Object.entries(locationParameters).forEach(([key, value]) => {
-      if (key === 'viewSelectors') {
-        try {
-          tempViewSpec = { view: mure.selectAll(value) };
-        } catch (err) {
-          if (!err.INVALID_SELECTOR) {
-            throw err;
-          }
-        }
-      } else if (key === 'subViews') {
-        this.subViews = value;
-      }
-    });
-
-    // Default view settings if the URL didn't provide any
-    this.subViews = (this.subViews || [
-      'NetworkModelView',
-      'InstanceView',
-      'SetView',
-      'TableView'
-    ]).map(viewClassName => {
-      // Initialize the subview classes
-      return new viewClasses[viewClassName](this);
-    });
 
     // If the URL gave us new viewSelectors that need to be propagated (e.g. the
     // user pasted a link), do it (this will trigger the docChange event and and
     // reset on its own)... otherwise, we need to call reset ourselves (but
     // don't pushState)
-    if (tempViewSpec) {
-      mure.setLinkedViews(this.viewSpec);
+    const urlSettings = this.getUrlSettings();
+    if (urlSettings.view) {
+      this.viewSpec = null;
       this.render(); // 'Connecting...' spinner
+      mure.setLinkedViews({ view: urlSettings.view });
     } else {
-      this.reset(false);
+      this.reset();
     }
   }
-  parseLocation () {
+  /**
+   * Get any settings the user may have pasted in a URL when loading the page
+   */
+  getUrlSettings () {
     let result;
     window.location.search.substr(1).split('&').forEach(chunk => {
       let [key, value] = chunk.split('=');
-      result[key] = decodeURIComponent(value);
+      if (key === 'viewSelectors') {
+        try {
+          result.view = { view: mure.selectAll(decodeURIComponent(value)) };
+        } catch (err) {
+          if (!err.INVALID_SELECTOR) {
+            throw err;
+          }
+        }
+      }
     });
     return result;
   }
-  async reset (pushState) {
+  async reset () {
     this.viewSpec = null;
     this.render(); // 'Connecting...' spinner
-    return this.update(await mure.getLinkedViews(), pushState);
+    return this.update(await mure.getLinkedViews());
   }
-  async update (linkedViewSpec, pushState = true) {
+  async update (linkedViewSpec) {
     let changedView = !this.viewSpec || linkedViewSpec.view;
     let changedUserSelection = !this.viewSpec || linkedViewSpec.userSelection;
     let changedSettings = !this.viewSpec || linkedViewSpec.settings;
 
     this.viewSpec = linkedViewSpec;
+    if (changedView) {
+      this.render(); // 'Collecting items...' spinner
+      // Update the URL to reflect the current selection
+      window.history.replaceState({}, '',
+        window.location.pathname + '?viewSelectors=' +
+        encodeURIComponent(this.viewSpec.view.selectorList));
+      // trigger the view Selection to cache its items
+      await this.viewSpec.view.items();
+    }
+    if (changedUserSelection) {
+      // trigger the userSelection Selection to cache its items
+      await this.viewSpec.userSelection.items();
+      // TODO: do we need to do anything with the selected items?
+    }
     if (changedSettings) {
+      // TODO: derive stuff from mure for the subviews to render,
+      // depending sliceMode
       this.viewSpec.settings.origraph = this.viewSpec.settings.origraph || {
         // Default settings that are synced across windows:
-        sliceMode: MainView.SLICE_MODES.unified,
+        sliceMode: MainView.SLICE_MODES.union,
         sliceSettings: {
-          // if not in unified mode, there should be a key for every intersection
-          unified: {
+          // if not in union mode, there should be a key for every intersection
+          union: {
             scrollIndex: 0
             // no sortAttr means to sort on item labels
           }
@@ -103,41 +125,31 @@ class MainView extends View {
       };
     }
 
-    if (changedView) {
-      this.slices = null;
-      this.render(); // 'Collecting items...' spinner
-      const items = await this.viewSpec.view.items();
-      if (Object.keys(items).length > 0) {
-        this.render(); // 'Slicing...' spinner
-        this.slices = await this.computeSlices();
-      }
-    }
-    if (changedUserSelection) {
-      // trigger the userSelection Selection to cache its items
-      await this.viewSpec.userSelection.items();
-      // TODO: do we need to do anything with the selected items?
-    }
-
-    if (pushState && changedView) {
-      window.history.pushState(this.viewSpec.view.selectorList, '', this.getUrl());
-    }
     this.render();
   }
-  composeUrl () {
-    let url = window.location.origin + window.location.pathname + '?' +
-      'viewSelectors=' + encodeURIComponent(this.viewSpec.view.selectorList) + '&' +
-      'subViews=' + encodeURIComponent(this.subViews.map(subView => subView.prototype.constructor.name));
-    return url;
-  }
-  async computeSlices () {
-    let sliceMode = this.viewSpec.settings.origraph.sliceMode;
-    if (sliceMode === GraphView.MODES.flat) {
-      return this.viewSpec.view.getFlatGraphSchema();
-    } else if (sliceMode === GraphView.MODES.intersection) {
-      return this.viewSpec.view.getIntersectedGraphSchema();
-    } else { // if (sliceMode === GraphView.MODES.container) {
-      return this.viewSpec.view.getContainerSchema();
+  initSubViews (contentsElement) {
+    let layout;
+    const savedState = window.localStorage.getItem('goldenLayoutState');
+    if (savedState !== null) {
+      layout = new GoldenLayout(JSON.parse(savedState), contentsElement.node());
+    } else {
+      // Default layout
+      layout = new GoldenLayout(defaultLayout, contentsElement.node());
     }
+    layout.on('stateChanged', () => {
+      window.localStorage.setItem('goldenLayoutState',
+        JSON.stringify(layout.toConfig()));
+    });
+
+    let subViews = [];
+    Object.entries(viewClasses).forEach(([className, ClassObj]) => {
+      layout.registerComponent(className, (container, state) => {
+        subViews.push(new ClassObj(d3.select(container), state, this));
+      });
+    });
+
+    layout.init();
+    return [layout, subViews];
   }
   setup () {
     this.hideTooltip();
@@ -145,6 +157,9 @@ class MainView extends View {
       message: 'Loading assets...',
       spinner: true
     });
+    // Set up the subViews
+    this.menuView = new MenuView(this.d3el.select('#menu'));
+    [this.goldenLayout, this.subViews] = this.initSubViews(this.d3el.select('#contents'));
   }
   draw () {
     let contents = this.d3el.select('#contents');
@@ -165,25 +180,8 @@ class MainView extends View {
         spinner: true
       });
     } else {
-      (async () => {
-        const viewItems = this.viewSpec.view.items();
-        const selectedItems = this.viewSpec.userSelection.items();
-        if (viewItems.length === 0) {
-
-        }
-      })();
-    }if (.length === 0) {
-      this.showOverlay({
-        message: 'No data selected',
-        spinner: false
-      });
-    } else if (!this.slices) {
-      this.showOverlay({
-        message: 'Slicing...',
-        spinner: true
-      });
-    } else {
-
+      this.menuView.render();
+      this.subViews.forEach(subView => { subView.render(); });
       this.hideOverlay();
     }
   }
@@ -230,8 +228,8 @@ class MainView extends View {
   }
 }
 MainView.SLICE_MODES = {
-  slice: 'slice',
-  unified: 'unified'
+  intersections: 'intersections',
+  union: 'union'
 };
 
 export default MainView;
