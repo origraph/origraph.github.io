@@ -50,7 +50,15 @@ class MainView extends View {
     super(d3el);
 
     mure.on('linkedViewChange', linkedViewSpec => {
-      this.update(linkedViewSpec);
+      if (!this.viewSpec) {
+        // linkedViewSpec is (potentially) incomplete (it only contains what
+        // changed). If we haven't initialized this.viewSpec yet, we need to go
+        // back and get the whole thing
+        this.reset();
+      } else {
+        // Only update the stuff that changed
+        this.update(linkedViewSpec);
+      }
     });
     mure.on('docChange', changedDoc => {
       // TODO: stupidly just always update; we might be able to ignore
@@ -59,9 +67,9 @@ class MainView extends View {
     });
 
     // If the URL gave us new viewSelectors that need to be propagated (e.g. the
-    // user pasted a link), do it (this will trigger the docChange event and and
-    // reset on its own)... otherwise, we need to call reset ourselves (but
-    // don't pushState)
+    // user pasted a link), do it (this will trigger the linkedViewChange event
+    // and and reset on its own)... otherwise, we need to call reset ourselves
+    // (but don't pushState)
     const urlView = this.getUrlViewSelection();
     if (urlView) {
       this.viewSpec = null;
