@@ -12,9 +12,11 @@ class GoldenLayoutView extends View {
     this.container.on('show', () => this.render());
     this.container.on('resize', () => this.render());
   }
-  setup () {
-    this.d3el.text('TODO: view not implemented');
+  setup () {}
+  draw () {
+    this.drawCount = this.drawCount || 0;
+    this.drawCount++;
+    this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
   }
-  draw () {}
 }
 export default GoldenLayoutView;

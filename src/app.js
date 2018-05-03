@@ -6,6 +6,6 @@ window.onload = () => {
 };
 window.onresize = () => {
   if (window.mainView) {
-    window.mainView.render();
+    window.mainView.resize();
   }
 };

@@ -13,74 +13,80 @@ const viewClasses = {
   TableView
 };
 
-const defaultConfig = { content: [
-  {
-    type: 'row',
-    content: [{
-      type: 'column',
-      content: [{
+const SLICE_MODES = {
+  intersections: 'intersections',
+  union: 'union'
+};
+
+const defaultSettings = {
+  sliceMode: SLICE_MODES.union,
+  sliceSettings: {
+    // if not in union mode, there should be a key for every intersection
+    union: {
+      scrollIndex: 0
+      // no sortAttr means to sort on item labels
+    }
+  },
+  goldenLayoutConfig: {
+    content: [
+      {
         type: 'row',
         content: [{
-          type: 'component',
-          componentName: 'NetworkModelView',
-          componentState: {}
-        }, {
-          type: 'component',
-          componentName: 'InstanceView',
-          componentState: {}
+          type: 'column',
+          content: [{
+            type: 'row',
+            content: [{
+              type: 'component',
+              componentName: 'NetworkModelView',
+              componentState: {}
+            }, {
+              type: 'component',
+              componentName: 'InstanceView',
+              componentState: {}
+            }]
+          }, {
+            type: 'row',
+            content: [{
+              type: 'component',
+              componentName: 'SetView',
+              componentState: {}
+            }, {
+              type: 'component',
+              componentName: 'TableView',
+              componentState: {}
+            }]
+          }]
         }]
-      }, {
-        type: 'row',
-        content: [{
-          type: 'component',
-          componentName: 'SetView',
-          componentState: {}
-        }, {
-          type: 'component',
-          componentName: 'TableView',
-          componentState: {}
-        }]
-      }]
-    }]
+      }
+    ]
   }
-]};
+};
 
 class MainView extends View {
   constructor (d3el) {
     super(d3el);
 
+    this.context = this.initContext();
+
     mure.on('linkedViewChange', linkedViewSpec => {
-      if (!this.viewSpec) {
-        // linkedViewSpec is (potentially) incomplete (it only contains what
-        // changed). If we haven't initialized this.viewSpec yet, we need to go
-        // back and get the whole thing
-        this.reset();
-      } else {
-        // Only update the stuff that changed
-        this.update(linkedViewSpec);
+      if (linkedViewSpec.userSelection ||
+         (linkedViewSpec.settings &&
+          linkedViewSpec.settings[this.context.hash] &&
+          linkedViewSpec.settings[this.context.hash].origraph)) {
+        this.refresh(linkedViewSpec);
       }
     });
     mure.on('docChange', changedDoc => {
-      // TODO: stupidly just always update; we might be able to ignore
-      // if our selection doesn't refer to the changed document
-      this.reset();
+      // TODO: stupidly just always update everything; in the future we might be
+      // able to ignore if our selection doesn't refer to the changed document
+      this.refresh();
     });
 
-    // If the URL gave us new viewSelectors that need to be propagated (e.g. the
-    // user pasted a link), do it (this will trigger the linkedViewChange event
-    // and and reset on its own)... otherwise, we need to call reset ourselves
-    // (but don't pushState)
-    const urlView = this.getUrlViewSelection();
-    if (urlView) {
-      this.viewSpec = null;
-      this.render(); // 'Connecting...' spinner
-      mure.setLinkedViews({ view: urlView });
-    } else {
-      this.reset();
-    }
+    this.refresh();
   }
-  getUrlViewSelection () {
+  initContext () {
     let result = null;
+    // Select the view context specified by the URL
     window.location.search.substr(1).split('&').forEach(chunk => {
       let [key, value] = chunk.split('=');
       if (key === 'viewSelectors') {
@@ -93,68 +99,77 @@ class MainView extends View {
         }
       }
     });
+    // Default: return the root selection
+    result = result || mure.selectAll();
     return result;
   }
-  async reset () {
-    this.viewSpec = null;
-    this.render(); // 'Connecting...' spinner
-    return this.update(await mure.getLinkedViews());
+  setContext (selectorList) {
+    this.context = mure.selectAll(selectorList);
+    window.history.replaceState({}, '',
+      window.location.pathname + '?viewSelectors=' +
+      encodeURIComponent(selectorList));
+    this._lastSettings = this.settings;
+    delete this.settings;
+    this.refresh();
   }
-  async update (linkedViewSpec) {
-    let changedView = !this.viewSpec || linkedViewSpec.view;
-    let changedUserSelection = !this.viewSpec || linkedViewSpec.userSelection;
-    let changedSettings = !this.viewSpec || linkedViewSpec.settings;
+  async refresh (linkedViewSpec) {
+    linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
 
-    this.viewSpec = linkedViewSpec;
-    if (changedView) {
-      this.render(); // 'Collecting items...' spinner
-      // Update the URL to reflect the current selection
-      window.history.replaceState({}, '',
-        window.location.pathname + '?viewSelectors=' +
-        encodeURIComponent(this.viewSpec.view.selectorList));
-      // trigger the view Selection to cache its items
-      await this.viewSpec.view.items();
+    let changedUserSelection = false;
+    if (!this.userSelection) {
+      // We need to initialize the userSelection
+      this.render(); // 'Syncing user selection...' spinner
+      if (!linkedViewSpec.settings) {
+        // Force a full read of userSelection if we only got a settings delta
+        linkedViewSpec = await mure.getLinkedViews();
+      }
+      this.userSelection = linkedViewSpec.userSelection;
+      changedUserSelection = true;
+    } else if (linkedViewSpec.userSelection) {
+      // We got a simple update for the userSelection
+      this.userSelection = linkedViewSpec.userSelection;
+      changedUserSelection = true;
     }
-    if (changedUserSelection) {
-      // trigger the userSelection Selection to cache its items
-      await this.viewSpec.userSelection.items();
-      // TODO: do we need to do anything with the selected items?
-    }
-    if (changedSettings) {
-      // TODO: derive stuff from mure for the subviews to render,
-      // depending sliceMode
-      this.viewSpec.settings.origraph = this.viewSpec.settings.origraph || {
-        // Default settings that are synced across windows:
-        sliceMode: MainView.SLICE_MODES.union,
-        sliceSettings: {
-          // if not in union mode, there should be a key for every intersection
-          union: {
-            scrollIndex: 0
-            // no sortAttr means to sort on item labels
-          }
+
+    let changedSettings = false;
+    if (!this.settings) {
+      // We need to initialize the settings
+      this.render(); // 'Syncing view settings...' spinner
+      if (!linkedViewSpec.settings) {
+        // Force a full read of the settings if we only got a userSelection delta
+        linkedViewSpec = await mure.getLinkedViews();
+      }
+      if (!linkedViewSpec.settings[this.context.hash] ||
+          !linkedViewSpec.settings[this.context.hash].origraph) {
+        // Origraph hasn't seen this context before; apply default settings
+        // (this will trigger a linkedViewChange event and call render again)
+        let temp = { settings: {} };
+        if (this._lastSettings) {
+          // We changed contexts but already had view settings; save those
+          // settings for the new context
+          temp.settings[this.context.hash] = { origraph: this._lastSettings };
+        } else {
+          // Apply the default settings
+          temp.settings[this.context.hash] = { origraph: defaultSettings };
         }
-      };
+        mure.setLinkedViews(temp);
+        return;
+      } else {
+        // Initialize the settings and layout
+        this.settings = linkedViewSpec.settings[this.context.hash].origraph;
+        changedSettings = true;
+        [this.goldenLayout, this.subViews] = this.initSubViews(this.d3el.select('#contents'));
+      }
+    } else if (linkedViewSpec.settings) {
+      // We got a simple update for the settings
+      this.settings = linkedViewSpec.settings[this.context.hash].origraph;
+      changedSettings = true;
     }
 
+    if (changedUserSelection || changedSettings) {
+      // TODO: calculate stuff
+    }
     this.render();
-  }
-  initSubViews (contentsElement) {
-    let subViews = [];
-    let config = window.localStorage.getItem('goldenLayoutState');
-    config = config ? JSON.parse(config) : defaultConfig;
-
-    let layout = new GoldenLayout(config, contentsElement.node());
-    layout.on('stateChanged', () => {
-      window.localStorage.setItem('goldenLayoutState',
-        JSON.stringify(layout.toConfig()));
-    });
-
-    Object.entries(viewClasses).forEach(([className, ViewClass]) => {
-      layout.registerComponent(className, ViewClass);
-    });
-
-    layout.init();
-    return [layout, subViews];
   }
   setup () {
     this.hideTooltip();
@@ -164,18 +179,43 @@ class MainView extends View {
     });
     // Set up the subViews
     this.menuView = new MenuView(this.d3el.select('#menu'));
-    [this.goldenLayout, this.subViews] = this.initSubViews(this.d3el.select('#contents'));
+  }
+  initSubViews (contentsElement) {
+    let subViews = [];
+
+    let layout = new GoldenLayout(this.settings.goldenLayoutConfig, contentsElement.node());
+
+    Object.entries(viewClasses).forEach(([className, ViewClass]) => {
+      layout.registerComponent(className, ViewClass);
+    });
+
+    layout.on('stateChanged', () => {
+      this.settings.goldenLayoutConfig = layout.toConfig();
+      let temp = { settings: {} };
+      temp.settings[this.context.hash] = { origraph: this.settings };
+      mure.setLinkedViews(temp);
+    });
+
+    layout.init();
+    return [layout, subViews];
+  }
+  resize () {
+    if (this.menuView) {
+      this.menuView.render();
+    }
+    if (this.goldenLayout) {
+      this.goldenLayout.updateSize();
+    }
   }
   draw () {
-    if (!this.viewSpec) {
+    if (!this.userSelection) {
       this.showOverlay({
-        message: 'Connecting...',
+        message: 'Syncing user selection...',
         spinner: true
       });
-    } else if (!this.viewSpec.view.isCached ||
-               !this.viewSpec.userSelection.isCached) {
+    } else if (!this.settings) {
       this.showOverlay({
-        message: 'Collecting items...',
+        message: 'Syncing view settings...',
         spinner: true
       });
     } else {
@@ -226,9 +266,6 @@ class MainView extends View {
     this.showTooltip();
   }
 }
-MainView.SLICE_MODES = {
-  intersections: 'intersections',
-  union: 'union'
-};
+MainView.SLICE_MODES = SLICE_MODES;
 
 export default MainView;
