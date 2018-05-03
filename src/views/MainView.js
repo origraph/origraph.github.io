@@ -13,28 +13,34 @@ const viewClasses = {
   TableView
 };
 
-const defaultLayout = { content: [
+const defaultConfig = { content: [
   {
     type: 'row',
     content: [{
-      type: 'component',
-      componentName: 'NetworkModelView',
-      componentState: {}
-    }, {
-      type: 'component',
-      componentName: 'InstanceView',
-      componentState: {}
-    }]
-  }, {
-    type: 'row',
-    content: [{
-      type: 'component',
-      componentName: 'SetView',
-      componentState: {}
-    }, {
-      type: 'component',
-      componentName: 'TableView',
-      componentState: {}
+      type: 'column',
+      content: [{
+        type: 'row',
+        content: [{
+          type: 'component',
+          componentName: 'NetworkModelView',
+          componentState: {}
+        }, {
+          type: 'component',
+          componentName: 'InstanceView',
+          componentState: {}
+        }]
+      }, {
+        type: 'row',
+        content: [{
+          type: 'component',
+          componentName: 'SetView',
+          componentState: {}
+        }, {
+          type: 'component',
+          componentName: 'TableView',
+          componentState: {}
+        }]
+      }]
     }]
   }
 ]};
@@ -125,24 +131,18 @@ class MainView extends View {
     this.render();
   }
   initSubViews (contentsElement) {
-    let layout;
-    const savedState = window.localStorage.getItem('goldenLayoutState');
-    if (savedState !== null) {
-      layout = new GoldenLayout(JSON.parse(savedState), contentsElement.node());
-    } else {
-      // Default layout
-      layout = new GoldenLayout(defaultLayout, contentsElement.node());
-    }
+    let subViews = [];
+    let config = window.localStorage.getItem('goldenLayoutState');
+    config = config ? JSON.parse(config) : defaultConfig;
+
+    let layout = new GoldenLayout(config, contentsElement.node());
     layout.on('stateChanged', () => {
       window.localStorage.setItem('goldenLayoutState',
         JSON.stringify(layout.toConfig()));
     });
 
-    let subViews = [];
-    Object.entries(viewClasses).forEach(([className, ClassObj]) => {
-      layout.registerComponent(className, (container, state) => {
-        subViews.push(new ClassObj(d3.select(container), state, this));
-      });
+    Object.entries(viewClasses).forEach(([className, ViewClass]) => {
+      layout.registerComponent(className, ViewClass);
     });
 
     layout.init();
@@ -159,12 +159,6 @@ class MainView extends View {
     [this.goldenLayout, this.subViews] = this.initSubViews(this.d3el.select('#contents'));
   }
   draw () {
-    let contents = this.d3el.select('#contents');
-    this.contentBounds = contents.node().getBoundingClientRect();
-    contents.select('svg')
-      .attr('width', this.contentBounds.width)
-      .attr('height', this.contentBounds.height);
-
     if (!this.viewSpec) {
       this.showOverlay({
         message: 'Connecting...',

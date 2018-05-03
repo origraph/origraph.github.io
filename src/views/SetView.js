@@ -1,8 +1,8 @@
-import SubView from './SubView.js';
+import GoldenLayoutView from './GoldenLayoutView.js';
 
-class SetView extends SubView {
-  constructor (d3el, savedState, mainView) {
-    super(d3el, savedState, mainView);
+class SetView extends GoldenLayoutView {
+  constructor (container) {
+    super(container, 'Sets');
     // TODO
     console.log('created SetView');
   }

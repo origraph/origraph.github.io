@@ -1,8 +1,8 @@
-import SubView from './SubView.js';
+import GoldenLayoutView from './GoldenLayoutView.js';
 
-class InstanceView extends SubView {
-  constructor (d3el, savedState, mainView) {
-    super(d3el, savedState, mainView);
+class InstanceView extends GoldenLayoutView {
+  constructor (container) {
+    super(container, 'Instance Topology');
     // TODO
     console.log('created InstanceView');
   }

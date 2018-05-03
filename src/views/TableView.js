@@ -1,8 +1,8 @@
-import SubView from './SubView.js';
+import GoldenLayoutView from './GoldenLayoutView.js';
 
-class TableView extends SubView {
-  constructor (d3el, savedState, mainView) {
-    super(d3el, savedState, mainView);
+class TableView extends GoldenLayoutView {
+  constructor (container) {
+    super(container, 'Attributes');
     // TODO
     console.log('created TableView');
   }
