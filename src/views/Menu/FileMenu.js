@@ -5,7 +5,7 @@ class FileMenu extends Menu {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/disk.svg';
-    this.label = 'File';
+    this.label = 'Files';
     this.items = [
       new UploadOption(this)
     ];

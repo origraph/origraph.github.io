@@ -20,6 +20,13 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Josefin Sans', sans-serif;
   font-weight: 700;
 }
+.lm_header .lm_tab {
+  font-family: 'Josefin Sans', sans-serif;
+}
+.lm_title {
+  position: relative;
+  bottom: -2px;
+}
 
 #overlay {
   position: absolute;
@@ -30,7 +37,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 100vh;
 }
 #overlay {
-  background-color: rgba(51, 51, 51 ,0.75);
+  background-color: rgba(34, 34, 34 ,0.75);
 }
 #overlay .center {
   position: absolute;
@@ -86,14 +93,18 @@ h1, h2, h3, h4, h5, h6 {
 #menu details {
   position: relative;
   display: block;
+  left: 0px;
   width: 100%;
+}
+#menu details details {
+  left: calc(var(--menu-size) / 2);
+  width: calc(100% - var(--menu-size) / 2);
 }
 #menu summary {
   position: relative;
   display: block;
   left: 0px;
   height: var(--menu-size);
-  width: 100%;
   cursor: pointer;
   outline: none;
   user-select: none;
@@ -128,10 +139,27 @@ h1, h2, h3, h4, h5, h6 {
   left: var(--menu-size);
   bottom: calc((var(--menu-size) - var(--button-size)) / 2);
 }
-#menu details[open] {
-  margin: calc(var(--menu-size) / 2);
-}
 #menu .menuOptionContent {
   background-color: #222;
   padding: 0.5em;
+}
+#menu .menuOptionContent .row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+#menu .menuOptionContent .button {
+  border-radius: 1em;
+  width: fit-content;
+  padding: 0.3em 0.4em 0.15em 0.35em;
+  cursor: pointer;
+  background-color: white;
+  color: black;
+  font-family: 'Josefin Sans', sans-serif;
+  opacity: 0.4;
+  transition: opacity 300ms ease;
+}
+#menu .menuOptionContent .button:hover {
+  opacity: 1;
 }
