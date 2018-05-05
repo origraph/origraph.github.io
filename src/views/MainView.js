@@ -1,6 +1,6 @@
 /* globals d3, mure, GoldenLayout */
 import { View } from '../lib/uki.esm.js';
-import MenuView from './MenuView.js';
+import MainMenu from './Menu/MainMenu.js';
 import NetworkModelView from './NetworkModelView.js';
 import InstanceView from './InstanceView.js';
 import SetView from './SetView.js';
@@ -178,7 +178,7 @@ class MainView extends View {
       spinner: true
     });
     // Set up the subViews
-    this.menuView = new MenuView(this.d3el.select('#menu'));
+    this.menuView = new MainMenu(this.d3el.select('#menu'));
   }
   initSubViews (contentsElement) {
     let subViews = [];

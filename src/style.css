@@ -1,4 +1,10 @@
 @import url('https://fonts.googleapis.com/css?family=Josefin+Sans:700|Josefin+Slab:700');
+
+:root {
+  --button-size: 18px;
+  --menu-size: 40px;
+}
+
 html, body {
   padding: 0;
   margin: 0;
@@ -7,7 +13,7 @@ body {
   overflow: hidden;
   font-family: 'Josefin Slab', serif;
   font-weight: 700;
-  background-color: #333333;
+  background-color: black;
   color: white;
 }
 h1, h2, h3, h4, h5, h6 {
@@ -17,6 +23,7 @@ h1, h2, h3, h4, h5, h6 {
 
 #overlay {
   position: absolute;
+  z-index: 22;
   left: 0px;
   top: 0px;
   width: 100%;
@@ -41,42 +48,90 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   padding: 1em;
   border-radius: 0.5em;
-  background-color: #cccccc;
-  color: black;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.25);
 }
 
 #menu {
   position: absolute;
+  z-index: 21;
   right: 0px;
   top: 0px;
   bottom: 0px;
-  background-color: #cccccc;
-  color: black;
-  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+  width: var(--menu-size);
+  max-width: 30em;
+  background-color: black;
 }
 #contents {
   position: absolute;
   left: 0px;
   top: 0px;
   bottom: 0px;
+  width: calc(100% - var(--menu-size));
 }
 @media (max-width: 60em) {
-  #menu {
-    width: 2em;
-  }
-  #menu.expanded {
+  #menu[open] {
     width: 100%;
-  }
-  #contents {
-    width: calc(100% - 2em);
+    box-shadow: -2px 0px 2px 2px rgba(0, 0, 0, 0.25);
   }
 }
 @media (min-width: 60em) {
-  #menu {
+  #menu[open] {
     width: 30em;
   }
-  #contents {
+  #contents.squished {
     width: calc(100% - 30em);
   }
+}
+
+#menu details {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+#menu summary {
+  position: relative;
+  display: block;
+  left: 0px;
+  height: var(--menu-size);
+  width: 100%;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+#menu summary::-webkit-details-marker {
+  display: none;
+}
+#menu summary::-moz-list-bullet {
+  list-style-type: none;
+}
+#menu summary > .iconwrapper {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: var(--menu-size);
+  height: var(--menu-size);
+  opacity: 0.4;
+  transition: opacity 300ms ease;
+}
+#menu summary:hover > .iconwrapper {
+  opacity: 1;
+}
+#menu summary > .iconwrapper > img {
+  position: absolute;
+  left: calc((var(--menu-size) - var(--button-size)) / 2);
+  top: calc((var(--menu-size) - var(--button-size)) / 2);
+  width: var(--button-size);
+  height: var(--button-size);
+}
+#menu summary > label {
+  position: absolute;
+  left: var(--menu-size);
+  bottom: calc((var(--menu-size) - var(--button-size)) / 2);
+}
+#menu details[open] {
+  margin: calc(var(--menu-size) / 2);
+}
+#menu .menuOptionContent {
+  background-color: #222;
+  padding: 0.5em;
 }
