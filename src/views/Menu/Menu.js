@@ -7,14 +7,6 @@ class BaseMenu extends View {
     this.parentMenu = parentMenu;
     this.requireProperties(['icon', 'label']);
   }
-  get expanded () {
-    return this.d3el && this.d3el.node().open;
-  }
-  toggle () {
-    if (this.d3el) {
-      this.d3el.node().open = !this.d3el.node().open;
-    }
-  }
   getRootMenu () {
     let temp = this;
     while (temp.parentMenu) {
@@ -23,53 +15,78 @@ class BaseMenu extends View {
     return temp;
   }
   setup () {
-    this.d3el.on('toggle', () => {
-      const root = this.getRootMenu();
-      if (!root.expanded) {
-        root.toggle();
-      }
-    });
-    this.summary = this.d3el.append('summary');
+    this.summary.classed('menuSummary', true);
     this.summary.append('div')
       .classed('iconwrapper', true)
       .append('img')
       .attr('src', this.icon);
     this.summary.append('label')
       .text(this.label);
+    if (this.items) {
+      let menuOptions = this.d3el.selectAll('.menuOption')
+        .data(this.items, d => d);
+      menuOptions = menuOptions.enter()
+        .append('div')
+        .classed('menuOption', true)
+        .merge(menuOptions);
+
+      menuOptions.each(function (d) {
+        d.render(d3.select(this));
+      });
+    }
   }
   draw () {
     this.summary.select('label')
       .style('display', this.getRootMenu().expanded ? null : 'none');
+    if (this.items) {
+      this.items.forEach(d => d.render());
+    }
   }
 }
 
-class Menu extends BaseMenu {
+class ActionMenuOption extends BaseMenu {
   constructor (parentMenu, d3el) {
-    super(parentMenu, d3el);
-    this.requireProperties(['items']);
+    super(d3el);
+    this.parentMenu = parentMenu;
+    this.requireProperties(['executeAction']);
   }
   setup () {
+    this.summary = this.d3el;
     super.setup();
-    let menuOptions = this.d3el.selectAll('details')
-      .data(this.items);
-    menuOptions = menuOptions.enter().append('details')
-      .merge(menuOptions);
-
-    menuOptions.each(function (d) {
-      d.render(d3.select(this));
+    this.summary.on('click', () => {
+      this.executeAction();
     });
   }
-  draw () {
-    super.draw();
-    this.items.forEach(d => d.render());
+}
+
+class DetailsMenu extends BaseMenu {
+  get expanded () {
+    return this.details && this.details.node().open;
+  }
+  toggle () {
+    if (this.details) {
+      this.details.node().open = !this.details.node().open;
+    }
+  }
+  setup () {
+    this.details = this.d3el.append('details');
+    this.summary = this.details.append('summary');
+    super.setup();
+    this.details.on('toggle', () => {
+      const root = this.getRootMenu();
+      if (!root.expanded) {
+        root.toggle();
+      }
+    });
   }
 }
 
-class MenuOption extends BaseMenu {
+class ModalMenuOption extends DetailsMenu {
   setup () {
     super.setup();
-    this.contentDiv = this.d3el.append('div').classed('menuOptionContent', true);
+    this.contentDiv = this.d3el.append('div')
+      .classed('menuOptionContent', true);
   }
 }
 
-export { BaseMenu, MenuOption, Menu };
+export { BaseMenu, DetailsMenu, ActionMenuOption, ModalMenuOption };

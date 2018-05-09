@@ -1,11 +1,11 @@
 /* globals mure */
-import { MenuOption } from './Menu.js';
+import { ModalMenuOption } from '../Menu.js';
 
-class UploadOption extends MenuOption {
+class UploadOption extends ModalMenuOption {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/upload.svg';
-    this.label = 'Upload';
+    this.label = 'Upload Data...';
   }
   setup () {
     super.setup();

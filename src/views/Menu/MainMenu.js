@@ -1,8 +1,8 @@
 /* globals d3 */
-import { Menu } from './Menu.js';
-import FileMenu from './FileMenu.js';
+import { BaseMenu } from './Menu.js';
+import FileMenu from './File/FileMenu.js';
 
-class MainMenu extends Menu {
+class MainMenu extends BaseMenu {
   constructor (d3el) {
     super(null, d3el);
     this.icon = 'img/hamburger.svg';
@@ -10,19 +10,26 @@ class MainMenu extends Menu {
     this.items = [
       new FileMenu(this)
     ];
+    this.expanded = false;
+  }
+  toggle () {
+    this.expanded = !this.expanded;
+    this.render();
   }
   setup () {
+    this.summary = this.d3el.append('div');
     super.setup();
-    // Important: this overrides the SubMenu toggle event listener
-    this.d3el.on('toggle', () => {
-      d3.select('#contents').classed('squished', this.d3el.node().open);
-      window.mainView.resize();
+    this.summary.on('click', () => {
+      this.toggle();
     });
   }
   draw () {
     super.draw();
-    this.d3el.select('summary').select('label')
-      .style('display', this.expanded ? null : 'none');
+    const wasSquished = d3.select('#contents').classed('squished');
+    d3.select('#contents').classed('squished', this.expanded);
+    if (wasSquished !== this.expanded) {
+      window.mainView.resize();
+    }
   }
 }
 export default MainMenu;
