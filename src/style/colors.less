@@ -6,13 +6,13 @@ http://colorbrewer2.org/#type=qualitative&scheme=Dark2&n=8
 http://colorbrewer2.org/#type=qualitative&scheme=Pastel2&n=8
 */
 
-@White: #F7F7F7;
+@OffWhite: #F7F7F7;
 @LightestGrey: #D9D9D9;
 @LightGrey: #BDBDBD;
 @Grey: #969696;
 @DarkGrey: #737373;
 @DarkestGrey: #525252;
-@Black: #252525;
+@OffBlack: #252525;
 
 @DarkTeal: #1B9E77;
 @DarkOrange: #D95F02;
@@ -35,28 +35,31 @@ Color meanings:
 */
 
 @textColor: @LightPurple;
+
 @separatorColor: @DarkGrey;
 
-@panelColor: @DarkPurple;
-@lightPanelColor: @LightPurple;
-@darkPanelColor: darken(@panelColor, 30%);
-@darkestPanelColor: darken(@panelColor, 45%);
-
-@accentColor: @DarkYellow;
-@accentImageFilter: replace(@accentColor, '#(.*)', 'url(recolorImageTo$1)');/* url(#recolorImageToE6AB02); /* TODO: does less have a way to auto-generate this string?*/
-@lightAccentColor: @LightYellow;
-@darkAccentColor: darken(@accentColor, 30%);
+@shadowColor: black;
 
 @errorColor: @DarkPink;
+
+@backgroundColor: @DarkPurple;
+@lightBackgroundColor: @LightPurple;
+@darkBackgroundColor: darken(@backgroundColor, 30%);
+@darkestBackgroundColor: darken(@backgroundColor, 45%);
+
+@accentColor: @DarkYellow;
+@accentImageFilter: replace(@accentColor, '#(.*)', 'url(#recolorImageTo$1)');
+@lightAccentColor: @LightYellow;
+@darkAccentColor: darken(@accentColor, 30%);
 
 /*
 Gradients:
 */
-@backgroundGradient: linear-gradient(-100deg, desaturate(@darkPanelColor,15) 0%, desaturate(@darkPanelColor,20) 23%, desaturate(@darkestPanelColor,20) 100%);
+@backgroundGradient: linear-gradient(-100deg, desaturate(@darkBackgroundColor,15) 0%, desaturate(@darkBackgroundColor,20) 23%, desaturate(@darkestBackgroundColor,20) 100%);
 
-@tempLight: desaturate(@lightPanelColor, 10%);
-@tempMid: desaturate(@panelColor, 10%);
-@tempDark: desaturate(@darkPanelColor, 10%);
+@tempLight: desaturate(@lightBackgroundColor, 10%);
+@tempMid: desaturate(@backgroundColor, 10%);
+@tempDark: desaturate(@darkBackgroundColor, 10%);
 @lightGradientStop1: rgba(red(@tempLight), green(@tempLight), blue(@tempLight), 0.1);
 @lightGradientStop2: rgba(red(@tempMid), green(@tempMid), blue(@tempMid), 0);
 @lightGradientStop3: rgba(red(@tempDark), green(@tempDark), blue(@tempDark), 0.1);

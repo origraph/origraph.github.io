@@ -20,7 +20,7 @@ input {
   &[type=week] {
     font-family: inherit;
     font-size: 1em;
-    background: @darkestPanelColor;
+    background: @darkestBackgroundColor;
     color: @textColor;
     border: 1px solid @Black;
     border-radius: @borderRadius / 2;
@@ -30,7 +30,7 @@ input {
     appearance: none;
     outline: none;
     &:focus {
-      background: @darkPanelColor;
+      background: @darkBackgroundColor;
     }
   }
 
@@ -69,7 +69,7 @@ input {
     &:checked:after {
       content: '\2713';
       background: @selectedButtonGradient;
-      color: @darkPanelColor;
+      color: @darkBackgroundColor;
     }
     &:checked:hover:after {
       background: @selectedButtonHoverGradient;
@@ -78,7 +78,7 @@ input {
 }
 
 .panel {
-  border: 1px solid @darkestPanelColor;
-  background-color: @darkestPanelColor;
+  border: 1px solid @darkestBackgroundColor;
+  background-color: @darkestBackgroundColor;
   border-radius: @borderRadius;
 }

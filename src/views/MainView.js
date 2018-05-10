@@ -189,14 +189,43 @@ class MainView extends View {
       layout.registerComponent(className, ViewClass);
     });
 
-    layout.on('stateChanged', () => {
-      this.settings.goldenLayoutConfig = layout.toConfig();
-      let temp = { settings: {} };
-      temp.settings[this.context.hash] = { origraph: this.settings };
-      mure.setLinkedViews(temp);
-    });
+    const saveLayoutState = () => {
+      // debounce this call if goldenlayout isn't ready;
+      // see https://github.com/golden-layout/golden-layout/issues/253#issuecomment-361144944
+      clearTimeout(this.saveLayoutStateTimeout);
+      if (!(layout.isInitialised && layout.openPopouts.every(p => p.isInitialised))) {
+        this.saveLayoutStateTimeout = setTimeout(() => {
+          saveLayoutState();
+        }, 200);
+      } else {
+        this.settings.goldenLayoutConfig = layout.toConfig();
+        let temp = { settings: {} };
+        temp.settings[this.context.hash] = { origraph: this.settings };
+        mure.setLinkedViews(temp);
+      }
+    };
+    layout.on('stateChanged', saveLayoutState);
 
-    layout.init();
+    try {
+      layout.init();
+    } catch (error) {
+      if (error.type === 'popoutBlocked') {
+        mure.warn(`\
+The last time you used this app, a view was in a popup that your \
+browser just blocked (you will need to re-open the view from the \
+menu).
+
+You can prevent this in the future by adding this site to the allowed \
+sites in your browser settings.`);
+        // TODO: this hack successfully allows the rest of the main page to
+        // initialize, but there's a minor bug if the user opens the blocked
+        // popup in that it can't be popped back into the layout
+        layout._subWindowsCreated = true;
+        layout.init();
+      } else {
+        throw error;
+      }
+    }
     return [layout, subViews];
   }
   resize () {

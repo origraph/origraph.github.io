@@ -1,5 +1,6 @@
 //@import url('https://fonts.googleapis.com/css?family=Josefin+Sans:700|Josefin+Slab:700');
 @import './colors.less';
+@import './measurements.less';
 
 html, body {
   padding: 0;
@@ -53,8 +54,8 @@ h1, h2, h3, h4, h5, h6 {
   right: 0px;
   top: 0px;
   bottom: 0px;
-  width: var(--menu-size);
-  max-width: 30em;
+  width: @menuSize;
+  max-width: @fullMenuSize;
   background-color: black;
 }
 #contents {
@@ -62,19 +63,19 @@ h1, h2, h3, h4, h5, h6 {
   left: 0px;
   top: 0px;
   bottom: 0px;
-  width: calc(100% - var(--menu-size));
+  width: calc(100% - @menuSize);
 }
-@media (max-width: 60em) {
+@media (max-width: @fullMenuSize * 2) {
   #menu[open] {
     width: 100%;
     box-shadow: -2px 0px 2px 2px rgba(0, 0, 0, 0.25);
   }
 }
-@media (min-width: 60em) {
+@media (min-width: @fullMenuSize * 2) {
   #menu[open] {
-    width: 30em;
+    width: @fullMenuSize;
   }
   #contents.squished {
-    width: calc(100% - 30em);
+    width: calc(100% - @fullMenuSize);
   }
 }

@@ -13,7 +13,7 @@
   width: @buttonSize;
   height: @buttonSize;
 
-  background: @darkPanelColor;
+  background: @darkBackgroundColor;
   border-radius: @borderRadius;
 
   cursor: pointer;
@@ -55,11 +55,11 @@
       border-radius: @borderRadius;
       z-index: 100;
 
-      background-color: @darkPanelColor;
+      background-color: @darkBackgroundColor;
       color: @accentColor;
       white-space: nowrap;
       border: 1px solid @Black;
-      box-shadow: 0 0 0.25em @darkPanelColor;
+      box-shadow: 0 0 0.25em @darkBackgroundColor;
 
       /* default position for label is on the bottom */
       top: calc(#{@buttonSize} + 0.5em);
@@ -96,7 +96,7 @@
     a {
       background: @selectedButtonGradient;
       img {
-        filter: imgColorFilter(@darkPanelColor);
+        filter: imgColorFilter(@darkBackgroundColor);
       }
     }
     &:hover a {

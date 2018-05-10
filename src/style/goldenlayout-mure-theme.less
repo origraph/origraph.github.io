@@ -1,8 +1,9 @@
 @import './colors.less';
+@import './measurements.less';
 
 // Color variables (appears count calculates by raw css)
-@color0: @Black; // #000000; // Appears 7 times
-@color1: @darkestPanelColor; // #222222; // Appears 3 times
+@color0: #000000; // Appears 7 times
+@color1: @darkestBackgroundColor; // #222222; // Appears 3 times
 @color2: #eeeeee; // Appears 2 times
 @color3: #dddddd; // Appears 2 times
 
@@ -18,93 +19,93 @@
 
 // Entire GoldenLayout Container, if a background is set, it is visible as color of "pane header" and "splitters" (if these latest has opacity very low)
 .lm_goldenlayout {
-  background: @color0;
+  background: @backgroundGradient;
 }
 
 // Single Pane content (area in which final dragged content is contained)
 .lm_content {
-  background: @color1;
+  background: @darkestBackgroundColor;
   border: 1px solid transparent;
+  border-radius: 0 @borderRadius @borderRadius @borderRadius;
 }
 
 // Single Pane content during Drag (style of moving window following mouse)
 .lm_dragProxy {
   .lm_content {
-    box-shadow: 2px 2px 4px fade(@color0,90%);
+    box-shadow: 0.25em 0.25em 2em fade(@shadowColor,90%);
   }
 }
 
 // Placeholder Container of target position
 .lm_dropTargetIndicator {
-  box-shadow: inset 0 0 30px @color0;
-  outline: 1px dashed @color4;
+  box-shadow: inset 0 0 1em @shadowColor;
+  outline: 1px dashed @accentColor;
 
   // Inner Placeholder
   .lm_inner {
-    background: @color0;
-    opacity: 0.2;
+    background: @backgroundGradient;
+    opacity: 0.5;
   }
 }
 
 // Separator line (handle to change pane size)
 .lm_splitter {
-  background: @color0;
+  background: desaturate(@accentColor, 5%);
   opacity: 0.001;
   transition: opacity 200ms ease;
 
   &:hover, // When hovered by mouse...
   &.lm_dragging {
-    background: @color5;
+    background: @accentColor;
     opacity: 1;
   }
 }
 
 // Pane Header (container of Tabs for each pane)
 .lm_header {
-  height: 20px;
+  height: @titleBarSize;
 
   // Single Tab container. A single Tab is set for each pane, a group of Tabs are contained in ".lm_header"
   .lm_tab {
-    font-family: Arial, sans-serif;
-    font-size: 12px;
-    color: @color6;
-    background: @color7;
-    box-shadow: 2px -2px 2px fade(@color0,30%);
-    margin-right: 2px;
-    padding-bottom: 2px;
-    padding-top: 2px;
+    position: relative;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: @titleBarFontSize;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: @darkBackgroundColor;
 
-    /*.lm_title         // Present in LIGHT Theme
-    {
-      padding-top:1px;
-    }*/
+    .lm_title {
+      padding-top: @titleBarFontPadding;
+    }
 
     // Close Tab Icon
     .lm_close_tab {
-      width: 11px;
-      height: 11px;
-      background-image: data-uri('../img/lm_close_white.png');
-      background-position: center center;
+      width: @titleBarSize;
+      height: @titleBarSize;
+      background-image: data-uri('../img/ex.svg');
+      background-size: @titleBarButtonSize;
+      background-position: left center;
       background-repeat: no-repeat;
-      top: 4px;
-      right: 6px;
-      opacity: 0.4;
+      opacity: 0.1;
 
       &:hover {
         opacity: 1;
+        filter: @accentImageFilter;
       }
     }
 
     // If Tab is active, so if it's in foreground
     &.lm_active {
-      border-bottom: none;
-      box-shadow: 0 -2px 2px @color0;
-      padding-bottom: 3px;
-
-      .lm_close_tab {
-        opacity: 1;
-      }
+      background: @darkestBackgroundColor;
     }
+  }
+  .lm_tabs > .lm_tab {
+    // The tab is docked (i.e. not in the dropdown menu)
+    border-radius: @borderRadius @borderRadius 0 0;
+  }
+  .lm_tabdropdown_list > .lm_tab {
+    // The tab is in the dropdown menu
+    white-space: nowrap;
   }
 }
 
@@ -245,12 +246,4 @@
       opacity: 1;
     }
   }
-}
-
-.lm_header .lm_tab {
-  font-family: 'Josefin Sans', sans-serif;
-}
-.lm_title {
-  position: relative;
-  bottom: -3px;
 }
