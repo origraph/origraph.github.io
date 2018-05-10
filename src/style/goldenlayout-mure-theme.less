@@ -109,31 +109,10 @@
   }
 }
 
-.lm_dragProxy,
-.lm_stack {
-  &.lm_right {
-    .lm_header .lm_tab {
-      &.lm_active {
-        box-shadow: 2px -2px 2px @color0;
-      }
-    }
-  }
-
-  &.lm_bottom {
-    .lm_header .lm_tab {
-      box-shadow: 2px 2px 2px fade(@color0,30%);
-
-      &.lm_active {
-        box-shadow: 0 2px 2px @color0;
-      }
-    }
-  }
-}
-
 // If Pane Header (container of Tabs for each pane) is selected (used only if addition of new Contents is made "by selection" and not "by drag")
 .lm_selected {
   .lm_header {
-    background-color: @color8;
+    background-color: @darkAccentColor;
   }
 }
 
@@ -141,14 +120,13 @@
   &:hover, // If Tab is hovered
   &.lm_active // If Tab is active, so if it's in foreground
   {
-    background: @color1;
-    color: @color3;
+    background: @darkestBackgroundColor;
   }
 }
 
 // Dropdown arrow for additional tabs when too many to be displayed
 .lm_header .lm_controls .lm_tabdropdown:before {
-  color: @color10;
+  color: white;
 }
 
 // Pane controls (popout, maximize, minimize, close)
@@ -156,6 +134,7 @@
   // All Pane controls shares these
   > li {
     position: relative;
+    background-size: @titleBarButtonSize;
     background-position: center center;
     background-repeat: no-repeat;
     opacity: 0.4;
@@ -168,36 +147,17 @@
 
   // Icon to PopOut Pane, so move it to a different Browser Window
   .lm_popout {
-    background-image: data-uri('../img/lm_popout_white.png');
+    background-image: data-uri('../img/popWindowOut.svg');
   }
 
   // Icon to Maximize Pane, so it will fill the entire GoldenLayout Container
   .lm_maximise {
-    background-image: data-uri('../img/lm_maximise_white.png');
+    background-image: data-uri('../img/maximize.svg');
   }
 
   // Icon to Close Pane and so remove it from GoldenLayout Container
   .lm_close {
-    background-image: data-uri('../img/lm_close_white.png');
-  }
-
-  // Icon to toggle Pane Docking at mouse hover
-  .lm_dock {
-    background-image: data-uri('../img/lm_docked_white.png');
-    transform:rotate(-45deg);
-    transition:transform 300ms;
-  }
-}
-
-.lm_stack.lm_docked {
-  .lm_controls .lm_dock {
-    transform:rotate(0deg);
-  }
-
-  > .lm_items {
-    border-color: @color9;
-    border-image: linear-gradient(to right, @color5 1%, @color6 100%);
-    box-shadow: 0 2px 2px @color0;
+    background-image: data-uri('../img/ex.svg');
   }
 }
 
@@ -205,20 +165,21 @@
 .lm_maximised {
   // Pane Header (container of Tabs for each pane) can have different style when is Maximized
   .lm_header {
-    background-color: @color0;
+    background: @backgroundGradient;
+    opacity: 1;
   }
 
   // Pane controls are different in Maximized Mode, especially the old Icon "Maximise" that now has a different meaning, so "Minimize" (even if CSS Class did not change)
   .lm_controls {
     .lm_maximise {
-      background-image: data-uri('../img/lm_minimize_white.png');
+      background-image: data-uri('../img/minimize.svg');
     }
   }
 }
 
 .lm_transition_indicator {
-  background-color: @color0;
-  border: 1px dashed @color9;
+  background-color: @darkestBackgroundColor;
+  border: 1px dashed @darkBackgroundColor;
 }
 
 // If a specific Pane is Popped Out, so move it to a different Browser Window, Icon to restore original position is:
@@ -227,17 +188,16 @@
 
   // Background of Icon
   .lm_bg {
-    background: @color10;
+    background: @backgroundGradient;
     opacity: 0.3;
   }
 
   // Icon to Restore original position in Golden Layout Container
   .lm_icon {
-    background-image: data-uri('../img/lm_popin_white.png');
+    background-image: data-uri('../img/popWindowIn.svg');
+    background-size: @titleBarButtonSize;
     background-position: center center;
     background-repeat: no-repeat;
-    border-left: 1px solid @color2;
-    border-top: 1px solid @color2;
     opacity: 0.7;
   }
 
