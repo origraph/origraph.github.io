@@ -16,12 +16,30 @@ class BaseMenu extends View {
   }
   setup () {
     this.summary.classed('menuSummary', true);
-    this.summary.append('div')
-      .classed('iconwrapper', true)
+    const button = this.summary.append('div')
+      .classed('button', true);
+    button.append('a')
       .append('img')
       .attr('src', this.icon);
+    // Label in expanded menu
     this.summary.append('label')
+      .classed('menuLabel', true)
       .text(this.label);
+    // Show the tooltip when the menu is collapsed
+    this.summary.on('mouseover', () => {
+      if (!this.getRootMenu().expanded) {
+        window.mainView.showTooltip({
+          content: this.label,
+          targetBounds: this.summary.node().getBoundingClientRect(),
+          anchor: { x: -1 }
+        });
+      } else {
+        window.mainView.hideTooltip();
+      }
+    });
+    this.summary.on('mouseout', () => {
+      window.mainView.hideTooltip();
+    });
     if (this.items) {
       let menuOptions = this.d3el.selectAll('.menuOption')
         .data(this.items, d => d);
@@ -36,7 +54,7 @@ class BaseMenu extends View {
     }
   }
   draw () {
-    this.summary.select('label')
+    this.summary.select('.menuLabel')
       .style('display', this.getRootMenu().expanded ? null : 'none');
     if (this.items) {
       this.items.forEach(d => d.render());

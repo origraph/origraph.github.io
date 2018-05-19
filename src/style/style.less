@@ -1,6 +1,8 @@
 //@import url('https://fonts.googleapis.com/css?family=Josefin+Sans:700|Josefin+Slab:700');
 @import './colors.less';
 @import './measurements.less';
+@import './buttons.less';
+@import './menu.less';
 
 html, body {
   padding: 0;
@@ -20,7 +22,7 @@ h1, h2, h3, h4, h5, h6 {
 
 #overlay {
   position: absolute;
-  z-index: 22;
+  z-index: 23;
   left: 0px;
   top: 0px;
   width: 100%;
@@ -43,8 +45,10 @@ h1, h2, h3, h4, h5, h6 {
 
 #tooltip {
   position: absolute;
-  padding: 1em;
+  z-index: 22;
+  padding: 0.5em;
   border-radius: 0.5em;
+  background: black;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.25);
 }
 
@@ -56,26 +60,26 @@ h1, h2, h3, h4, h5, h6 {
   bottom: 0px;
   width: @menuSize;
   max-width: @fullMenuSize;
-  background-color: black;
 }
 #contents {
   position: absolute;
   left: 0px;
   top: 0px;
   bottom: 0px;
-  width: calc(100% - @menuSize);
+  width: calc(100% - (@menuSize + @menuPadding));
 }
 @media (max-width: @fullMenuSize * 2) {
-  #menu[open] {
+  #menu.expanded {
     width: 100%;
     box-shadow: -2px 0px 2px 2px rgba(0, 0, 0, 0.25);
+    background: @backgroundGradient;
   }
 }
 @media (min-width: @fullMenuSize * 2) {
-  #menu[open] {
+  #menu.expanded {
     width: @fullMenuSize;
   }
   #contents.squished {
-    width: calc(100% - @fullMenuSize);
+    width: calc(100% - (@fullMenuSize + @menuPadding));
   }
 }

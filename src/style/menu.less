@@ -1,73 +1,26 @@
-#menu .menuOption {
-  position: relative;
-  display: block;
-  left: 0px;
-  width: 100%;
-}
-#menu .menuOption .menuOption {
-  left: calc(var(--menu-size) / 2);
-  width: calc(100% - var(--menu-size) / 2);
-}
-#menu .summary {
-  position: relative;
-  display: block;
-  left: 0px;
-  height: var(--menu-size);
-  cursor: pointer;
-  outline: none;
-  user-select: none;
-}
-#menu summary::-webkit-details-marker {
-  display: none;
-}
-#menu summary::-moz-list-bullet {
-  list-style-type: none;
-}
-#menu .iconwrapper {
-  position: absolute;
-  left: 0px;
-  top: 0px;
-  width: var(--menu-size);
-  height: var(--menu-size);
-  opacity: 0.4;
-  transition: opacity 300ms ease;
-}
-#menu .summary:hover > .iconwrapper {
-  opacity: 1;
-}
-#menu .summary > .iconwrapper > img {
-  position: absolute;
-  left: calc((var(--menu-size) - var(--button-size)) / 2);
-  top: calc((var(--menu-size) - var(--button-size)) / 2);
-  width: var(--button-size);
-  height: var(--button-size);
-}
-#menu .summary > label {
-  position: absolute;
-  left: var(--menu-size);
-  bottom: calc((var(--menu-size) - var(--button-size)) / 2);
-}
-#menu .menuOptionContent {
-  background-color: #222;
-  padding: 0.5em;
-}
-#menu .menuOptionContent .row {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-#menu .menuOptionContent .button {
-  border-radius: 1em;
-  width: fit-content;
-  padding: 0.3em 0.4em 0.15em 0.35em;
-  cursor: pointer;
-  background-color: white;
-  color: black;
-  font-family: 'Josefin Sans', sans-serif;
-  opacity: 0.4;
-  transition: opacity 300ms ease;
-}
-#menu .menuOptionContent .button:hover {
-  opacity: 1;
+#menu {
+  .menuOption {
+    position: relative;
+    display: block;
+    left: 0px;
+    width: 100%;
+    summary {
+      outline: none;
+      &::-webkit-details-marker {
+        display: none;
+      }
+      &::-moz-list-bullet {
+        list-style-type: none;
+      }
+    }
+  }
+  .menuSummary {
+    display: flex;
+    align-items: center;
+    margin-top: @buttonPadding;
+    margin-left: @buttonPadding;
+    .menuLabel {
+      padding-left: 1em;
+    }
+  }
 }

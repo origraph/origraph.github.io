@@ -1,8 +1,5 @@
 @borderRadius: 0.5em;
 
-@menuSize: 3em;
-@fullMenuSize: 30em;
-
 @titleBarSize: 19px;  /* Visual result of GoldenLayout hard-coding */
 @titleBarFontSize: 12px;
 @titleBarFontPadding: (@titleBarSize - @titleBarFontSize) / 2 + 1px;
@@ -13,6 +10,6 @@
 @buttonImageSize: 1.5em;
 @buttonPadding: 0.25em;
 
-@smallButtonSize: 3 * @buttonSize / 4;
-@smallButtonImageSize: 3 * @buttonImageSize / 4;
-@smallBorderRadius: 3 * @borderRadius / 4;
+@menuSize: @buttonSize + 2 * @buttonPadding;
+@fullMenuSize: 30em;
+@menuPadding: 0.25em;

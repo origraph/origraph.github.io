@@ -25,7 +25,7 @@
     height: 100%;
     left: -1px;
     top: -1px;
-    border: 1px solid @Black;
+    border: 1px solid black;
     border-radius: @borderRadius;
     // overflow: hidden;
 
@@ -33,57 +33,17 @@
 
     img {
       position: absolute;
-      left: calc(@buttonSize / 2 - @buttonImageSize / 2);
-      top: calc(@buttonSize / 2 - @buttonImageSize / 2);
+      left: @buttonSize / 2 - @buttonImageSize / 2;
+      top: @buttonSize / 2 - @buttonImageSize / 2;
       width: @buttonImageSize;
       height: @buttonImageSize;
       filter: @accentImageFilter;
     }
   }
-  label {
-    display: none;
-  }
 
   &:hover {
     a {
       background: @buttonHoverGradient;
-    }
-    label {
-      display: block;
-      position: absolute;
-      padding: 0.25em 0.5em;
-      border-radius: @borderRadius;
-      z-index: 100;
-
-      background-color: @darkBackgroundColor;
-      color: @accentColor;
-      white-space: nowrap;
-      border: 1px solid @Black;
-      box-shadow: 0 0 0.25em @darkBackgroundColor;
-
-      /* default position for label is on the bottom */
-      top: calc(#{@buttonSize} + 0.5em);
-      left: calc(#{@buttonSize / 2});
-      transform: translate(-50%, 0);
-
-      /* label positioning can also be overridden when the button is in a toolbar */
-      &.top {
-        bottom: calc(#{@buttonSize} + 0.5em);
-        top: auto;
-        left: calc(#{@buttonSize / 2});
-        transform: translate(-50%, 0);
-      }
-      &.right {
-        top: calc(#{@buttonSize / 2} - 0.9em);
-        left: calc(#{@buttonSize} + 1em);
-        transform: none;
-      }
-      &.left {
-        top: calc(#{@buttonSize / 2} - 0.9em);
-        right: calc(#{@buttonSize} + 1em);
-        left: auto;
-        transform: none;
-      }
     }
   }
   &:active {
@@ -104,42 +64,6 @@
     }
     &:active a {
       background: @selectedButtonActiveGradient;
-    }
-  }
-
-  &.small {
-    width: @smallButtonSize;
-    height: @smallButtonSize;
-    a img {
-      left: calc(@smallButtonSize / 2 - @smallButtonImageSize / 2);
-      top: calc(@smallButtonSize / 2 - @smallButtonImageSize / 2);
-      width: @smallButtonImageSize;
-      height: @smallButtonImageSize
-    }
-    &:hover label {
-      /* default position for label is on the bottom */
-      top: calc(#{@smallButtonSize} + 0.5em);
-      left: calc(#{@smallButtonSize / 2});
-      transform: translate(-50%, 0);
-
-      /* label positioning can also be overridden when the button is in a toolbar */
-      &.top {
-        bottom: calc(#{@smallButtonSize} + 0.5em);
-        top: auto;
-        left: calc(#{@smallButtonSize / 2});
-        transform: translate(-50%, 0);
-      }
-      &.right {
-        top: calc(#{@smallButtonSize / 2} - 0.9em);
-        left: calc(#{@smallButtonSize} + 0.5em);
-        transform: none;
-      }
-      &.left {
-        top: calc(#{@smallButtonSize / 2} - 0.9em);
-        right: calc(#{@smallButtonSize} + 0.5em);
-        left: auto;
-        transform: none;
-      }
     }
   }
 }

@@ -27,6 +27,7 @@ class MainMenu extends BaseMenu {
     super.draw();
     const wasSquished = d3.select('#contents').classed('squished');
     d3.select('#contents').classed('squished', this.expanded);
+    d3.select('#menu').classed('expanded', this.expanded);
     if (wasSquished !== this.expanded) {
       window.mainView.resize();
     }
