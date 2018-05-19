@@ -1,9 +1,9 @@
-import { DetailsMenu } from '../Menu.js';
+import { SubMenu } from '../Menu.js';
 import UploadOption from './UploadOption.js';
 import DownloadOption from './DownloadOption.js';
 import SyncOption from './SyncOption.js';
 
-class FileMenu extends DetailsMenu {
+class FileMenu extends SubMenu {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/disk.svg';

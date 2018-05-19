@@ -1,8 +1,8 @@
 /* globals d3 */
-import { BaseMenu } from './Menu.js';
+import { SubMenu } from './Menu.js';
 import FileMenu from './File/FileMenu.js';
 
-class MainMenu extends BaseMenu {
+class MainMenu extends SubMenu {
   constructor (d3el) {
     super(null, d3el);
     this.icon = 'img/hamburger.svg';
@@ -10,18 +10,7 @@ class MainMenu extends BaseMenu {
     this.items = [
       new FileMenu(this)
     ];
-    this.expanded = false;
-  }
-  toggle () {
-    this.expanded = !this.expanded;
-    this.render();
-  }
-  setup () {
-    this.summary = this.d3el.append('div');
-    super.setup();
-    this.summary.on('click', () => {
-      this.toggle();
-    });
+    this.hideContents = false;
   }
   draw () {
     super.draw();

@@ -10,8 +10,12 @@
 
 .button {
   position: relative;
-  width: @buttonSize;
-  height: @buttonSize;
+  min-width: @buttonSize;
+  min-height: @buttonSize;
+  width: -webkit-fit-content;
+  height: -webkit-fit-content;
+  width: fit-content;
+  height: fit-content;
 
   background: @darkBackgroundColor;
   border-radius: @borderRadius;
@@ -39,6 +43,13 @@
       height: @buttonImageSize;
       filter: @accentImageFilter;
     }
+  }
+
+  span {
+    white-space: nowrap;
+    position: relative;
+    top: (@buttonSize - 1em) / 2 + 0.1em;
+    margin: 0px @buttonTextPadding;
   }
 
   &:hover {

@@ -4,15 +4,6 @@
     display: block;
     left: 0px;
     width: 100%;
-    summary {
-      outline: none;
-      &::-webkit-details-marker {
-        display: none;
-      }
-      &::-moz-list-bullet {
-        list-style-type: none;
-      }
-    }
   }
   .menuSummary {
     display: flex;
@@ -22,5 +13,8 @@
     .menuLabel {
       padding-left: 1em;
     }
+  }
+  .menuOptionContent {
+    padding: @menuPadding @menuPadding 0em @menuPadding;
   }
 }

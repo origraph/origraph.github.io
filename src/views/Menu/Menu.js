@@ -15,7 +15,8 @@ class BaseMenu extends View {
     return temp;
   }
   setup () {
-    this.summary.classed('menuSummary', true);
+    this.summary = this.d3el.append('div')
+      .classed('menuSummary', true);
     const button = this.summary.append('div')
       .classed('button', true);
     button.append('a')
@@ -40,25 +41,91 @@ class BaseMenu extends View {
     this.summary.on('mouseout', () => {
       window.mainView.hideTooltip();
     });
-    if (this.items) {
-      let menuOptions = this.d3el.selectAll('.menuOption')
-        .data(this.items, d => d);
-      menuOptions = menuOptions.enter()
-        .append('div')
-        .classed('menuOption', true)
-        .merge(menuOptions);
-
-      menuOptions.each(function (d) {
-        d.render(d3.select(this));
-      });
-    }
   }
   draw () {
     this.summary.select('.menuLabel')
       .style('display', this.getRootMenu().expanded ? null : 'none');
-    if (this.items) {
+  }
+}
+
+class CollapsibleMenu extends BaseMenu {
+  constructor (parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.expanded = false;
+  }
+  toggle (state = !this.expanded) {
+    this.expanded = state;
+    this.render();
+  }
+  setup () {
+    super.setup();
+    this.summary.on('click', () => {
+      this.toggle();
+    });
+  }
+  draw () {
+    super.draw();
+    this.summary.select('.button')
+      .classed('selected', this.expanded);
+  }
+}
+
+class SubMenu extends CollapsibleMenu {
+  constructor (parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.requireProperties(['items']);
+    this.hideContents = true;
+  }
+  toggle (state) {
+    super.toggle(state);
+    if (!this.expanded) {
+      this.items.forEach(item => {
+        item.toggle(false);
+      });
+    }
+  }
+  setup () {
+    super.setup();
+    let menuOptions = this.d3el.selectAll('.menuOption')
+      .data(this.items, d => d);
+    menuOptions = menuOptions.enter()
+      .append('div')
+      .classed('menuOption', true)
+      .merge(menuOptions);
+
+    menuOptions.each(function (d) {
+      d.render(d3.select(this));
+    });
+  }
+  draw () {
+    super.draw();
+    if (this.hideContents) {
+      this.d3el.selectAll('.menuOption')
+        .style('display', this.expanded ? null : 'none');
+      if (this.expanded) {
+        this.items.forEach(d => d.render());
+      }
+    } else {
       this.items.forEach(d => d.render());
     }
+  }
+}
+
+class ModalMenuOption extends CollapsibleMenu {
+  setup () {
+    super.setup();
+    this.contentDiv = this.d3el.append('div')
+      .classed('menuOptionContent', true);
+  }
+  toggle (state) {
+    super.toggle(state);
+    if (this.expanded && !this.getRootMenu().expanded) {
+      this.getRootMenu().toggle(true);
+    }
+  }
+  draw () {
+    super.draw();
+    this.contentDiv.style('display', this.expanded ? null : 'none');
   }
 }
 
@@ -66,45 +133,24 @@ class ActionMenuOption extends BaseMenu {
   constructor (parentMenu, d3el) {
     super(d3el);
     this.parentMenu = parentMenu;
-    this.requireProperties(['executeAction']);
+    this.requireProperties(['executeAction', 'enabled']);
   }
   setup () {
-    this.summary = this.d3el;
     super.setup();
     this.summary.on('click', () => {
       this.executeAction();
     });
   }
-}
-
-class DetailsMenu extends BaseMenu {
-  get expanded () {
-    return this.details && this.details.node().open;
-  }
-  toggle () {
-    if (this.details) {
-      this.details.node().open = !this.details.node().open;
-    }
-  }
-  setup () {
-    this.details = this.d3el.append('details');
-    this.summary = this.details.append('summary');
-    super.setup();
-    this.details.on('toggle', () => {
-      const root = this.getRootMenu();
-      if (!root.expanded) {
-        root.toggle();
-      }
-    });
+  draw () {
+    this.summary.select('.button')
+      .classed('disabled', !this.enabled);
   }
 }
 
-class ModalMenuOption extends DetailsMenu {
-  setup () {
-    super.setup();
-    this.contentDiv = this.d3el.append('div')
-      .classed('menuOptionContent', true);
-  }
-}
-
-export { BaseMenu, DetailsMenu, ActionMenuOption, ModalMenuOption };
+export {
+  BaseMenu,
+  CollapsibleMenu,
+  SubMenu,
+  ModalMenuOption,
+  ActionMenuOption
+};

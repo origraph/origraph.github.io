@@ -8,8 +8,7 @@ class SyncOption extends ModalMenuOption {
   }
   setup () {
     super.setup();
-    const row = this.contentDiv.append('div').classed('row', true);
-    row.text('todo');
+    this.contentDiv.text('todo');
   }
 }
 export default SyncOption;

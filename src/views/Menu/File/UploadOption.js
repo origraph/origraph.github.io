@@ -9,17 +9,18 @@ class UploadOption extends ModalMenuOption {
   }
   setup () {
     super.setup();
-    const row = this.contentDiv.append('div').classed('row', true);
-    this.uploadInput = row.append('input')
+    this.uploadInput = this.contentDiv.append('input')
       .attr('type', 'file')
       .property('multiple', true)
       .style('display', 'none')
       .on('change', () => { this.uploadFiles(); });
-    this.uploadButton = row.append('div')
+    this.uploadButton = this.contentDiv.append('div')
       .classed('button', true)
-      .text('Choose files')
       .on('click', () => this.uploadInput.node().click());
-    this.spinner = row.append('img')
+    this.uploadButton.append('a');
+    this.uploadButton.append('span')
+      .text('Choose Files');
+    this.spinner = this.contentDiv.append('img')
       .style('display', 'none')
       .attr('width', '18px')
       .attr('height', '18px')
