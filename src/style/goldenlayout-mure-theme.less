@@ -1,20 +1,6 @@
 @import './colors.less';
 @import './measurements.less';
 
-// Color variables (appears count calculates by raw css)
-@color0: #000000; // Appears 7 times
-@color1: @darkestBackgroundColor; // #222222; // Appears 3 times
-@color2: #eeeeee; // Appears 2 times
-@color3: #dddddd; // Appears 2 times
-
-@color4: #cccccc; // Appears 1 time
-@color5: #444444; // Appears 1 time
-@color6: #999999; // Appears 1 time
-@color7: #111111; // Appears 1 time
-@color8: #452500; // Appears 1 time
-@color9: #555555; // Appears 1 time
-@color10: #ffffff; // Appears 2 time
-
 // ".lm_dragging" is applied to BODY tag during Drag and is also directly applied to the root of the object being dragged
 
 // Entire GoldenLayout Container, if a background is set, it is visible as color of "pane header" and "splitters" (if these latest has opacity very low)
@@ -138,10 +124,10 @@
     background-position: center center;
     background-repeat: no-repeat;
     opacity: 0.4;
-    transition: opacity 300ms ease;
 
     &:hover {
       opacity: 1;
+      filter: @accentImageFilter;
     }
   }
 
