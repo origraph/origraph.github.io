@@ -3,6 +3,7 @@
 @import './measurements.less';
 @import './buttons.less';
 @import './menu.less';
+@import './scrollbars.less';
 
 html, body {
   padding: 0;
@@ -60,6 +61,10 @@ h1, h2, h3, h4, h5, h6 {
   bottom: 0px;
   width: @menuSize;
   max-width: @fullMenuSize;
+  overflow: hidden;
+  &.expanded {
+    overflow-y: auto;
+  }
 }
 #contents {
   position: absolute;

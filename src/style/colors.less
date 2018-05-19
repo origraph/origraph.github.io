@@ -45,6 +45,8 @@ Color meanings:
 @backgroundColor: @DarkPurple;
 @lightBackgroundColor: @LightPurple;
 @darkBackgroundColor: darken(@backgroundColor, 30%);
+// replace(darken(...)) hack doesn't work, so hard-coding the result:
+@darkBackgroundImageFilter: url(#recolorImageTo33305a);
 @darkestBackgroundColor: darken(@backgroundColor, 45%);
 
 @accentColor: @DarkYellow;
