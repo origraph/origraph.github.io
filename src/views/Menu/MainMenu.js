@@ -1,6 +1,7 @@
 /* globals d3 */
 import { SubMenu } from './Menu.js';
 import FileMenu from './File/FileMenu.js';
+import EditMenu from './Edit/EditMenu.js';
 
 class MainMenu extends SubMenu {
   constructor (d3el) {
@@ -8,7 +9,8 @@ class MainMenu extends SubMenu {
     this.icon = 'img/hamburger.svg';
     this.label = 'Menu';
     this.items = [
-      new FileMenu(this)
+      new FileMenu(this),
+      new EditMenu(this)
     ];
     this.hideContents = false;
   }

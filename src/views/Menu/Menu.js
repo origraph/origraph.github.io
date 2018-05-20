@@ -80,7 +80,7 @@ class SubMenu extends CollapsibleMenu {
     super.toggle(state);
     if (!this.expanded) {
       this.items.forEach(item => {
-        item.toggle(false);
+        if (item.toggle) { item.toggle(false); }
       });
     }
   }
