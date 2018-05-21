@@ -60,8 +60,22 @@
     text-transform: uppercase;
     background: @darkBackgroundColor;
 
+    // Icon before the title
+    .lm_tab_icon {
+      position: absolute;
+      left: 0px;
+      top: 0px;
+      width: @titleBarSize;
+      height: @titleBarSize;
+      background-size: @titleBarButtonSize;
+      background-position: right center;
+      background-repeat: no-repeat;
+      opacity: 0.25;
+    }
+
     .lm_title {
-      padding-top: @titleBarFontPadding;
+      vertical-align: top;
+      padding: @titleBarFontPadding;
     }
 
     // Close Tab Icon

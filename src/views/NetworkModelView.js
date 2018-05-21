@@ -2,9 +2,10 @@ import GoldenLayoutView from './GoldenLayoutView.js';
 
 class NetworkModelView extends GoldenLayoutView {
   constructor (container) {
-    super(container, 'Network Model');
+    super(container, NetworkModelView.icon, NetworkModelView.label);
     // TODO
-    console.log('created NetworkModelView');
   }
 }
+NetworkModelView.icon = 'img/networkModel.svg';
+NetworkModelView.label = 'Network Model';
 export default NetworkModelView;

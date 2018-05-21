@@ -80,7 +80,9 @@ class SubMenu extends CollapsibleMenu {
     super.toggle(state);
     if (!this.expanded) {
       this.items.forEach(item => {
-        if (item.toggle) { item.toggle(false); }
+        if (item instanceof CollapsibleMenu) {
+          item.toggle(false);
+        }
       });
     }
   }
@@ -131,8 +133,7 @@ class ModalMenuOption extends CollapsibleMenu {
 
 class ActionMenuOption extends BaseMenu {
   constructor (parentMenu, d3el) {
-    super(d3el);
-    this.parentMenu = parentMenu;
+    super(parentMenu, d3el);
     this.requireProperties(['executeAction', 'enabled']);
   }
   setup () {
@@ -147,10 +148,34 @@ class ActionMenuOption extends BaseMenu {
   }
 }
 
+class CheckableMenuOption extends BaseMenu {
+  constructor (parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.requireProperties(['checked', 'toggle']);
+  }
+  setup () {
+    super.setup();
+    this.summary.append('img')
+      .classed('checkmark', true)
+      .attr('src', 'img/check.svg');
+    this.summary.on('click', () => {
+      this.toggle();
+    });
+  }
+  draw () {
+    super.draw();
+    this.summary.select('.button')
+      .classed('selected', this.checked);
+    this.summary.select('.checkmark')
+      .style('display', this.checked && this.getRootMenu().expanded ? null : 'none');
+  }
+}
+
 export {
   BaseMenu,
   CollapsibleMenu,
   SubMenu,
   ModalMenuOption,
-  ActionMenuOption
+  ActionMenuOption,
+  CheckableMenuOption
 };

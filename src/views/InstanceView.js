@@ -2,9 +2,10 @@ import GoldenLayoutView from './GoldenLayoutView.js';
 
 class InstanceView extends GoldenLayoutView {
   constructor (container) {
-    super(container, 'Instance Topology');
+    super(container, InstanceView.icon, InstanceView.label);
     // TODO
-    console.log('created InstanceView');
   }
 }
+InstanceView.icon = 'img/instanceView.svg';
+InstanceView.label = 'Instance Topology';
 export default InstanceView;

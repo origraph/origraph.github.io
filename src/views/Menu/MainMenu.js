@@ -2,6 +2,7 @@
 import { SubMenu } from './Menu.js';
 import FileMenu from './File/FileMenu.js';
 import EditMenu from './Edit/EditMenu.js';
+import ViewMenu from './View/ViewMenu.js';
 
 class MainMenu extends SubMenu {
   constructor (d3el) {
@@ -10,7 +11,8 @@ class MainMenu extends SubMenu {
     this.label = 'Menu';
     this.items = [
       new FileMenu(this),
-      new EditMenu(this)
+      new EditMenu(this),
+      new ViewMenu(this)
     ];
     this.hideContents = false;
   }

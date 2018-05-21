@@ -2,10 +2,13 @@
 import { View } from '../lib/uki.esm.js';
 
 class GoldenLayoutView extends View {
-  constructor (container, title) {
+  constructor (container, icon, label) {
     super(null);
     this.container = container;
-    this.container.setTitle(title);
+    this.container.setTitle(label);
+    this.container.on('tab', tab => {
+      tab.element.prepend(`<div class="lm_tab_icon" style="background-image:url('${icon}')"></div>`);
+    });
     this.container.on('open', () => {
       this.render(d3.select(this.container.getElement()[0]));
     });

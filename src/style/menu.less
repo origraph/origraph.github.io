@@ -1,3 +1,6 @@
+@import './colors.less';
+@import './measurements.less';
+
 #menu {
   .menuOption {
     position: relative;
@@ -6,12 +9,21 @@
     width: 100%;
   }
   .menuSummary {
+    cursor: pointer;
     display: flex;
     align-items: center;
     margin-top: @buttonPadding;
     margin-left: @buttonPadding;
     .menuLabel {
+      user-select: none;
+      cursor: pointer;
       padding-left: 1em;
+    }
+    .checkmark {
+      width: @buttonImageSize;
+      height: @buttonImageSize;
+      padding-left: 1em;
+      filter: @accentImageFilter;
     }
   }
   .menuOptionContent {

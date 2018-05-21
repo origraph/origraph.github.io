@@ -4,12 +4,14 @@ import MainMenu from './Menu/MainMenu.js';
 import NetworkModelView from './NetworkModelView.js';
 import InstanceView from './InstanceView.js';
 import SetView from './SetView.js';
+import NavigationView from './NavigationView.js';
 import TableView from './TableView.js';
 
-const viewClasses = {
+const VIEW_CLASSES = {
+  NavigationView,
+  SetView,
   NetworkModelView,
   InstanceView,
-  SetView,
   TableView
 };
 
@@ -37,18 +39,22 @@ const defaultSettings = {
             type: 'row',
             content: [{
               type: 'component',
-              componentName: 'NetworkModelView',
+              componentName: 'NavigationView',
               componentState: {}
             }, {
               type: 'component',
-              componentName: 'InstanceView',
+              componentName: 'SetView',
+              componentState: {}
+            }, {
+              type: 'component',
+              componentName: 'NetworkModelView',
               componentState: {}
             }]
           }, {
             type: 'row',
             content: [{
               type: 'component',
-              componentName: 'SetView',
+              componentName: 'InstanceView',
               componentState: {}
             }, {
               type: 'component',
@@ -65,6 +71,10 @@ const defaultSettings = {
 class MainView extends View {
   constructor (d3el) {
     super(d3el);
+
+    // Expose global enums that other views need access to
+    this.SLICE_MODES = SLICE_MODES;
+    this.VIEW_CLASSES = VIEW_CLASSES;
 
     this.context = this.initContext();
 
@@ -185,7 +195,7 @@ class MainView extends View {
 
     let layout = new GoldenLayout(this.settings.goldenLayoutConfig, contentsElement.node());
 
-    Object.entries(viewClasses).forEach(([className, ViewClass]) => {
+    Object.entries(VIEW_CLASSES).forEach(([className, ViewClass]) => {
       layout.registerComponent(className, ViewClass);
     });
 
@@ -199,6 +209,12 @@ class MainView extends View {
         }, 200);
       } else {
         this.settings.goldenLayoutConfig = layout.toConfig();
+        // Save the settings (auto-triggers a render once they're saved, but for
+        // snappier menu feedback, we manually trigger its render function right
+        // away)
+        if (this.menuView) {
+          this.menuView.render();
+        }
         let temp = { settings: {} };
         temp.settings[this.context.hash] = { origraph: this.settings };
         mure.setLinkedViews(temp);
@@ -227,6 +243,35 @@ sites in your browser settings.`);
       }
     }
     return [layout, subViews];
+  }
+  isShowingSubView (className) {
+    if (!this.goldenLayout) {
+      return false;
+    } else {
+      return this.goldenLayout.root.getComponentsByName(className).length > 0;
+    }
+  }
+  toggleSubView (className, state) {
+    const viewIsShowing = this.isShowingSubView(className);
+    state = state === undefined ? !viewIsShowing : state;
+    if (state) {
+      // Show the subview
+      let targetIndex = this.goldenLayout.root.contentItems.length - 1;
+      let target = targetIndex === -1 ? this.goldenLayout.root
+        : this.goldenLayout.root.contentItems[targetIndex];
+      target.addChild({
+        type: 'component',
+        componentName: className,
+        componentState: {}
+      });
+    } else {
+      // Close the subview
+      const componentList = this.goldenLayout.root.getComponentsByName(className);
+      // Should be exactly length 1, but just in case...
+      componentList.forEach(component => {
+        component.container.close();
+      });
+    }
   }
   resize () {
     if (this.menuView) {
@@ -361,6 +406,5 @@ sites in your browser settings.`);
     this.showTooltip();
   }
 }
-MainView.SLICE_MODES = SLICE_MODES;
 
 export default MainView;
