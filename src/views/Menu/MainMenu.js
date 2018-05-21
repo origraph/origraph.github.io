@@ -1,5 +1,5 @@
 /* globals d3 */
-import { SubMenu } from './Menu.js';
+import { SubMenu, ViewMenuOption } from './Menu.js';
 import FileMenu from './File/FileMenu.js';
 import EditMenu from './Edit/EditMenu.js';
 import ViewMenu from './View/ViewMenu.js';
@@ -12,7 +12,9 @@ class MainMenu extends SubMenu {
     this.items = [
       new FileMenu(this),
       new EditMenu(this),
-      new ViewMenu(this)
+      new ViewMenu(this),
+      // Show the help menu item at the root level:
+      new ViewMenuOption('HelpView', this)
     ];
     this.hideContents = false;
   }

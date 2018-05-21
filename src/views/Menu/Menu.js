@@ -171,11 +171,27 @@ class CheckableMenuOption extends BaseMenu {
   }
 }
 
+class ViewMenuOption extends CheckableMenuOption {
+  constructor (className, parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.className = className;
+    this.icon = window.mainView.VIEW_CLASSES[className].icon;
+    this.label = window.mainView.VIEW_CLASSES[className].label;
+  }
+  get checked () {
+    return window.mainView.isShowingSubView(this.className);
+  }
+  toggle (state) {
+    window.mainView.toggleSubView(this.className);
+  }
+}
+
 export {
   BaseMenu,
   CollapsibleMenu,
   SubMenu,
   ModalMenuOption,
   ActionMenuOption,
-  CheckableMenuOption
+  CheckableMenuOption,
+  ViewMenuOption
 };

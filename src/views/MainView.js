@@ -6,13 +6,15 @@ import InstanceView from './InstanceView.js';
 import SetView from './SetView.js';
 import NavigationView from './NavigationView.js';
 import TableView from './TableView.js';
+import HelpView from './HelpView.js';
 
 const VIEW_CLASSES = {
   NavigationView,
   SetView,
   NetworkModelView,
   InstanceView,
-  TableView
+  TableView,
+  HelpView
 };
 
 const SLICE_MODES = {
