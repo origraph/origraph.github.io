@@ -168,7 +168,7 @@ class MainView extends View {
         // Initialize the settings and layout
         this.settings = linkedViewSpec.settings[this.context.hash].origraph;
         changedSettings = true;
-        [this.goldenLayout, this.subViews] = this.initSubViews(this.d3el.select('#contents'));
+        this.goldenLayout = this.initSubViews(this.d3el.select('#contents'));
       }
     } else if (linkedViewSpec.settings) {
       // We got a simple update for the settings
@@ -191,8 +191,6 @@ class MainView extends View {
     this.menuView = new MainMenu(this.d3el.select('#menu'));
   }
   initSubViews (contentsElement) {
-    let subViews = [];
-
     let layout = new GoldenLayout(this.settings.goldenLayoutConfig, contentsElement.node());
 
     Object.entries(VIEW_CLASSES).forEach(([className, ViewClass]) => {
@@ -242,7 +240,7 @@ sites in your browser settings.`);
         throw error;
       }
     }
-    return [layout, subViews];
+    return layout;
   }
   isShowingSubView (className) {
     if (!this.goldenLayout) {
@@ -273,6 +271,11 @@ sites in your browser settings.`);
       });
     }
   }
+  getAllSubViews () {
+    return Object.keys(VIEW_CLASSES).reduce((agg, className) => {
+      return agg.concat(this.goldenLayout.root.getComponentsByName(className));
+    }, []);
+  }
   resize () {
     if (this.menuView) {
       this.menuView.render();
@@ -294,7 +297,9 @@ sites in your browser settings.`);
       });
     } else {
       this.menuView.render();
-      this.subViews.forEach(subView => { subView.render(); });
+      this.getAllSubViews().forEach(subView => {
+        subView.render();
+      });
       this.hideOverlay();
     }
   }
