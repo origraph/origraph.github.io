@@ -285,6 +285,8 @@ sites in your browser settings.`);
     }
   }
   draw () {
+    this.d3el.select('#emptyState')
+      .style('display', 'none');
     if (!this.userSelection) {
       this.showOverlay({
         message: 'Syncing user selection...',
@@ -297,7 +299,10 @@ sites in your browser settings.`);
       });
     } else {
       this.menuView.render();
-      this.getAllSubViews().forEach(subView => {
+      const subViewList = this.getAllSubViews();
+      this.d3el.select('#emptyState')
+        .style('display', subViewList.length === 0 ? null : 'none');
+      subViewList.forEach(subView => {
         subView.render();
       });
       this.hideOverlay();
