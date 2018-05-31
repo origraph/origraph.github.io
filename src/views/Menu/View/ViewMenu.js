@@ -6,6 +6,7 @@ class ViewMenu extends SubMenu {
     this.icon = 'img/view.svg';
     this.label = 'View';
     this.items = Object.keys(window.mainView.VIEW_CLASSES)
+      .filter(className => className !== 'HelpView')
       .map(className => {
         return new ViewMenuOption(className, this);
       });
