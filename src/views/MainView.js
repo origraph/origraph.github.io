@@ -179,11 +179,10 @@ class MainView extends View {
       changedSettings = true;
     }
 
-    if (contentUpdated || !this.rawHierarchy) {
-      delete this.rawHierarchy;
-      this.render(); // 'Getting raw data expansion...'
-      this.rawHierarchy = await mure
-        .getHierarchy(this.settings.hierarchyExpansion);
+    if (contentUpdated || !this.allDocItems) {
+      delete this.allDocItems;
+      this.render(); // 'Getting document list...'
+      this.allDocItems = await mure.allDocItems();
     }
 
     if (changedUserSelection || changedSettings) {
@@ -307,9 +306,9 @@ sites in your browser settings.`);
         message: 'Syncing view settings...',
         spinner: true
       });
-    } else if (!this.rawHierarchy) {
+    } else if (!this.allDocItems) {
       this.showOverlay({
-        message: 'Getting raw data expansion...',
+        message: 'Getting document list...',
         spinner: true
       });
     } else {

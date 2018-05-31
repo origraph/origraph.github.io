@@ -15,7 +15,10 @@ class GoldenLayoutView extends View {
     this.container.on('show', () => this.render());
     this.container.on('resize', () => this.render());
   }
-  setup () {}
+  setup () {
+    console.log(this.constructor.name);
+    this.d3el.classed(this.constructor.name, true);
+  }
   draw () {
     this.drawCount = this.drawCount || 0;
     this.drawCount++;
@@ -25,6 +28,7 @@ class GoldenLayoutView extends View {
 
 class ScrollableGoldenLayoutView extends GoldenLayoutView {
   setup () {
+    super.setup();
     this.contentDiv = this.d3el.append('div')
       .classed('scrollArea', true);
   }

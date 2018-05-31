@@ -22,7 +22,7 @@ input {
     font-size: 1em;
     background: @darkestBackgroundColor;
     color: @textColor;
-    border: 1px solid @Black;
+    border: 1px solid black;
     border-radius: @borderRadius / 2;
     height: @buttonSize / 2;
     -webkit-appearance: none;
@@ -60,7 +60,7 @@ input {
       font-weight: 900;
       color: @accentColor;
       background: @buttonGradient;
-      border: 1px solid @Black;
+      border: 1px solid black;
       border-radius: @borderRadius / 2;
     }
     &:hover:after {
@@ -75,6 +75,10 @@ input {
       background: @selectedButtonHoverGradient;
     }
   }
+}
+
+summary {
+  outline: none;
 }
 
 .panel {
