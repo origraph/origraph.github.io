@@ -74,7 +74,8 @@ class RawDataView extends ScrollableGoldenLayoutView {
       .text(badgeCount);
 
     rowsEnter.append('div')
-      .classed(className, true)
+      .classed(className, true);
+    rows.select(`:scope > .${className}`)
       .style('display', d => sectionIsExpanded(d) ? null : 'none');
     rows.each(function (d) {
       if (sectionIsExpanded(d)) {
@@ -92,16 +93,16 @@ class RawDataView extends ScrollableGoldenLayoutView {
     let summaryEnter = rowsEnter.append('div')
       .classed('summary', true);
 
+    // Item label
+    summaryEnter.append('div').classed('label', true);
+    rows.select(':scope > .summary > .label')
+      .text(d => d.label);
+
     // Item type icon
     summaryEnter.append('div').classed('type', true)
       .append('img');
     rows.select(':scope > .summary > .type > img')
       .attr('src', d => ICONS[d.constructor.name]);
-
-    // Item label
-    summaryEnter.append('div').classed('label', true);
-    rows.select(':scope > .summary > .label')
-      .text(d => d.label);
 
     // Item tags button and section
     this.drawCollapsibleSection({
@@ -139,7 +140,7 @@ class RawDataView extends ScrollableGoldenLayoutView {
 
     // Item contents button and section
     this.drawCollapsibleSection({
-      className: 'contents',
+      className: 'containerContents',
       closedIconPath: 'img/container.svg',
       openIconPath: 'img/openContainer.svg',
       rows,
@@ -148,7 +149,8 @@ class RawDataView extends ScrollableGoldenLayoutView {
       visibleWhen: d => !!d.contentItems,
       badgeCount: d => d.contentItems ? d.contentItemCount() : 0,
       drawContents: (d3el, d) => {
-        this.drawRows(d3el, d.contentItems());
+        let temp = d.contentItems();
+        this.drawRows(d3el, temp);
       }
     });
 
