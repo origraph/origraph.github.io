@@ -1,6 +1,6 @@
-import GoldenLayoutView from './GoldenLayoutView.js';
+import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
 
-class InstanceView extends GoldenLayoutView {
+class InstanceView extends ScrollableGoldenLayoutView {
   constructor (container) {
     super(container, InstanceView.icon, InstanceView.label);
     // TODO

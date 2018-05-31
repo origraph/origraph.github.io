@@ -4,12 +4,12 @@ import MainMenu from './Menu/MainMenu.js';
 import NetworkModelView from './NetworkModelView.js';
 import InstanceView from './InstanceView.js';
 import SetView from './SetView.js';
-import NavigationView from './NavigationView.js';
+import RawDataView from './RawDataView.js';
 import TableView from './TableView.js';
 import HelpView from './HelpView.js';
 
 const VIEW_CLASSES = {
-  NavigationView,
+  RawDataView,
   SetView,
   NetworkModelView,
   InstanceView,
@@ -31,6 +31,7 @@ const defaultSettings = {
       // no sortAttr means to sort on item labels
     }
   },
+  hierarchyExpansion: {},
   goldenLayoutConfig: {
     content: [
       {
@@ -41,7 +42,7 @@ const defaultSettings = {
             type: 'row',
             content: [{
               type: 'component',
-              componentName: 'NavigationView',
+              componentName: 'RawDataView',
               componentState: {}
             }, {
               type: 'component',
@@ -85,13 +86,13 @@ class MainView extends View {
          (linkedViewSpec.settings &&
           linkedViewSpec.settings[this.context.hash] &&
           linkedViewSpec.settings[this.context.hash].origraph)) {
-        this.refresh(linkedViewSpec);
+        this.refresh({ linkedViewSpec });
       }
     });
     mure.on('docChange', changedDoc => {
       // TODO: stupidly just always update everything; in the future we might be
       // able to ignore if our selection doesn't refer to the changed document
-      this.refresh();
+      this.refresh({ contentUpdated: true });
     });
 
     this.refresh();
@@ -124,7 +125,7 @@ class MainView extends View {
     delete this.settings;
     this.refresh();
   }
-  async refresh (linkedViewSpec) {
+  async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
 
     let changedUserSelection = false;
@@ -176,6 +177,13 @@ class MainView extends View {
       // We got a simple update for the settings
       this.settings = linkedViewSpec.settings[this.context.hash].origraph;
       changedSettings = true;
+    }
+
+    if (contentUpdated || !this.rawHierarchy) {
+      delete this.rawHierarchy;
+      this.render(); // 'Getting raw data expansion...'
+      this.rawHierarchy = await mure
+        .getHierarchy(this.settings.hierarchyExpansion);
     }
 
     if (changedUserSelection || changedSettings) {
@@ -297,6 +305,11 @@ sites in your browser settings.`);
     } else if (!this.settings) {
       this.showOverlay({
         message: 'Syncing view settings...',
+        spinner: true
+      });
+    } else if (!this.rawHierarchy) {
+      this.showOverlay({
+        message: 'Getting raw data expansion...',
         spinner: true
       });
     } else {

@@ -1,6 +1,6 @@
-import GoldenLayoutView from './GoldenLayoutView.js';
+import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
 
-class NetworkModelView extends GoldenLayoutView {
+class NetworkModelView extends ScrollableGoldenLayoutView {
   constructor (container) {
     super(container, NetworkModelView.icon, NetworkModelView.label);
     // TODO

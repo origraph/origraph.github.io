@@ -22,4 +22,11 @@ class GoldenLayoutView extends View {
     this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
   }
 }
-export default GoldenLayoutView;
+
+class ScrollableGoldenLayoutView extends GoldenLayoutView {
+  setup () {
+    this.contentDiv = this.d3el.append('div')
+      .classed('scrollArea', true);
+  }
+}
+export { GoldenLayoutView, ScrollableGoldenLayoutView };

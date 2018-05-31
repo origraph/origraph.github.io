@@ -1,6 +1,6 @@
-import GoldenLayoutView from './GoldenLayoutView.js';
+import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
 
-class SetView extends GoldenLayoutView {
+class SetView extends ScrollableGoldenLayoutView {
   constructor (container) {
     super(container, SetView.icon, SetView.label);
     // TODO
