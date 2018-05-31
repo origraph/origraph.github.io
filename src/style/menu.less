@@ -2,11 +2,21 @@
 @import './measurements.less';
 
 #menu {
+  hr {
+    margin: 0.25em;
+    background-color: @separatorColor;
+    height: 1px;
+    border: none;
+  }
   .menuOption {
     position: relative;
     display: block;
     left: 0px;
     width: 100%;
+  }
+  &.expanded .menuOption,
+  &.expanded .menuOptionContent {
+    margin-left: 0.5em;
   }
   .menuSummary {
     cursor: pointer;

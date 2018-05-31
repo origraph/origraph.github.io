@@ -18,6 +18,11 @@ class MainMenu extends SubMenu {
     ];
     this.hideContents = false;
   }
+  setup () {
+    super.setup();
+    // Don't show a separator for the root menu
+    this.d3el.select(':scope > hr').remove();
+  }
   draw () {
     super.draw();
     const wasSquished = d3.select('#contents').classed('squished');

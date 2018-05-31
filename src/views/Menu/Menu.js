@@ -98,11 +98,12 @@ class SubMenu extends CollapsibleMenu {
     menuOptions.each(function (d) {
       d.render(d3.select(this));
     });
+    this.d3el.append('hr');
   }
   draw () {
     super.draw();
     if (this.hideContents) {
-      this.d3el.selectAll('.menuOption')
+      this.d3el.selectAll(':scope > .menuOption, :scope > hr')
         .style('display', this.expanded ? null : 'none');
       if (this.expanded) {
         this.items.forEach(d => d.render());
@@ -118,6 +119,7 @@ class ModalMenuOption extends CollapsibleMenu {
     super.setup();
     this.contentDiv = this.d3el.append('div')
       .classed('menuOptionContent', true);
+    this.d3el.append('hr');
   }
   toggle (state) {
     super.toggle(state);
@@ -128,6 +130,8 @@ class ModalMenuOption extends CollapsibleMenu {
   draw () {
     super.draw();
     this.contentDiv.style('display', this.expanded ? null : 'none');
+    this.d3el.selectAll(':scope > hr')
+      .style('display', this.expanded ? null : 'none');
   }
 }
 
