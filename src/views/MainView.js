@@ -294,7 +294,7 @@ sites in your browser settings.`);
     }
   }
   draw () {
-    this.d3el.select('#emptyState')
+    this.d3el.select(':scope > .emptyState')
       .style('display', 'none');
     if (!this.userSelection) {
       this.showOverlay({
@@ -314,7 +314,7 @@ sites in your browser settings.`);
     } else {
       this.menuView.render();
       const subViewList = this.getAllSubViews();
-      this.d3el.select('#emptyState')
+      this.d3el.select(':scope > .emptyState')
         .style('display', subViewList.length === 0 ? null : 'none');
       subViewList.forEach(subView => {
         subView.render();

@@ -16,7 +16,6 @@ class GoldenLayoutView extends View {
     this.container.on('resize', () => this.render());
   }
   setup () {
-    console.log(this.constructor.name);
     this.d3el.classed(this.constructor.name, true);
   }
   draw () {
