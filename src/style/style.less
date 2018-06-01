@@ -1,4 +1,3 @@
-//@import url('https://fonts.googleapis.com/css?family=Josefin+Sans:700|Josefin+Slab:700');
 @import './colors.less';
 @import './measurements.less';
 @import './buttons.less';
@@ -14,14 +13,14 @@ html, body {
 }
 body {
   overflow: hidden;
-  font-family: 'Josefin Slab', serif;
-  font-weight: 700;
+  font-family: @bodyFontFamily;
+  font-weight: @bodyFontWeight;
   background: @backgroundGradient;
   color: @textColor;
 }
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Josefin Sans', sans-serif;
-  font-weight: 700;
+  font-family: @headerFontFamily;
+  font-weight: @headerFontWeight;
 }
 
 .scrollArea {
