@@ -125,6 +125,13 @@ class MainView extends View {
     delete this.settings;
     this.refresh();
   }
+  saveSettings () {
+    const temp = { settings: {} };
+    temp.settings[this.context.hash] = {
+      origraph: this.settings || this._lastSettings || defaultSettings
+    };
+    mure.setLinkedViews(temp);
+  }
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
 
@@ -154,18 +161,11 @@ class MainView extends View {
       }
       if (!linkedViewSpec.settings[this.context.hash] ||
           !linkedViewSpec.settings[this.context.hash].origraph) {
-        // Origraph hasn't seen this context before; apply default settings
-        // (this will trigger a linkedViewChange event and call render again)
-        let temp = { settings: {} };
-        if (this._lastSettings) {
-          // We changed contexts but already had view settings; save those
-          // settings for the new context
-          temp.settings[this.context.hash] = { origraph: this._lastSettings };
-        } else {
-          // Apply the default settings
-          temp.settings[this.context.hash] = { origraph: defaultSettings };
-        }
-        mure.setLinkedViews(temp);
+        // Origraph hasn't seen this context before; use this._lastSettings if
+        // we have them, or apply the default settings (this.settings will be
+        // undefined). This will trigger a linkedViewChange event and call
+        // render again.
+        this.saveSettings();
         return;
       } else {
         // Initialize the settings and layout

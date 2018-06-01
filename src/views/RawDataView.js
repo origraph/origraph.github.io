@@ -58,7 +58,7 @@ class RawDataView extends ScrollableGoldenLayoutView {
         window.mainView.settings.hierarchyExpansion[d.uniqueSelector] = className;
       }
       this.render();
-      console.log('todo: save the updated settings');
+      window.mainView.saveSettings();
     };
 
     const buttonEnter = summaryEnter.append('div')
