@@ -46,22 +46,16 @@ class RawDataView extends ScrollableGoldenLayoutView {
     drawContents
   }) {
     const sectionIsExpanded = d => {
-      const itemSettings = window.mainView.settings.hierarchyExpansion[d.uniqueSelector];
-      return itemSettings && itemSettings[className];
+      return window.mainView.settings.hierarchyExpansion[d.uniqueSelector] === className;
     };
     const toggleSection = d => {
-      let itemSettings = window.mainView.settings.hierarchyExpansion[d.uniqueSelector];
-      if (itemSettings && itemSettings[className]) {
+      let selectedSection = window.mainView.settings.hierarchyExpansion[d.uniqueSelector];
+      if (selectedSection === className) {
         // Close the section
-        delete itemSettings[className];
-        if (Object.keys(itemSettings).length === 0) {
-          delete window.mainView.settings.hierarchyExpansion[d.uniqueSelector];
-        }
+        delete window.mainView.settings.hierarchyExpansion[d.uniqueSelector];
       } else {
-        // Expand the section
-        itemSettings = itemSettings || {};
-        itemSettings[className] = true;
-        window.mainView.settings.hierarchyExpansion[d.uniqueSelector] = itemSettings;
+        // Expand / change the section
+        window.mainView.settings.hierarchyExpansion[d.uniqueSelector] = className;
       }
       this.render();
       console.log('todo: save the updated settings');
