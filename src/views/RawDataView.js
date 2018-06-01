@@ -69,10 +69,10 @@ class RawDataView extends ScrollableGoldenLayoutView {
     const button = rows.select(`:scope > .summary > .${className}`)
       .style('display', d => visibleWhen(d) ? null : 'none')
       .classed('selected', sectionIsExpanded);
-    buttonEnter.on('mouseover', () => {
+    buttonEnter.on('mouseover', function () {
       window.mainView.showTooltip({
         content: tooltip,
-        targetBounds: button.node().getBoundingClientRect(),
+        targetBounds: this.getBoundingClientRect(),
         anchor: { y: 1 }
       });
     }).on('mouseout', () => {
@@ -91,11 +91,13 @@ class RawDataView extends ScrollableGoldenLayoutView {
       .style('display', d => sectionIsExpanded(d) ? null : 'none');
     rows.each(function (d) {
       if (sectionIsExpanded(d)) {
-        drawContents(d3.select(this).select(`:scope > .${className}`), d);
+        const d3el = d3.select(this);
+        drawContents(d3el.select(`:scope > .${className}`), d,
+          d3el.select(`:scope > .summary > .${className}`).node().getBoundingClientRect());
       }
     });
   }
-  drawRows (contentEl, itemList) {
+  drawRows (contentEl, itemList, offset = null) {
     let rows = contentEl.selectAll(':scope > .row').data(itemList);
     rows.exit().remove();
     let rowsEnter = rows.enter().append('div')
@@ -108,7 +110,8 @@ class RawDataView extends ScrollableGoldenLayoutView {
     // Item label
     summaryEnter.append('div').classed('label', true);
     rows.select(':scope > .summary > .label')
-      .text(d => d.label);
+      .text(d => d.label)
+      .style('min-width', offset);
 
     // Item type icon
     summaryEnter.append('div').classed('type', true)
@@ -163,8 +166,8 @@ class RawDataView extends ScrollableGoldenLayoutView {
       summaryEnter,
       visibleWhen: d => !!d.contentItems,
       badgeCount: d => d.contentItems ? d.contentItemCount() : 0,
-      drawContents: (d3el, d) => {
-        this.drawRows(d3el, d.contentItems());
+      drawContents: (d3el, d, buttonBounds) => {
+        this.drawRows(d3el, d.contentItems(), buttonBounds.left + 'px');
       }
     });
 
@@ -179,8 +182,8 @@ class RawDataView extends ScrollableGoldenLayoutView {
       summaryEnter,
       visibleWhen: d => !!d.metaItems,
       badgeCount: d => d.metaItems ? d.metaItemCount() : 0,
-      drawContents: (d3el, d) => {
-        this.drawRows(d3el, d.metaItems());
+      drawContents: (d3el, d, buttonBounds) => {
+        this.drawRows(d3el, d.metaItems(), buttonBounds.left + 'px');
       }
     });
 
