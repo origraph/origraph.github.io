@@ -37,6 +37,7 @@ class RawDataView extends ScrollableGoldenLayoutView {
     className,
     closedIconPath,
     openIconPath,
+    tooltip,
     rows,
     rowsEnter,
     summaryEnter,
@@ -71,14 +72,23 @@ class RawDataView extends ScrollableGoldenLayoutView {
       .classed('small', true)
       .classed('button', true)
       .on('click', toggleSection);
-    buttonEnter.append('a').append('img');
-    rows.select(`:scope > .summary > .${className}`)
+    const button = rows.select(`:scope > .summary > .${className}`)
       .style('display', d => visibleWhen(d) ? null : 'none')
       .classed('selected', sectionIsExpanded);
-    rows.select(`:scope > .summary > .${className} img`)
+    buttonEnter.on('mouseover', () => {
+      window.mainView.showTooltip({
+        content: tooltip,
+        targetBounds: button.node().getBoundingClientRect(),
+        anchor: { y: 1 }
+      });
+    }).on('mouseout', () => {
+      window.mainView.hideTooltip();
+    });
+    buttonEnter.append('a').append('img');
+    button.select(`img`)
       .attr('src', d => sectionIsExpanded(d) ? openIconPath : closedIconPath);
     buttonEnter.append('div').classed('badge', true);
-    rows.select(`:scope > summary > .${className} .badge`)
+    button.select(`.badge`)
       .text(badgeCount);
 
     rowsEnter.append('div')
@@ -117,6 +127,7 @@ class RawDataView extends ScrollableGoldenLayoutView {
       className: 'tags',
       openIconPath: 'img/tag.svg',
       closedIconPath: 'img/tag.svg',
+      tooltip: 'Tags',
       rows,
       rowsEnter,
       summaryEnter,
@@ -132,6 +143,7 @@ class RawDataView extends ScrollableGoldenLayoutView {
       className: 'references',
       openIconPath: 'img/reference.svg',
       closedIconPath: 'img/reference.svg',
+      tooltip: 'References',
       rows,
       rowsEnter,
       summaryEnter,
@@ -151,14 +163,30 @@ class RawDataView extends ScrollableGoldenLayoutView {
       className: 'containerContents',
       closedIconPath: 'img/container.svg',
       openIconPath: 'img/openContainer.svg',
+      tooltip: 'Contents',
       rows,
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.contentItems,
       badgeCount: d => d.contentItems ? d.contentItemCount() : 0,
       drawContents: (d3el, d) => {
-        let temp = d.contentItems();
-        this.drawRows(d3el, temp);
+        this.drawRows(d3el, d.contentItems());
+      }
+    });
+
+    // Meta items button and section (for documents)
+    this.drawCollapsibleSection({
+      className: 'meta',
+      closedIconPath: 'img/meta.svg',
+      openIconPath: 'img/meta.svg',
+      tooltip: 'Metadata',
+      rows,
+      rowsEnter,
+      summaryEnter,
+      visibleWhen: d => !!d.metaItems,
+      badgeCount: d => d.metaItems ? d.metaItemCount() : 0,
+      drawContents: (d3el, d) => {
+        this.drawRows(d3el, d.metaItems());
       }
     });
 
