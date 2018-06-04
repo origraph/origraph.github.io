@@ -4,7 +4,7 @@
   "description": "Graph folding",
   "scripts": {
     "serve": "serve src",
-    "ghpages": "git add src/* && git commit -m \"ghpages autocommit\" && git subtree push --prefix src origin gh-pages"
+    "ghpages": "git subtree push --prefix src origin gh-pages"
   },
   "repository": {
     "type": "git",
