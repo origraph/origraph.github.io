@@ -29,9 +29,11 @@ class RawDataView extends ScrollableGoldenLayoutView {
       .attr('src', 'img/noDataEmptyState.svg');
   }
   draw () {
-    this.d3el.select('.emptyState')
-      .style('display', window.mainView.allDocItems.length > 0 ? 'none' : null);
-    this.drawRows(this.contentDiv, window.mainView.allDocItems);
+    if (window.mainView.allDocItems && window.mainView.settings) {
+      this.d3el.select('.emptyState')
+        .style('display', window.mainView.allDocItems.length > 0 ? 'none' : null);
+      this.drawRows(this.contentDiv, window.mainView.allDocItems);
+    }
   }
   drawCollapsibleSection ({
     className,
