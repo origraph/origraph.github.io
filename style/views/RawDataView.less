@@ -1,0 +1,57 @@
+@import '../measurements.less';
+
+.RawDataView {
+  .summary {
+    padding: 0.25em 0;
+    margin: 0.25em 0;
+    display: flex;
+    align-items: center;
+
+    /* .label gets its min-width set in javascript, controlling the entire layout */
+    .label {
+      position: relative;
+      text-align: right;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      padding-right: @smallButtonSize / 2;
+      &::after {
+        content: '\2022';
+        color: @accentColor;
+        position: absolute;
+        right: -2px;
+      }
+    }
+    .type {
+      padding: 0 0.5em;
+      img {
+        width: @smallButtonImageSize;
+        height: @smallButtonImageSize;
+      }
+    }
+    .button {
+      margin: 0 0.5em 0 0;
+    }
+    .value {
+      white-space: nowrap;
+      max-width: 30em;
+      min-width: 10em;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    &:hover {
+      cursor: pointer;
+      background-color: @accentColor;
+      color: @darkBackgroundColor;
+
+      .label::after {
+        color: @darkBackgroundColor;
+      }
+
+      .type img {
+        filter: @darkBackgroundImageFilter;
+      }
+    }
+  }
+}

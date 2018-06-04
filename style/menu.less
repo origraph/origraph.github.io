@@ -1,0 +1,42 @@
+@import './colors.less';
+@import './measurements.less';
+
+#menu {
+  hr {
+    margin: 0.25em;
+    background-color: @separatorColor;
+    height: 1px;
+    border: none;
+  }
+  .menuOption {
+    position: relative;
+    display: block;
+    left: 0px;
+    width: 100%;
+  }
+  &.expanded .menuOption,
+  &.expanded .menuOptionContent {
+    margin-left: @buttonSize;
+  }
+  .menuSummary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    margin-top: @buttonPadding;
+    margin-left: @buttonPadding;
+    .menuLabel {
+      user-select: none;
+      cursor: pointer;
+      padding-left: 1em;
+    }
+    .checkmark {
+      width: @buttonImageSize;
+      height: @buttonImageSize;
+      padding-left: 1em;
+      filter: @accentImageFilter;
+    }
+  }
+  .menuOptionContent {
+    padding: @menuPadding @menuPadding 0em @menuPadding;
+  }
+}
