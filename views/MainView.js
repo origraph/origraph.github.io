@@ -1,5 +1,5 @@
 /* globals d3, mure, GoldenLayout */
-import { View } from '../lib/uki.esm.js';
+import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './Menu/MainMenu.js';
 import NetworkModelView from './NetworkModelView.js';
 import InstanceView from './InstanceView.js';

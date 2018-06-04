@@ -1,0 +1,1 @@
+This directory is for files not installable through npm; to add an NPM library, add it to package.json in the usual way, and follow the pattern in `.gitignore` to make sure its compiled version gets committed.

@@ -1,5 +1,5 @@
 /* globals d3 */
-import { View } from '../../lib/uki.esm.js';
+import { View } from '../../node_modules/uki/dist/uki.esm.js';
 
 class BaseMenu extends View {
   constructor (parentMenu, d3el) {

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Graph folding",
   "scripts": {
-    "serve": "serve src",
+    "serve": "serve .",
     "ghpages": "git subtree push --prefix src origin gh-pages"
   },
   "repository": {
