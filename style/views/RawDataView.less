@@ -1,56 +1,72 @@
 @import '../measurements.less';
 
 .RawDataView {
-  .summary {
-    padding: 0.25em 0;
-    margin: 0.25em 0;
-    display: flex;
-    align-items: center;
+  .row {
+    position: relative;
+    .selectionTarget {
+      position: absolute;
+      left: 0px;
+      top: 0px;
+      right: 0px;
+      height: 2em;
 
-    /* .label gets its min-width set in javascript, controlling the entire layout */
-    .label {
-      position: relative;
-      text-align: right;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-      padding-right: @smallButtonSize / 2;
-      &::after {
-        content: '\2022';
-        color: @accentColor;
-        position: absolute;
-        right: -2px;
+      &:hover {
+        cursor: pointer;
+        background: @buttonHoverGradient;
+      }
+      &:active {
+        background: @buttonActiveGradient;
+      }
+      &.selected {
+        background: @selectedButtonGradient;
+        color: @darkBackgroundColor;
+
+        .label::after {
+          color: @darkBackgroundColor;
+        }
+
+        .type img {
+          filter: @darkBackgroundImageFilter;
+        }
+        &:hover {
+          background: @selectedButtonHoverGradient;
+        }
+        &:active {
+          background: @selectedButtonActiveGradient;
+        }
       }
     }
-    .type {
-      padding: 0 0.5em;
-      img {
+    .summary {
+      /* left is set in JS, controlling the whole layout */
+      position: relative;
+      padding: 0.25em 0;
+      display: flex;
+      align-items: center;
+      background: none;
+      pointer-events: none;
+      & > * {
+        pointer-events: initial;
+      }
+
+      .label {
+        position: absolute;
+        right: 100%;
+        text-align: right;
+        margin-right: 0.25em;
+      }
+      .label, .value {
+        max-width: 30em;
+        min-width: 10em;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      .type img {
         width: @smallButtonImageSize;
         height: @smallButtonImageSize;
+        filter: @accentImageFilter;
       }
-    }
-    .button {
-      margin: 0 0.5em 0 0;
-    }
-    .value {
-      white-space: nowrap;
-      max-width: 30em;
-      min-width: 10em;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-
-    &:hover {
-      cursor: pointer;
-      background-color: @accentColor;
-      color: @darkBackgroundColor;
-
-      .label::after {
-        color: @darkBackgroundColor;
-      }
-
-      .type img {
-        filter: @darkBackgroundImageFilter;
+      .button, .value, .type {
+        margin: 0 0.25em;
       }
     }
   }

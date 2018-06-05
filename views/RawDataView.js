@@ -99,25 +99,85 @@ class RawDataView extends ScrollableGoldenLayoutView {
       }
     });
   }
+  drawField ({
+    className,
+    rows,
+    summaryEnter,
+    value,
+    onChange
+  }) {
+    summaryEnter.append('input').classed(className, true)
+      .on('keyup', function () {
+        if (d3.event.which === 13) {
+          this.blur();
+        }
+      })
+      .on('change', function (d) {
+        onChange.call(this, d, this.value);
+      });
+    return rows.select(`:scope > .summary > .${className}`)
+      .property('value', value);
+  }
+  sortItems (itemList) {
+    return itemList.sort((a, b) => {
+      if (a.contentItems && !b.contentItems) {
+        // a has contents and b doesn't put a after b
+        return 1;
+      } else if (b.contentItems && !a.contentItems) {
+        // b has contents and a doesn't put b after a
+        return -1;
+      } else {
+        // neither have contents; sort by label
+        return a.label > b.label ? 1 : -1;
+      }
+    });
+  }
   drawRows (contentEl, itemList, offset = null) {
-    let rows = contentEl.selectAll(':scope > .row').data(itemList);
+    let rows = contentEl.selectAll(':scope > .row')
+      .data(this.sortItems(itemList), d => d.uniqueSelector);
     rows.exit().remove();
     let rowsEnter = rows.enter().append('div')
       .classed('row', true);
     rows = rows.merge(rowsEnter);
 
+    rowsEnter.append('div')
+      .classed('selectionTarget', true);
     let summaryEnter = rowsEnter.append('div')
       .classed('summary', true);
 
     // Item label
-    summaryEnter.append('div').classed('label', true);
-    rows.select(':scope > .summary > .label')
-      .text(d => d.label)
-      .style('min-width', offset);
+    let labels = this.drawField({
+      className: 'label',
+      rows,
+      summaryEnter,
+      value: d => d.label,
+      onChange: (d, newValue) => {
+        console.log(d, newValue);
+      }
+    });
+
+    // If this is the first row, set offset to be the width of the longest
+    // filename label
+    if (offset === null) {
+      offset = labels.nodes()
+        .reduce((agg, el) => Math.max(agg, el.getBoundingClientRect().width), 0);
+    }
+    // Apply the offset
+    rows.select(':scope > .summary')
+      .style('left', offset + 'px');
 
     // Item type icon
     summaryEnter.append('div').classed('type', true)
-      .append('img');
+      .append('img')
+      .on('mouseover', function (d) {
+        window.mainView.showTooltip({
+          content: 'Type: ' + d.constructor.name,
+          targetBounds: this.getBoundingClientRect(),
+          anchor: { y: 1 }
+        });
+      }).on('mouseout', () => {
+        window.mainView.hideTooltip();
+      });
     rows.select(':scope > .summary > .type > img')
       .attr('src', d => ICONS[d.constructor.name]);
 
@@ -169,7 +229,7 @@ class RawDataView extends ScrollableGoldenLayoutView {
       visibleWhen: d => !!d.contentItems,
       badgeCount: d => d.contentItems ? d.contentItemCount() : 0,
       drawContents: (d3el, d, buttonBounds) => {
-        this.drawRows(d3el, d.contentItems(), buttonBounds.left + 'px');
+        this.drawRows(d3el, d.contentItems(), buttonBounds.left);
       }
     });
 
@@ -185,15 +245,20 @@ class RawDataView extends ScrollableGoldenLayoutView {
       visibleWhen: d => !!d.metaItems,
       badgeCount: d => d.metaItems ? d.metaItemCount() : 0,
       drawContents: (d3el, d, buttonBounds) => {
-        this.drawRows(d3el, d.metaItems(), buttonBounds.left + 'px');
+        this.drawRows(d3el, d.metaItems(), buttonBounds.left);
       }
     });
 
     // Item value (for primitives)
-    summaryEnter.append('div').classed('value', true);
-    rows.select(`:scope > .summary > .value`)
-      .style('display', d => d.stringValue ? null : 'none')
-      .text(d => d.stringValue ? d.stringValue() : '');
+    this.drawField({
+      className: 'value',
+      rows,
+      summaryEnter,
+      value: d => d.stringValue ? d.stringValue() : '',
+      onChange: (d, newValue) => {
+        console.log(d, newValue);
+      }
+    }).style('display', d => d.stringValue ? null : 'none');
   }
 }
 RawDataView.icon = 'img/rawData.svg';
