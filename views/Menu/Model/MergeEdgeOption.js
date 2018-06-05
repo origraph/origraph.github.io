@@ -6,8 +6,8 @@ class MergeEdgeOption extends ActionMenuOption {
     this.icon = 'img/mergeEdges.svg';
   }
   get label () {
-    // TODO: Apply the (s) dynamically
-    return 'Merge into Hyperedges(s)';
+    // TODO: Add "into" for regular edges; add the (s) dynamically
+    return 'Merge Hyperedge(s)';
   }
   get enabled () {
     // TODO
