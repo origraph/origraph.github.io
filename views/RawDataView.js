@@ -121,13 +121,16 @@ class RawDataView extends ScrollableGoldenLayoutView {
   sortItems (itemList) {
     return itemList.sort((a, b) => {
       if (a.contentItems && !b.contentItems) {
-        // a has contents and b doesn't put a after b
+        // a has contents and b doesn't; put a after b
         return 1;
       } else if (b.contentItems && !a.contentItems) {
-        // b has contents and a doesn't put b after a
+        // b has contents and a doesn't; put b after a
         return -1;
+      } else if (!isNaN(Number(a.label)) && !isNaN(Number(b.label))) {
+        // both or neither have contents; sort labels numerically
+        return Number(a.label) - Number(b.label);
       } else {
-        // neither have contents; sort by label
+        // both or neither have contents; sort labels alphabetically
         return a.label > b.label ? 1 : -1;
       }
     });
