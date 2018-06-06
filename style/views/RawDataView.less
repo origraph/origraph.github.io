@@ -3,6 +3,7 @@
 .RawDataView {
   .row {
     position: relative;
+    user-select: none;
     .selectionTarget {
       position: absolute;
       left: 0px;
@@ -17,23 +18,16 @@
       &:active {
         background: @buttonActiveGradient;
       }
-      &.selected {
-        background: @selectedButtonGradient;
-        color: @darkBackgroundColor;
+    }
+    &.selected > .selectionTarget {
+      background: @selectedButtonGradient;
+      color: @darkBackgroundColor;
 
-        .label::after {
-          color: @darkBackgroundColor;
-        }
-
-        .type img {
-          filter: @darkBackgroundImageFilter;
-        }
-        &:hover {
-          background: @selectedButtonHoverGradient;
-        }
-        &:active {
-          background: @selectedButtonActiveGradient;
-        }
+      &:hover {
+        background: @selectedButtonHoverGradient;
+      }
+      &:active {
+        background: @selectedButtonActiveGradient;
       }
     }
     .summary {
@@ -67,6 +61,11 @@
       }
       .button, .value, .type {
         margin: 0 0.25em;
+      }
+    }
+    &.selected > .summary {
+      .type img {
+        filter: @darkBackgroundImageFilter;
       }
     }
   }

@@ -140,8 +140,19 @@ class RawDataView extends ScrollableGoldenLayoutView {
       .classed('row', true);
     rows = rows.merge(rowsEnter);
 
+    // Target for selection inicator / interactions
     rowsEnter.append('div')
-      .classed('selectionTarget', true);
+      .classed('selectionTarget', true)
+      .on('click', d => {
+        window.mainView.selectItem(d, d3.event.shiftKey);
+      });
+    (async () => {
+      const selectedItems = await window.mainView.userSelection.items();
+      rows.classed('selected', d => {
+        return !!selectedItems[d.uniqueSelector];
+      });
+    })();
+
     let summaryEnter = rowsEnter.append('div')
       .classed('summary', true);
 
