@@ -10,18 +10,24 @@
       top: 0px;
       right: 0px;
       height: 2em;
+      opacity: 0;
+      -webkit-transition: opacity 0.5s;
+      transition: opacity 0.5s;
 
       &:hover {
+        opacity: 1;
         cursor: pointer;
         background: @buttonHoverGradient;
       }
       &:active {
+        opacity: 1;
         background: @buttonActiveGradient;
       }
     }
     &.selected > .selectionTarget {
       background: @selectedButtonGradient;
       color: @darkBackgroundColor;
+      opacity: 1;
 
       &:hover {
         background: @selectedButtonHoverGradient;

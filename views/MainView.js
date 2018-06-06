@@ -132,9 +132,13 @@ class MainView extends View {
     };
     mure.setLinkedViews(temp);
   }
-  selectItem (item, addToSelection = false) {
+  selectItem (item, toggleMode = false) {
+    const options = {};
+    if (toggleMode) {
+      options.mode = mure.DERIVE_MODES.XOR;
+    }
     this.userSelection = this.userSelection
-      .deriveSelection([item.uniqueSelector], { merge: addToSelection });
+      .deriveSelection([item.uniqueSelector], options);
     mure.setLinkedViews({ userSelection: this.userSelection });
   }
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
