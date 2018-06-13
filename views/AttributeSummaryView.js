@@ -89,13 +89,13 @@ class AttributeSummaryView extends ScrollableGoldenLayoutView {
     let svgEnter = sectionsEnter.append('svg')
       .classed(className, true);
     svgEnter.append('g')
+      .classed('bars', true);
+    svgEnter.append('g')
       .classed('x', true)
       .classed('axis', true);
     svgEnter.append('g')
       .classed('y', true)
       .classed('axis', true);
-    svgEnter.append('g')
-      .classed('bars', true);
 
     const self = this;
     sections.each(function (histogramSpec) {
@@ -106,13 +106,13 @@ class AttributeSummaryView extends ScrollableGoldenLayoutView {
         const margins = {
           left: 50,
           top: 10,
-          right: 10,
-          bottom: 75
+          right: 20,
+          bottom: 40
         };
         svg.select('.bars')
           .attr('transform', `translate(${margins.left},${margins.top})`);
         const width = self.contentDiv.node().getBoundingClientRect()
-          .width - margins.left - margins.right;
+          .width - self.scrollBarSize - margins.left - margins.right;
         const height = 200;
         svg.attr('width', width + margins.left + margins.right)
           .attr('height', height + margins.top + margins.bottom);
