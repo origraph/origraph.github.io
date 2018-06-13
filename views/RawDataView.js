@@ -22,16 +22,8 @@ class RawDataView extends ScrollableGoldenLayoutView {
   constructor (container) {
     super(container, RawDataView.icon, RawDataView.label);
   }
-  setup () {
-    super.setup();
-    this.d3el.append('img')
-      .classed('emptyState', true)
-      .attr('src', 'img/noDataEmptyState.svg');
-  }
   draw () {
-    if (window.mainView.allDocItems && window.mainView.settings) {
-      this.d3el.select('.emptyState')
-        .style('display', window.mainView.allDocItems.length > 0 ? 'none' : null);
+    if (!this.drawEmptyState()) {
       this.drawRows(this.contentDiv, window.mainView.allDocItems);
     }
   }
@@ -185,7 +177,7 @@ class RawDataView extends ScrollableGoldenLayoutView {
       .append('img')
       .on('mouseover', function (d) {
         window.mainView.showTooltip({
-          content: 'Type: ' + d.constructor.name,
+          content: 'Type: ' + d.name,
           targetBounds: this.getBoundingClientRect(),
           anchor: { y: 1 }
         });

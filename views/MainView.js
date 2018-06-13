@@ -6,6 +6,7 @@ import InstanceView from './InstanceView.js';
 import SetView from './SetView.js';
 import RawDataView from './RawDataView.js';
 import TableView from './TableView.js';
+import AttributeSummaryView from './AttributeSummaryView.js';
 import HelpView from './HelpView.js';
 
 const VIEW_CLASSES = {
@@ -14,6 +15,7 @@ const VIEW_CLASSES = {
   NetworkModelView,
   InstanceView,
   TableView,
+  AttributeSummaryView,
   HelpView
 };
 

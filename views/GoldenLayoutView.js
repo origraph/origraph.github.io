@@ -2,9 +2,10 @@
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 
 class GoldenLayoutView extends View {
-  constructor (container, icon, label) {
+  constructor (container, icon, label, emptyState = 'img/noDataEmptyState.svg') {
     super(null);
     this.container = container;
+    this.emptyState = emptyState;
     this.container.setTitle(label);
     this.container.on('tab', tab => {
       tab.element.prepend(`<div class="lm_tab_icon" style="background-image:url('${icon}')"></div>`);
@@ -17,11 +18,24 @@ class GoldenLayoutView extends View {
   }
   setup () {
     this.d3el.classed(this.constructor.name, true);
+    this.d3el.append('img')
+      .classed('emptyState', true)
+      .attr('src', this.emptyState);
+  }
+  drawEmptyState () {
+    const notEmpty = window.mainView.userSelection &&
+      window.mainView.settings &&
+      window.mainView.allDocItems &&
+      window.mainView.allDocItems.length > 0;
+    this.d3el.select('.emptyState').style('display', notEmpty ? 'none' : null);
+    return !notEmpty;
   }
   draw () {
     this.drawCount = this.drawCount || 0;
     this.drawCount++;
-    this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
+    if (!this.drawEmptyState()) {
+      this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
+    }
   }
 }
 
