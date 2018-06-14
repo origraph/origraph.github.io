@@ -2,10 +2,14 @@
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 
 class GoldenLayoutView extends View {
-  constructor (container, icon, label, emptyState = 'img/noDataEmptyState.svg') {
-    super(null);
+  constructor ({
+    container,
+    icon,
+    label,
+    resources = {}
+  }) {
+    super(null, resources);
     this.container = container;
-    this.emptyState = emptyState;
     this.container.setTitle(label);
     this.container.on('tab', tab => {
       tab.element.prepend(`<div class="lm_tab_icon" style="background-image:url('${icon}')"></div>`);
@@ -18,24 +22,11 @@ class GoldenLayoutView extends View {
   }
   setup () {
     this.d3el.classed(this.constructor.name, true);
-    this.d3el.append('img')
-      .classed('emptyState', true)
-      .attr('src', this.emptyState);
-  }
-  drawEmptyState () {
-    const notEmpty = window.mainView.userSelection &&
-      window.mainView.settings &&
-      window.mainView.allDocItems &&
-      window.mainView.allDocItems.length > 0;
-    this.d3el.select('.emptyState').style('display', notEmpty ? 'none' : null);
-    return !notEmpty;
   }
   draw () {
     this.drawCount = this.drawCount || 0;
     this.drawCount++;
-    if (!this.drawEmptyState()) {
-      this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
-    }
+    this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
   }
 }
 
@@ -46,4 +37,31 @@ class ScrollableGoldenLayoutView extends GoldenLayoutView {
       .classed('scrollArea', true);
   }
 }
-export { GoldenLayoutView, ScrollableGoldenLayoutView };
+
+const EmptyStateMixin = (superclass) => class extends superclass {
+  constructor (options) {
+    super(options);
+    this.emptyState = options.emptyState || 'img/noDataEmptyState.svg';
+  }
+  setup () {
+    super.setup();
+    this.d3el.append('img')
+      .classed('emptyState', true)
+      .attr('src', this.emptyState);
+  }
+  draw () {
+    if (!this.drawEmptyState()) {
+      super.draw();
+    }
+  }
+  drawEmptyState () {
+    const notEmpty = window.mainView.userSelection &&
+      window.mainView.settings &&
+      window.mainView.allDocItems &&
+      window.mainView.allDocItems.length > 0;
+    this.d3el.select('.emptyState').style('display', notEmpty ? 'none' : null);
+    return !notEmpty;
+  }
+};
+
+export { GoldenLayoutView, ScrollableGoldenLayoutView, EmptyStateMixin };

@@ -1,8 +1,12 @@
-import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
+import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
 
-class NetworkModelView extends ScrollableGoldenLayoutView {
+class NetworkModelView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
   constructor (container) {
-    super(container, NetworkModelView.icon, NetworkModelView.label);
+    super({
+      container,
+      icon: NetworkModelView.icon,
+      label: NetworkModelView.label
+    });
     // TODO
   }
 }

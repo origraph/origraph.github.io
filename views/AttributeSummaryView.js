@@ -1,9 +1,13 @@
 /* globals d3 */
-import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
+import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
 
-class AttributeSummaryView extends ScrollableGoldenLayoutView {
+class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
   constructor (container) {
-    super(container, AttributeSummaryView.icon, AttributeSummaryView.label);
+    super({
+      container,
+      icon: AttributeSummaryView.icon,
+      label: AttributeSummaryView.label
+    });
   }
   draw () {
     if (!this.drawEmptyState()) {

@@ -1,5 +1,5 @@
 /* globals d3 */
-import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
+import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
 
 const ICONS = {
   RootItem: 'img/root.svg',
@@ -18,9 +18,13 @@ const ICONS = {
   SupernodeItem: 'img/missing.svg'
 };
 
-class RawDataView extends ScrollableGoldenLayoutView {
+class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
   constructor (container) {
-    super(container, RawDataView.icon, RawDataView.label);
+    super({
+      container,
+      icon: RawDataView.icon,
+      label: RawDataView.label
+    });
   }
   draw () {
     if (!this.drawEmptyState()) {

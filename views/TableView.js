@@ -1,8 +1,12 @@
-import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
+import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
 
-class TableView extends ScrollableGoldenLayoutView {
+class TableView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
   constructor (container) {
-    super(container, TableView.icon, TableView.label);
+    super({
+      container,
+      icon: TableView.icon,
+      label: TableView.label
+    });
     // TODO
   }
 }
