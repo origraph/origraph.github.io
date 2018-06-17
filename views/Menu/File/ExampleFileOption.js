@@ -14,7 +14,7 @@ const EXAMPLE_FILES = [
 class ExampleFileOption extends ModalMenuOption {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
-    this.icon = 'img/exampleFiles.svg';
+    this.icon = 'img/boilerplate.svg';
     this.label = 'Load Example File...';
   }
   setup () {

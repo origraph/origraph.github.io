@@ -3,7 +3,7 @@ import { SubMenu, ViewMenuOption } from './Menu.js';
 import FileMenu from './File/FileMenu.js';
 import EditMenu from './Edit/EditMenu.js';
 import ViewMenu from './View/ViewMenu.js';
-import ModelMenu from './Model/ModelMenu.js';
+// import ModelMenu from './Model/ModelMenu.js';
 
 class MainMenu extends SubMenu {
   constructor (d3el) {
@@ -14,7 +14,7 @@ class MainMenu extends SubMenu {
       new FileMenu(this),
       new EditMenu(this),
       new ViewMenu(this),
-      new ModelMenu(this),
+      // new ModelMenu(this),
       // Show the help menu item at the root level:
       new ViewMenuOption('HelpView', this)
     ];

@@ -147,6 +147,6 @@ class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     });
   }
 }
-AttributeSummaryView.icon = 'img/attributeSummary.svg';
+AttributeSummaryView.icon = 'img/histogram.svg';
 AttributeSummaryView.label = 'Attribute Summary';
 export default AttributeSummaryView;
