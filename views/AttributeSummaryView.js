@@ -30,17 +30,20 @@ class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
         this.drawCategoricalHistogram({
           sectionsEnter,
           sections,
-          className: 'typeBins'
+          className: 'typeBins',
+          label: 'Item type(s)'
         });
         this.drawCategoricalHistogram({
           sectionsEnter,
           sections,
-          className: 'categoricalBins'
+          className: 'categoricalBins',
+          label: 'Categorical value(s)'
         });
         this.drawHistogram({
           sectionsEnter,
           sections,
           className: 'quantitativeBins',
+          label: 'Quantitative distribution',
           dataAccessor: histogramSpec => histogramSpec.quantitativeBins || null,
           generateXScaleFunction: ({ histogramSpec }) => histogramSpec.quantitativeScale,
           xAccessor: d => d.x0,
@@ -59,11 +62,12 @@ class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       })();
     }
   }
-  drawCategoricalHistogram ({sectionsEnter, sections, className}) {
+  drawCategoricalHistogram ({sectionsEnter, sections, className, label}) {
     this.drawHistogram({
       sectionsEnter,
       sections,
       className,
+      label,
       dataAccessor: histogramSpec => histogramSpec.value[className] ? d3.entries(histogramSpec.value[className]) : null,
       generateXScaleFunction: ({ data }) => {
         return d3.scaleBand()
@@ -83,6 +87,7 @@ class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     sectionsEnter,
     sections,
     className,
+    label,
     dataAccessor,
     generateXScaleFunction,
     xAccessor,
@@ -90,6 +95,9 @@ class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     yAccessor,
     generateBandwidthFunction
   }) {
+    sectionsEnter.append('label')
+      .classed(className, true)
+      .text(label);
     let svgEnter = sectionsEnter.append('svg')
       .classed(className, true);
     svgEnter.append('g')
@@ -103,9 +111,10 @@ class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
 
     const self = this;
     sections.each(function (histogramSpec) {
-      const svg = d3.select(this).select(`svg.${className}`);
       const data = dataAccessor(histogramSpec);
-      svg.style('display', data === null ? 'none' : null);
+      d3.select(this).selectAll(`.${className}`)
+        .style('display', data === null ? 'none' : null);
+      const svg = d3.select(this).select(`svg.${className}`);
       if (data) {
         const margins = {
           left: 50,

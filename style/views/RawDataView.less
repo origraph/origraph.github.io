@@ -16,25 +16,18 @@
       transition: opacity 0.5s;
 
       &:hover {
-        opacity: 1;
+        opacity: 0.2;
         cursor: pointer;
-        background: @interactableHoverGradient;
-      }
-      &:active {
-        opacity: 1;
-        background: @interactableActiveGradient;
+        background: @selectionColor;
       }
     }
     &.selected > .selectionTarget {
-      background: @selectedButtonGradient;
+      background: @selectionColor;
       color: @darkBackgroundColor;
-      opacity: 1;
+      opacity: 0.8;
 
       &:hover {
-        background: @selectedButtonHoverGradient;
-      }
-      &:active {
-        background: @selectedButtonActiveGradient;
+        opacity: 1;
       }
     }
     .summary {

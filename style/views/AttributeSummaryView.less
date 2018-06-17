@@ -6,12 +6,13 @@
       stroke: @separatorColor;
     }
     text {
-      fill: @lightBackgroundColor;
+      font-family: @bodyFontFamily;
+      fill: @textColor;
     }
   }
   .bars {
     .bar {
-      fill: @accentColor;
+      fill: @selectionColor; // TODO: override this with other groups...
     }
   }
 }
