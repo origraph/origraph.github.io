@@ -20,9 +20,9 @@ input {
   &[type=week] {
     font-family: inherit;
     font-size: 1em;
-    background: @darkestBackgroundColor;
+    background: @backgroundColor;
     color: @textColor;
-    border: 1px solid @shadowColor;
+    border: 1px solid @separatorColor;
     border-radius: @borderRadius / 2;
     height: @buttonSize / 2;
     -webkit-appearance: none;
@@ -59,12 +59,12 @@ input {
       font-size: 1em;
       font-weight: 900;
       color: @accentColor;
-      background: @buttonGradient;
+      background: @interactableGradient;
       border: 1px solid @shadowColor;
       border-radius: @borderRadius / 2;
     }
     &:hover:after {
-      background: @buttonHoverGradient;
+      background: @interactableHoverGradient;
     }
     &:checked:after {
       content: '\2713';
@@ -75,6 +75,17 @@ input {
       background: @selectedButtonHoverGradient;
     }
   }
+}
+
+select {
+  font-family: inherit;
+  font-size: 1em;
+  background: @backgroundColor;
+  color: @textColor;
+  border: 1px solid @separatorColor;
+  border-radius: @borderRadius / 2;
+  height: @buttonSize / 2;
+  outline: none;
 }
 
 summary {

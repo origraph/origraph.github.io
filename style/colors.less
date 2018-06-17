@@ -34,24 +34,24 @@ http://colorbrewer2.org/#type=qualitative&scheme=Pastel2&n=8
 Color meanings:
 */
 
-@textColor: @LightPurple;
+@textColor: @OffBlack;
+@textColorImageFilter: replace(@textColor, '#(.*)', 'url(#recolorImageTo$1)');
 
-@separatorColor: @DarkGrey;
+@separatorColor: @LightestGrey;
 
 @shadowColor: @OffBlack;
 
 @errorColor: @DarkPink;
 
-@backgroundColor: @DarkPurple;
-@lightBackgroundColor: @LightPurple;
-@darkBackgroundColor: darken(@backgroundColor, 30%);
-// replace(darken(...)) hack doesn't work, so hard-coding the result:
-@darkBackgroundImageFilter: url(#recolorImageTo33305a);
-@darkestBackgroundColor: darken(@backgroundColor, 45%);
+@backgroundColor: @OffWhite;
+@backgroundImageFilter: replace(@backgroundColor, '#(.*)', 'url(#recolorImageTo$1)');
+@lightBackgroundColor: white;
+@darkBackgroundColor: @LightGrey;
+@darkestBackgroundColor: @Grey;
 
-@accentColor: @DarkYellow;
+@accentColor: @OffBlack;
 @accentImageFilter: replace(@accentColor, '#(.*)', 'url(#recolorImageTo$1)');
-@lightAccentColor: @LightYellow;
+@lightAccentColor: @DarkGrey;
 @darkAccentColor: darken(@accentColor, 30%);
 
 /*
@@ -68,7 +68,7 @@ Gradients:
 @lightGradientStops: @lightGradientStop1 0%,@lightGradientStop2 40%,@lightGradientStop3 100%;
 @lightHoverGradientStop1: rgba(red(@tempLight), green(@tempLight), blue(@tempLight), 0.5);
 @lightHoverGradientStop2: rgba(red(@tempMid), green(@tempMid), blue(@tempMid), 0.25);
-@lightHoverGradientStop3: rgba(red(@tempDark), green(@tempDark), blue(@tempDark), 1);
+@lightHoverGradientStop3: rgba(red(@tempDark), green(@tempDark), blue(@tempDark), 0.5);
 @lightHoverGradientStops: @lightHoverGradientStop1 0%,@lightHoverGradientStop2 40%,@lightHoverGradientStop3 100%;
 @lightActiveGradientStop1: rgba(red(@tempDark), green(@tempDark), blue(@tempDark), 1);
 @lightActiveGradientStop2: rgba(red(@tempMid), green(@tempMid), blue(@tempMid), 0.25);
@@ -106,3 +106,10 @@ Gradients:
 @strongActiveGradientStop2: @accentColor;
 @strongActiveGradientStop3: @lightAccentColor;
 @strongActiveGradientStops: @strongActiveGradientStop1 0%, @strongActiveGradientStop2 40%, @strongActiveGradientStop3 100%;
+
+@interactableGradient: linear-gradient(to bottom, @lightGradientStops);
+@interactableHoverGradient: linear-gradient(to bottom, @lightHoverGradientStops);
+@interactableActiveGradient: linear-gradient(to bottom, @lightActiveGradientStops);
+@selectedButtonGradient: linear-gradient(to bottom, @strongGradientStops);
+@selectedButtonHoverGradient: linear-gradient(to bottom, @strongHoverGradientStops);
+@selectedButtonActiveGradient: linear-gradient(to bottom, @strongActiveGradientStops);

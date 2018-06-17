@@ -1,6 +1,7 @@
 import { ModalMenuOption } from '../Menu.js';
 
 const EXAMPLE_FILES = [
+  'Pick a file:',
   'miserables.json',
   'airports.csv',
   'flights-airport.csv',
@@ -23,7 +24,8 @@ class ExampleFileOption extends ModalMenuOption {
     options.exit().remove();
     options = options.enter().append('option').merge(options);
 
-    options.text(d => d);
+    options.text(d => d)
+      .attr('disabled', (d, i) => i === 0 ? '' : null);
     dropdown.on('change', function () {
       window.mainView.loadExampleFile(this.value);
     });

@@ -2,13 +2,6 @@
 @import './colors.less';
 @import './measurements.less';
 
-@buttonGradient: linear-gradient(to bottom, @lightGradientStops);
-@buttonHoverGradient: linear-gradient(to bottom, @lightHoverGradientStops);
-@buttonActiveGradient: linear-gradient(to bottom, @lightActiveGradientStops);
-@selectedButtonGradient: linear-gradient(to bottom, @strongGradientStops);
-@selectedButtonHoverGradient: linear-gradient(to bottom, @strongHoverGradientStops);
-@selectedButtonActiveGradient: linear-gradient(to bottom, @strongActiveGradientStops);
-
 .button {
   position: relative;
   min-width: @buttonSize;
@@ -23,7 +16,7 @@
   width: fit-content;
   height: fit-content;
 
-  background: @darkBackgroundColor;
+  background: @lightBackgroundColor;
   border-radius: @borderRadius;
 
   cursor: pointer;
@@ -39,7 +32,7 @@
     border-radius: @borderRadius;
     // overflow: hidden;
 
-    background: @buttonGradient;
+    background: @interactableGradient;
 
     img {
       position: absolute;
@@ -49,6 +42,12 @@
       height: @buttonImageSize;
       filter: @accentImageFilter;
     }
+  }
+  span {
+    white-space: nowrap;
+    position: relative;
+    top: (@buttonSize - 1em) / 2 + 0.1em;
+    margin: 0px @buttonTextPadding;
   }
   &.small a img {
     left: @smallButtonSize / 2 - @smallButtonImageSize / 2;
@@ -72,25 +71,18 @@
     border-radius: @borderRadius;
     border: 1px solid @shadowColor;
   }
-
-  span {
-    white-space: nowrap;
-    position: relative;
-    top: (@buttonSize - 1em) / 2 + 0.1em;
-    margin: 0px @buttonTextPadding;
-  }
   &.small span {
     /* todo */
   }
 
   &:hover {
     a {
-      background: @buttonHoverGradient;
+      background: @interactableHoverGradient;
     }
   }
   &:active {
     a {
-      background: @buttonActiveGradient;
+      background: @interactableActiveGradient;
     }
   }
 
@@ -98,7 +90,7 @@
     a {
       background: @selectedButtonGradient;
       img {
-        filter: @darkBackgroundImageFilter;
+        filter: @backgroundImageFilter;
       }
     }
     &:hover a {

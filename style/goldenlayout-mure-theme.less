@@ -1,6 +1,7 @@
 @import './colors.less';
 @import './measurements.less';
 
+@patchedBorderRadius: calc(@borderRadius + 0.2em);
 // ".lm_dragging" is applied to BODY tag during Drag and is also directly applied to the root of the object being dragged
 
 // Entire GoldenLayout Container, if a background is set, it is visible as color of "pane header" and "splitters" (if these latest has opacity very low)
@@ -10,9 +11,10 @@
 
 // Single Pane content (area in which final dragged content is contained)
 .lm_content {
-  background: @darkestBackgroundColor;
-  border: 1px solid transparent;
-  border-radius: 0 @borderRadius @borderRadius @borderRadius;
+  background: @lightBackgroundColor;
+  border: 1px solid @shadowColor;
+  border-radius: 0 @patchedBorderRadius @patchedBorderRadius @patchedBorderRadius;
+  // border-radius looks funny right next to scroll bars, so we bump it up a little
 }
 
 // Single Pane content during Drag (style of moving window following mouse)
@@ -54,11 +56,13 @@
   // Single Tab container. A single Tab is set for each pane, a group of Tabs are contained in ".lm_header"
   .lm_tab {
     position: relative;
+    top: -1px;
     font-family: 'Josefin Sans', sans-serif;
     font-size: @titleBarFontSize;
     letter-spacing: 2px;
     text-transform: uppercase;
     background: @darkBackgroundColor;
+    border: 1px solid @shadowColor;
 
     // Icon before the title
     .lm_tab_icon {
@@ -67,10 +71,11 @@
       top: 0px;
       width: @titleBarSize;
       height: @titleBarSize;
+      filter: @textColorImageFilter;
       background-size: @titleBarButtonSize;
       background-position: right center;
       background-repeat: no-repeat;
-      opacity: 0.25;
+      opacity: 0.5;
     }
 
     .lm_title {
@@ -86,7 +91,8 @@
       background-size: @titleBarButtonSize;
       background-position: left center;
       background-repeat: no-repeat;
-      opacity: 0.1;
+      filter: @textColorImageFilter;
+      opacity: 0.5;
 
       &:hover {
         opacity: 1;
@@ -94,9 +100,10 @@
       }
     }
 
-    // If Tab is active, so if it's in foreground
+    // If Tab is active, invert the colors
     &.lm_active {
-      background: @darkestBackgroundColor;
+      background: @lightBackgroundColor;
+      border-bottom: 1px solid @lightBackgroundColor;
     }
   }
   .lm_tabs > .lm_tab {
@@ -120,7 +127,7 @@
   &:hover, // If Tab is hovered
   &.lm_active // If Tab is active, so if it's in foreground
   {
-    background: @darkestBackgroundColor;
+    background: @backgroundColor;
   }
 }
 

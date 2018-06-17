@@ -1,4 +1,5 @@
 @import './colors.less';
+@import './measurements.less';
 
 ::-webkit-scrollbar {
   width: 1em;
@@ -12,19 +13,19 @@
 }
 /* Round off three corners */
 ::-webkit-scrollbar-track:horizontal {
-  border-radius: 0 0 0 10px;
+  border-radius: 0 0 0 @borderRadius;
 }
 ::-webkit-scrollbar-track:vertical {
-  border-radius: 0 10px 0 0;
+  border-radius: 0 @borderRadius 0 0;
 }
 ::-webkit-scrollbar-corner,
 ::-webkit-resizer {
-  border-radius: 0 0 10px 0;
+  border-radius: 0 0 @borderRadius 0;
 }
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-  border-radius: 10px;
+  border-radius: @borderRadius;
   border: 1px solid black;
   &:hover {
     cursor: grab;

@@ -65,7 +65,8 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 22;
   padding: 0.5em;
   border-radius: 0.5em;
-  background: black;
+  background: @darkBackgroundColor;
+  border: 1px solid @shadowColor;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.25);
 }
 
@@ -86,13 +87,14 @@ h1, h2, h3, h4, h5, h6 {
   position: absolute;
   left: 0px;
   top: 0px;
-  bottom: 0px;
+  bottom: 2px;
   width: calc(100% - (@menuSize + @menuPadding));
 }
 @media (max-width: @fullMenuSize * 2) {
   #menu.expanded {
     width: 100%;
     box-shadow: -2px 0px 2px 2px rgba(0, 0, 0, 0.25);
+    border-left: 1px solid @shadowColor;
     background: @backgroundGradient;
   }
 }
