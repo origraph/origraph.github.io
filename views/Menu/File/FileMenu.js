@@ -1,6 +1,7 @@
 import { SubMenu } from '../Menu.js';
 import NewFileOption from './NewFileOption.js';
 import UploadOption from './UploadOption.js';
+import ExampleFileOption from './ExampleFileOption.js';
 import DownloadOption from './DownloadOption.js';
 import SyncOption from './SyncOption.js';
 
@@ -12,6 +13,7 @@ class FileMenu extends SubMenu {
     this.items = [
       new NewFileOption(this),
       new UploadOption(this),
+      new ExampleFileOption(this),
       new SyncOption(this),
       new DownloadOption(this)
     ];

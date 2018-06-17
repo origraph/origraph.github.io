@@ -143,6 +143,15 @@ class MainView extends View {
       .deriveSelection([item.uniqueSelector], options);
     mure.setLinkedViews({ userSelection: this.userSelection });
   }
+  async loadExampleFile (filename) {
+    let fileContents;
+    try {
+      fileContents = await d3.text(`docs/exampleDatasets/${filename}`);
+    } catch (err) {
+      mure.warn(err);
+    }
+    mure.uploadString(filename, null, null, fileContents);
+  }
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
 

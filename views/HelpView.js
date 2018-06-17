@@ -1,4 +1,3 @@
-/* globals d3, mure */
 import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
 
 class HelpView extends ScrollableGoldenLayoutView {
@@ -16,15 +15,8 @@ class HelpView extends ScrollableGoldenLayoutView {
     super.setup();
     this.contentDiv.html(this.resources.text);
     this.contentDiv.selectAll('a[data-example-dataset]')
-      .on('click', async function () {
-        const filename = this.dataset.exampleDataset;
-        let fileContents;
-        try {
-          fileContents = await d3.text(`docs/exampleDatasets/${filename}`);
-        } catch (err) {
-          mure.warn(err);
-        }
-        mure.uploadString(filename, null, null, fileContents);
+      .on('click', function () {
+        window.mainView.loadExampleFile(this.dataset.exampleDataset);
       });
   }
   draw () {}
