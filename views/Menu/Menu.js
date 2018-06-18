@@ -88,7 +88,7 @@ class SubMenu extends CollapsibleMenu {
   }
   setup () {
     super.setup();
-    let menuOptions = this.d3el.selectAll('.menuOption')
+    let menuOptions = this.d3el.selectAll(':scope > .menuOption')
       .data(this.items, d => d);
     menuOptions = menuOptions.enter()
       .append('div')
@@ -193,14 +193,17 @@ class ViewMenuOption extends CheckableMenuOption {
 class ConvertMenuOption extends ActionMenuOption {
   constructor (typeName, ItemType, parentMenu, d3el) {
     super(parentMenu, d3el);
+    this.typeName = typeName;
+    this.ItemType = ItemType;
     this.icon = `img/${typeName}.svg`;
     this.label = ItemType.getHumanReadableType();
   }
   executeAction () {
     console.log('todo: convert!');
   }
-  enabled () {
-    return true;
+  get enabled () {
+    return !!(window.mainView.availableOperations &&
+      window.mainView.availableOperations.possibleConversions[this.typeName]);
   }
 }
 

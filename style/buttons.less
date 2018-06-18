@@ -85,6 +85,21 @@
       background: @interactableActiveGradient;
     }
   }
+  &.disabled,
+  &.disabled:hover,
+  &.disabled:active {
+    cursor: default;
+    a {
+      border: 1px solid @separatorColor;
+      background: @darkBackgroundColor;
+      img {
+        filter: @separatorImageFilter;
+      }
+    }
+    span {
+      color: @separatorColor;
+    }
+  }
 
   &.selected {
     a {

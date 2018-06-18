@@ -170,8 +170,10 @@ class MainView extends View {
       this.userSelection = linkedViewSpec.userSelection;
       changedUserSelection = true;
     }
+    if (changedUserSelection) {
+      this.availableOperations = await this.userSelection.getAvailableOperations();
+    }
 
-    let changedSettings = false;
     if (!this.settings) {
       // We need to initialize the settings
       this.render(); // 'Syncing view settings...' spinner
@@ -190,24 +192,19 @@ class MainView extends View {
       } else {
         // Initialize the settings and layout
         this.settings = linkedViewSpec.settings[this.context.hash].origraph;
-        changedSettings = true;
         this.goldenLayout = this.initSubViews(this.d3el.select('#contents'));
       }
     } else if (linkedViewSpec.settings) {
       // We got a simple update for the settings
       this.settings = linkedViewSpec.settings[this.context.hash].origraph;
-      changedSettings = true;
     }
 
     if (contentUpdated || !this.allDocItems) {
       delete this.allDocItems;
-      this.render(); // 'Getting document list...'
+      this.render(); // 'Collecting metadata...'
       this.allDocItems = await mure.allDocItems();
     }
 
-    if (changedUserSelection || changedSettings) {
-      // TODO: calculate stuff
-    }
     this.render();
   }
   setup () {
@@ -316,7 +313,7 @@ sites in your browser settings.`);
   draw () {
     this.d3el.select(':scope > .emptyState')
       .style('display', 'none');
-    if (!this.userSelection) {
+    if (!this.userSelection || !this.availableOperations) {
       this.showOverlay({
         message: 'Syncing user selection...',
         spinner: true
@@ -328,7 +325,7 @@ sites in your browser settings.`);
       });
     } else if (!this.allDocItems) {
       this.showOverlay({
-        message: 'Getting document list...',
+        message: 'Collecting metadata...',
         spinner: true
       });
     } else {
