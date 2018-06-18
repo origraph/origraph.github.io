@@ -76,14 +76,17 @@ h1, h2, h3, h4, h5, h6 {
 #menu {
   position: absolute;
   z-index: 21;
-  right: 0px;
   top: 0px;
   bottom: 0px;
-  width: @menuSize;
   max-width: @fullMenuSize;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  // +/-50px is a hack to hide the scrollbar in collapsed mode
+  right: -50px;
+  width: calc(@menuSize + 50px);
   &.expanded {
-    overflow-y: auto;
+    right: 0px;
+    // width is already overridden below in the context of media queries
   }
 }
 #contents {
