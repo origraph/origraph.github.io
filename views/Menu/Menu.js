@@ -195,7 +195,7 @@ class ConvertMenuOption extends ActionMenuOption {
     super(parentMenu, d3el);
     this.typeName = typeName;
     this.ItemType = ItemType;
-    this.icon = `img/${typeName}.svg`;
+    this.icon = `img/${ItemType.getHumanReadableType().toLowerCase()}.svg`;
     this.label = ItemType.getHumanReadableType();
   }
   executeAction () {

@@ -15,5 +15,11 @@ class ConvertMenu extends SubMenu {
         return new ConvertMenuOption(typeName, ItemType, this);
       });
   }
+  draw () {
+    super.draw();
+    this.d3el.select('.button')
+      .classed('disabled', !window.mainView.availableOperations ||
+        Object.keys(window.mainView.availableOperations.possibleConversions).length === 0);
+  }
 }
 export default ConvertMenu;
