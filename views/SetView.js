@@ -10,6 +10,6 @@ class SetView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     // TODO
   }
 }
-SetView.icon = 'img/venn.svg';
+SetView.icon = 'img/set.svg';
 SetView.label = 'Set Manager';
 export default SetView;

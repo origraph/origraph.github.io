@@ -12,7 +12,7 @@ const ICONS = {
   ReferenceItem: 'img/reference.svg',
   ContainerItem: 'img/container.svg',
   TaggableItem: 'img/taggable.svg',
-  SetItem: 'img/venn.svg',
+  SetItem: 'img/set.svg',
   EdgeItem: 'img/edge.svg',
   NodeItem: 'img/node.svg',
   SupernodeItem: 'img/missing.svg'

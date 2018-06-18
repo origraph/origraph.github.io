@@ -114,6 +114,20 @@ class SubMenu extends CollapsibleMenu {
   }
 }
 
+class SortedSubMenu extends SubMenu {
+  constructor (parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.requireProperties(['compare']);
+  }
+  draw () {
+    if (this.expanded) {
+      this.d3el.selectAll(':scope > .menuOption')
+        .sort((a, b) => this.compare(a, b));
+    }
+    super.draw();
+  }
+}
+
 class ModalMenuOption extends CollapsibleMenu {
   setup () {
     super.setup();
@@ -226,6 +240,7 @@ export {
   BaseMenu,
   CollapsibleMenu,
   SubMenu,
+  SortedSubMenu,
   ModalMenuOption,
   ActionMenuOption,
   CheckableMenuOption,

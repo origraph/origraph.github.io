@@ -1,7 +1,7 @@
 /* globals mure */
-import { SubMenu, ConvertMenuOption } from '../Menu.js';
+import { SortedSubMenu, ConvertMenuOption } from '../Menu.js';
 
-class ConvertMenu extends SubMenu {
+class ConvertMenu extends SortedSubMenu {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/convert.svg';
@@ -20,6 +20,17 @@ class ConvertMenu extends SubMenu {
     this.d3el.select('.button')
       .classed('disabled', !window.mainView.availableOperations ||
         Object.keys(window.mainView.availableOperations.possibleConversions).length === 0);
+  }
+  compare (a, b) {
+    if (a.enabled && !b.enabled) {
+      // a is enabled and b isn't; it should come first
+      return -1;
+    } else if (b.enabled && !a.enabled) {
+      return 1;
+    } else {
+      // default: sort alphabetically
+      return a.label < b.label ? -1 : 1;
+    }
   }
 }
 export default ConvertMenu;
