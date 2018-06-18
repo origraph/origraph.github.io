@@ -181,7 +181,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       .append('img')
       .on('mouseover', function (d) {
         window.mainView.showTooltip({
-          content: 'Type: ' + d.name,
+          content: 'Type: ' + d.type,
           targetBounds: this.getBoundingClientRect(),
           anchor: { y: 1 }
         });

@@ -190,6 +190,20 @@ class ViewMenuOption extends CheckableMenuOption {
   }
 }
 
+class ConvertMenuOption extends ActionMenuOption {
+  constructor (typeName, ItemType, parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.icon = `img/${typeName}.svg`;
+    this.label = ItemType.getHumanReadableType();
+  }
+  executeAction () {
+    console.log('todo: convert!');
+  }
+  enabled () {
+    return true;
+  }
+}
+
 const AnimatedIconMixin = (superclass) => class extends superclass {
   setup () {
     super.setup();
@@ -213,5 +227,6 @@ export {
   ActionMenuOption,
   CheckableMenuOption,
   ViewMenuOption,
+  ConvertMenuOption,
   AnimatedIconMixin
 };

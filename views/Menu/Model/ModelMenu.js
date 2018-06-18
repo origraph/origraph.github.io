@@ -1,6 +1,4 @@
 import { SubMenu } from '../Menu.js';
-import ConvertToNodeOption from './ConvertToNodeOption.js';
-import ConvertToEdgeOption from './ConvertToEdgeOption.js';
 import ConnectOption from './ConnectOption.js';
 import MergeEdgeOption from './MergeEdgeOption.js';
 import DissolveOption from './DissolveOption.js';
@@ -13,8 +11,6 @@ class ModelMenu extends SubMenu {
     this.icon = 'img/networkModel.svg';
     this.label = 'Model';
     this.items = [
-      new ConvertToNodeOption(this),
-      new ConvertToEdgeOption(this),
       new ConnectOption(this),
       new MergeEdgeOption(this),
       new DissolveOption(this),
