@@ -1,4 +1,4 @@
-/* globals d3 */
+/* globals d3, mure */
 import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
 
 const ICONS = {
@@ -162,7 +162,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       summaryEnter,
       value: d => d.label,
       onChange: (d, newValue) => {
-        console.log(d, newValue);
+        throw new Error('unimplemented');
       }
     });
 
@@ -266,7 +266,8 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       summaryEnter,
       value: d => d.stringValue ? d.stringValue() : '',
       onChange: (d, newValue) => {
-        console.log(d, newValue);
+        d.value = newValue;
+        mure.putDoc(d.doc);
       }
     }).style('display', d => d.stringValue ? null : 'none');
   }
