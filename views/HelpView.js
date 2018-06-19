@@ -14,9 +14,10 @@ class HelpView extends ScrollableGoldenLayoutView {
   setup () {
     super.setup();
     this.contentDiv.html(this.resources.text);
-    this.contentDiv.select('.get.started.button', () => {
-      this.openDefaultViews();
-    });
+    this.contentDiv.select('.get.started.button')
+      .on('click', () => {
+        this.openDefaultViews();
+      });
     this.contentDiv.selectAll('a[data-example-dataset]')
       .on('click', function () {
         window.mainView.loadExampleFile(this.dataset.exampleDataset);

@@ -246,9 +246,11 @@ class MainView extends View {
         let temp = { settings: {} };
         temp.settings[this.context.hash] = { origraph: this.settings };
         mure.setLinkedViews(temp);
+        this.render();
       }
     };
     layout.on('stateChanged', saveLayoutState);
+    // layout.on('itemDestroyed', saveLayoutState);
 
     try {
       layout.init();
@@ -307,7 +309,10 @@ sites in your browser settings.`);
     }, []);
   }
   loadWorkspace (configObj) {
-    // TODO
+    this.settings.goldenLayoutConfig = configObj;
+    this.goldenLayout.destroy();
+    this.initSubViews(this.d3el.select('#contents'));
+    this.saveSettings();
   }
   resize () {
     if (this.menuView) {
@@ -337,9 +342,13 @@ sites in your browser settings.`);
       });
     } else {
       this.menuView.render();
-      const subViewList = this.getAllSubViews();
+      // goldenLayout doesn't really have a reliable way to check
+      // if it's empty at aribitrary points, so we inspect the DOM instead
+      const nChildren = this.d3el.select('#contents > .lm_root')
+        .node().childNodes.length;
       this.d3el.select(':scope > .emptyState')
-        .style('display', subViewList.length === 0 ? null : 'none');
+        .style('display', nChildren === 0 ? null : 'none');
+      const subViewList = this.getAllSubViews();
       subViewList.forEach(subView => {
         subView.render();
       });
