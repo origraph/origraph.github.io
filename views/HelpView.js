@@ -14,12 +14,54 @@ class HelpView extends ScrollableGoldenLayoutView {
   setup () {
     super.setup();
     this.contentDiv.html(this.resources.text);
+    this.contentDiv.select('.get.started.button', () => {
+      this.openDefaultViews();
+    });
     this.contentDiv.selectAll('a[data-example-dataset]')
       .on('click', function () {
         window.mainView.loadExampleFile(this.dataset.exampleDataset);
       });
   }
   draw () {}
+  openDefaultViews () {
+    window.mainView.loadWorkspace({
+      content: [
+        {
+          type: 'row',
+          content: [{
+            type: 'column',
+            content: [{
+              type: 'row',
+              content: [{
+                type: 'component',
+                componentName: 'RawDataView',
+                componentState: {}
+              }, {
+                type: 'component',
+                componentName: 'SetView',
+                componentState: {}
+              }, {
+                type: 'component',
+                componentName: 'NetworkModelView',
+                componentState: {}
+              }]
+            }, {
+              type: 'row',
+              content: [{
+                type: 'component',
+                componentName: 'InstanceView',
+                componentState: {}
+              }, {
+                type: 'component',
+                componentName: 'TableView',
+                componentState: {}
+              }]
+            }]
+          }]
+        }
+      ]
+    });
+  }
 }
 HelpView.icon = 'img/help.svg';
 HelpView.label = 'Help';

@@ -1,0 +1,30 @@
+@import '../colors.less';
+@import '../measurements.less';
+
+.lm_header .HelpView.lm_active {
+  border-bottom: 1px solid @textColor !important;
+}
+.lm_items .HelpView {
+  background: @textColor !important;
+  color: @backgroundColor;
+  .button {
+    color: @textColor;
+  }
+  a,
+  a:visited {
+    color: @lightAccentColor;
+  }
+
+  .teaser {
+    text-align: center;
+    img {
+      width: 100%;
+      max-width: 30em;
+    }
+  }
+
+  .content {
+    max-width: 40em;
+    margin: 0 auto;
+  }
+}

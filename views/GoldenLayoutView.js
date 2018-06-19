@@ -12,6 +12,7 @@ class GoldenLayoutView extends View {
     this.container = container;
     this.container.setTitle(label);
     this.container.on('tab', tab => {
+      tab.element.addClass(this.constructor.name);
       tab.element.prepend(`<div class="lm_tab_icon" style="background-image:url('${icon}')"></div>`);
     });
     this.container.on('open', () => {

@@ -37,37 +37,9 @@ const defaultSettings = {
   goldenLayoutConfig: {
     content: [
       {
-        type: 'row',
-        content: [{
-          type: 'column',
-          content: [{
-            type: 'row',
-            content: [{
-              type: 'component',
-              componentName: 'RawDataView',
-              componentState: {}
-            }, {
-              type: 'component',
-              componentName: 'SetView',
-              componentState: {}
-            }, {
-              type: 'component',
-              componentName: 'NetworkModelView',
-              componentState: {}
-            }]
-          }, {
-            type: 'row',
-            content: [{
-              type: 'component',
-              componentName: 'InstanceView',
-              componentState: {}
-            }, {
-              type: 'component',
-              componentName: 'TableView',
-              componentState: {}
-            }]
-          }]
-        }]
+        type: 'component',
+        componentName: 'HelpView',
+        componentState: {}
       }
     ]
   }
@@ -333,6 +305,9 @@ sites in your browser settings.`);
     return Object.keys(VIEW_CLASSES).reduce((agg, className) => {
       return agg.concat(this.goldenLayout.root.getComponentsByName(className));
     }, []);
+  }
+  loadWorkspace (configObj) {
+    // TODO
   }
   resize () {
     if (this.menuView) {
