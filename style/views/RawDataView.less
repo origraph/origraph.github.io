@@ -44,9 +44,9 @@
 
       .label {
         position: absolute;
-        right: 100%;
+        right: calc(100% + 0.5em);
         text-align: right;
-        margin-right: 0.25em;
+        padding-right: 0.25em;
       }
       .label, .value {
         max-width: 30em;
@@ -54,12 +54,15 @@
         text-overflow: ellipsis;
         overflow: hidden;
       }
-      .type img {
-        width: @smallButtonImageSize;
-        height: @smallButtonImageSize;
-        filter: @textColorImageFilter;
+      .type {
+        margin: 0 0.25em 0 0;
+        img {
+          width: @smallButtonImageSize;
+          height: @smallButtonImageSize;
+          filter: @textColorImageFilter;
+        }
       }
-      .button, .value, .type {
+      .button, .value {
         margin: 0 0.25em;
       }
     }

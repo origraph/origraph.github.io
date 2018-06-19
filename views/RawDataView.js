@@ -87,11 +87,20 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       .classed(className, true);
     rows.select(`:scope > .${className}`)
       .style('display', d => sectionIsExpanded(d) ? null : 'none');
+
+    // Calculate the global coordinate of the left side of the pane
+    const contentNode = this.contentDiv.node();
+    let contentOffset = contentNode.getBoundingClientRect().left;
+    contentOffset -= contentNode.scrollLeft;
     rows.each(function (d) {
       if (sectionIsExpanded(d)) {
         const d3el = d3.select(this);
-        drawContents(d3el.select(`:scope > .${className}`), d,
-          d3el.select(`:scope > .summary > .${className}`).node().getBoundingClientRect());
+        // Calculate the child offset = the left edge of the button, relative
+        // to this.contentDiv
+        let offset = d3el.select(`:scope > .summary > .${className}`).node()
+          .getBoundingClientRect().left;
+        offset -= contentOffset;
+        drawContents(d3el.select(`:scope > .${className}`), d, offset);
       }
     });
   }
@@ -168,10 +177,13 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     });
 
     // If this is the first row, set offset to be the width of the longest
-    // filename label
+    // filename label, plus a little padding on the left
     if (offset === null) {
       offset = labels.nodes()
-        .reduce((agg, el) => Math.max(agg, el.getBoundingClientRect().width), 0);
+        .reduce((agg, el) => {
+          return Math.max(agg, el.getBoundingClientRect().width);
+        }, 0);
+      offset += this.emSize;
     }
     // Apply the offset
     rows.select(':scope > .summary')
@@ -223,7 +235,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
                (d.value.$edges ? Object.keys(d.value.$edges).length : 0) +
                (d.value.$nodes ? Object.keys(d.value.$nodes).length : 0);
       },
-      drawContents: (d3el, d) => {
+      drawContents: (d3el, d, offset) => {
         d3el.text('todo: references');
       }
     });
@@ -239,8 +251,8 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       summaryEnter,
       visibleWhen: d => !!d.contentItems,
       badgeCount: d => d.contentItems ? d.contentItemCount() : 0,
-      drawContents: (d3el, d, buttonBounds) => {
-        this.drawRows(d3el, d.contentItems(), buttonBounds.left);
+      drawContents: (d3el, d, offset) => {
+        this.drawRows(d3el, d.contentItems(), offset);
       }
     });
 
@@ -255,8 +267,8 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       summaryEnter,
       visibleWhen: d => !!d.metaItems,
       badgeCount: d => d.metaItems ? d.metaItemCount() : 0,
-      drawContents: (d3el, d, buttonBounds) => {
-        this.drawRows(d3el, d.metaItems(), buttonBounds.left);
+      drawContents: (d3el, d, offset) => {
+        this.drawRows(d3el, d.metaItems(), offset);
       }
     });
 
