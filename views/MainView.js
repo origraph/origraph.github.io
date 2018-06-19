@@ -97,6 +97,38 @@ class MainView extends View {
       this.refresh({ contentUpdated: true });
     });
 
+    mure.customizeAlertDialog(message => {
+      return new Promise((resolve, reject) => {
+        this.showOverlay({
+          message,
+          ok: () => { this.hideOverlay(); resolve(); }
+        });
+      });
+    });
+    mure.customizeConfirmDialog(message => {
+      return new Promise((resolve, reject) => {
+        this.showOverlay({
+          message,
+          ok: () => { this.hideOverlay(); resolve(true); },
+          cancel: () => { this.hideOverlay(); resolve(false); }
+        });
+      });
+    });
+    mure.customizePromptDialog((message, defaultValue = '') => {
+      return new Promise((resolve, reject) => {
+        this.showOverlay({
+          message,
+          ok: () => {
+            const value = d3.select('#overlay .prompt').property('value');
+            this.hideOverlay();
+            resolve(value);
+          },
+          cancel: () => { this.hideOverlay(); resolve(null); },
+          prompt: defaultValue
+        });
+      });
+    });
+
     this.refresh();
   }
   initContext () {
@@ -348,13 +380,28 @@ sites in your browser settings.`);
     });
     return result;
   }
-  showOverlay ({ message = '', spinner = false } = {}) {
+  showOverlay ({
+    message = '',
+    spinner = false,
+    ok = null,
+    cancel = null,
+    prompt = null
+  } = {}) {
     let overlay = this.d3el.select('#overlay')
       .style('display', message || spinner ? null : 'none');
     overlay.select('.message')
       .text(message);
     overlay.select('.spinner')
       .style('display', spinner ? null : 'none');
+    overlay.select('.prompt')
+      .style('display', prompt === null ? 'none' : null)
+      .property('value', prompt || '');
+    overlay.select('.ok.button')
+      .style('display', ok === null ? 'none' : null)
+      .on('click', ok || (() => {}));
+    overlay.select('.cancel.button')
+      .style('display', cancel === null ? 'none' : null)
+      .on('click', cancel || (() => {}));
   }
   hideOverlay () {
     this.showOverlay();

@@ -161,8 +161,9 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rows,
       summaryEnter,
       value: d => d.label,
-      onChange: (d, newValue) => {
-        throw new Error('unimplemented');
+      onChange: async (d, newValue) => {
+        await mure.alert(`Sorry, editing labels hasn't been implemented yet.`);
+        this.render(); // clear out the bad value
       }
     });
 

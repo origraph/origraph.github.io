@@ -47,20 +47,35 @@ h1, h2, h3, h4, h5, h6 {
   top: 0px;
   width: 100%;
   height: 100vh;
-}
-#overlay {
   background-color: rgba(34, 34, 34 ,0.75);
-}
-#overlay .center {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-#overlay .spinner {
-  width: 4em;
-  height: 4em;
+
+  .center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+
+    .message {
+      color: @backgroundColor;
+      white-space: nowrap;
+    }
+    .spinner {
+      display: inline-block;
+      width: @buttonSize;
+      height: @buttonSize;
+    }
+    .prompt {
+      margin: 1em auto;
+    }
+    .dialogButtons {
+      display: flex;
+      justify-content: flex-end;
+      .button {
+        margin-left: 1em;
+      }
+    }
+  }
 }
 
 #tooltip {
