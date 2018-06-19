@@ -131,12 +131,12 @@ class MainView extends View {
     delete this.settings;
     this.refresh();
   }
-  saveSettings () {
+  async saveSettings () {
     const temp = { settings: {} };
     temp.settings[this.context.hash] = {
       origraph: this.settings || this._lastSettings || defaultSettings
     };
-    mure.setLinkedViews(temp);
+    await mure.setLinkedViews(temp);
   }
   selectItem (item, toggleMode = false) {
     const options = {};
@@ -196,7 +196,7 @@ class MainView extends View {
       } else {
         // Initialize the settings and layout
         this.settings = linkedViewSpec.settings[this.context.hash].origraph;
-        this.goldenLayout = this.initSubViews(this.d3el.select('#contents'));
+        this.initSubViews(this.d3el.select('#contents'));
       }
     } else if (linkedViewSpec.settings) {
       // We got a simple update for the settings
@@ -220,40 +220,39 @@ class MainView extends View {
     // Set up the subViews
     this.menuView = new MainMenu(this.d3el.select('#menu'));
   }
-  initSubViews (contentsElement) {
-    let layout = new GoldenLayout(this.settings.goldenLayoutConfig, contentsElement.node());
-
-    Object.entries(VIEW_CLASSES).forEach(([className, ViewClass]) => {
-      layout.registerComponent(className, ViewClass);
-    });
-
-    const saveLayoutState = () => {
-      // debounce this call if goldenlayout isn't ready;
-      // see https://github.com/golden-layout/golden-layout/issues/253#issuecomment-361144944
-      clearTimeout(this.saveLayoutStateTimeout);
-      if (!(layout.isInitialised && layout.openPopouts.every(p => p.isInitialised))) {
-        this.saveLayoutStateTimeout = setTimeout(() => {
-          saveLayoutState();
-        }, 200);
-      } else {
-        this.settings.goldenLayoutConfig = layout.toConfig();
-        // Save the settings (auto-triggers a render once they're saved, but for
-        // snappier menu feedback, we manually trigger its render function right
-        // away)
-        if (this.menuView) {
-          this.menuView.render();
-        }
-        let temp = { settings: {} };
-        temp.settings[this.context.hash] = { origraph: this.settings };
-        mure.setLinkedViews(temp);
-        this.render();
+  saveLayoutState () {
+    // debounce this call if goldenlayout isn't ready;
+    // see https://github.com/golden-layout/golden-layout/issues/253#issuecomment-361144944
+    clearTimeout(this.saveLayoutStateTimeout);
+    if (!(this.goldenLayout &&
+          this.goldenLayout.isInitialised &&
+          this.goldenLayout.openPopouts.every(p => p.isInitialised))) {
+      this.saveLayoutStateTimeout = setTimeout(() => {
+        this.saveLayoutState();
+      }, 200);
+    } else {
+      this.settings.goldenLayoutConfig = this.goldenLayout.toConfig();
+      // Save the settings (auto-triggers a render once they're saved, but for
+      // snappier menu feedback, we manually trigger its render function right
+      // away)
+      if (this.menuView) {
+        this.menuView.render();
       }
-    };
-    layout.on('stateChanged', saveLayoutState);
-    // layout.on('itemDestroyed', saveLayoutState);
+      this.saveSettings().then(() => {
+        this.render();
+      });
+    }
+  }
+  initSubViews (contentsElement) {
+    this.goldenLayout = new GoldenLayout(this.settings.goldenLayoutConfig, contentsElement.node());
+    Object.entries(VIEW_CLASSES).forEach(([className, ViewClass]) => {
+      this.goldenLayout.registerComponent(className, ViewClass);
+    });
+    this.goldenLayout.on('initialised', () => { this.saveLayoutState(); });
+    this.goldenLayout.on('stateChanged', () => { this.saveLayoutState(); });
 
     try {
-      layout.init();
+      this.goldenLayout.init();
     } catch (error) {
       if (error.type === 'popoutBlocked') {
         mure.warn(`\
@@ -266,13 +265,12 @@ sites in your browser settings.`);
         // TODO: this hack successfully allows the rest of the main page to
         // initialize, but there's a minor bug if the user opens the blocked
         // popup in that it can't be popped back into the layout
-        layout._subWindowsCreated = true;
-        layout.init();
+        this.goldenLayout._subWindowsCreated = true;
+        this.goldenLayout.init();
       } else {
         throw error;
       }
     }
-    return layout;
   }
   isShowingSubView (className) {
     if (!this.goldenLayout) {
