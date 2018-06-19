@@ -9,7 +9,7 @@
       position: absolute;
       left: 0px;
       top: 0px;
-      right: 0px;
+      // width set in javascript
       height: 2em;
       opacity: 0;
       -webkit-transition: opacity 0.5s;
@@ -31,10 +31,9 @@
       }
     }
     .summary {
-      /* left is set in JS, controlling the whole layout */
+      // left is set in JS, controlling the whole layout
       position: relative;
-      width: -webkit-fit-content;
-      width: fit-content;
+      width: 0;
       padding: 0.25em 0;
       display: flex;
       align-items: center;

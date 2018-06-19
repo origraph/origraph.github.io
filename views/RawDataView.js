@@ -29,6 +29,10 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
   draw () {
     if (!this.drawEmptyState()) {
       this.drawRows(this.contentDiv, window.mainView.allDocItems);
+      // Once everything has been draw, stretch the selectionTargets out
+      // to be the width of the window
+      this.contentDiv.selectAll('.selectionTarget')
+        .style('width', this.contentDiv.node().scrollWidth + 'px');
     }
   }
   drawCollapsibleSection ({
