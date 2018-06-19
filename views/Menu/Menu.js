@@ -212,8 +212,9 @@ class ConvertMenuOption extends ActionMenuOption {
     this.icon = `img/${ItemType.getHumanReadableType().toLowerCase()}.svg`;
     this.label = ItemType.getHumanReadableType();
   }
-  executeAction () {
-    console.log('todo: convert!');
+  async executeAction () {
+    window.mainView.userSelection.convertToType(this.ItemType);
+    await window.mainView.userSelection.save();
   }
   get enabled () {
     return !!(window.mainView.availableOperations &&
