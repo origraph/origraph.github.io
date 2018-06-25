@@ -4,7 +4,6 @@ class OperationModalOption extends ModalMenuOption {
   setup (d3el) {
     super.setup(d3el);
     this.contentDiv.text('todo: operation modal');
-    console.log(this.operation);
   }
 }
 
@@ -22,7 +21,7 @@ export default (icon, opFamilyName, opFamilyObj) => class extends SortedSubMenu 
         } else {
           menuOption = new ActionMenuOption(this);
           menuOption.executeAction = async () => {
-            await window.mainView.userSelection.execute(operation);
+            window.mainView.setUserSelection(await window.mainView.userSelection.execute(operation));
           };
         }
         menuOption.icon = `img/${opName}.svg`;

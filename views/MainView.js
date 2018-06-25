@@ -143,8 +143,11 @@ class MainView extends View {
     if (toggleMode) {
       options.mode = mure.DERIVE_MODES.XOR;
     }
-    this.userSelection = this.userSelection
-      .deriveSelection([item.uniqueSelector], options);
+    this.setUserSelection(this.userSelection
+      .deriveSelection([item.uniqueSelector], options));
+  }
+  setUserSelection (selection) {
+    this.userSelection = selection;
     mure.setLinkedViews({ userSelection: this.userSelection });
   }
   async loadExampleFile (filename) {

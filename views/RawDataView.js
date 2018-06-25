@@ -28,14 +28,16 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
   }
   draw () {
     if (!this.drawEmptyState()) {
-      this.drawRows(this.contentDiv, window.mainView.allDocItems);
-      // Once everything has been draw, stretch the selectionTargets out
-      // to be the width of the window
-      this.contentDiv.selectAll('.selectionTarget')
-        .style('width', this.contentDiv.node().scrollWidth + 'px');
+      (async () => {
+        await this.drawRows(this.contentDiv, window.mainView.allDocItems);
+        // Once everything has been draw, stretch the selectionTargets out
+        // to be the width of the window
+        this.contentDiv.selectAll('.selectionTarget')
+          .style('width', this.contentDiv.node().scrollWidth + 'px');
+      })();
     }
   }
-  drawCollapsibleSection ({
+  async drawCollapsibleSection ({
     className,
     closedIconPath,
     openIconPath,
@@ -44,7 +46,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     rowsEnter,
     summaryEnter,
     visibleWhen,
-    setBadgeCount,
+    badgeCount,
     drawContents
   }) {
     const sectionIsExpanded = d => {
@@ -94,17 +96,22 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     const contentNode = this.contentDiv.node();
     let contentOffset = contentNode.getBoundingClientRect().left;
     contentOffset -= contentNode.scrollLeft;
+    let contentPromises = [];
     rows.each(function (d) {
-      const d3el = d3.select(this);
-      setBadgeCount(d3el.select(`:scope > .summary > .${className}.button > .badge`), d);
-      if (sectionIsExpanded(d)) {
-        // Calculate the child offset = the left edge of the button, relative
-        // to this.contentDiv
-        let offset = d3el.select(`:scope > .summary > .${className}`).node()
-          .getBoundingClientRect().left;
-        offset -= contentOffset;
-        drawContents(d3el.select(`:scope > .${className}`), d, offset);
-      }
+      contentPromises.push(new Promise(async (resolve, reject) => {
+        const d3el = d3.select(this);
+        d3el.select(`:scope > .summary > .${className}.button > .badge`)
+          .text(await badgeCount(d));
+        if (sectionIsExpanded(d)) {
+          // Calculate the child offset = the left edge of the button, relative
+          // to this.contentDiv
+          let offset = d3el.select(`:scope > .summary > .${className}`).node()
+            .getBoundingClientRect().left;
+          offset -= contentOffset;
+          await drawContents(d3el.select(`:scope > .${className}`), d, offset);
+        }
+        resolve();
+      }));
     });
   }
   drawField ({
@@ -143,7 +150,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       }
     });
   }
-  drawRows (contentEl, itemList, offset = null) {
+  async drawRows (contentEl, itemList, offset = null) {
     let rows = contentEl.selectAll(':scope > .row')
       .data(this.sortItems(itemList), d => d.uniqueSelector);
     rows.exit().remove();
@@ -208,7 +215,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       .attr('src', d => ICONS[d.constructor.name]);
 
     // Item tags button and section
-    this.drawCollapsibleSection({
+    await this.drawCollapsibleSection({
       className: 'tags',
       openIconPath: 'img/tag.svg',
       closedIconPath: 'img/tag.svg',
@@ -217,16 +224,14 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.value.$tags,
-      setBadgeCount: (d3el, d) => {
-        d3el.text(d.value.$tags ? Object.keys(d.value.$tags).length : 0);
-      },
+      badgeCount: d => d.value.$tags ? Object.keys(d.value.$tags).length : 0,
       drawContents: (d3el, d) => {
         d3el.text('todo: tags');
       }
     });
 
     // Item references button and section
-    this.drawCollapsibleSection({
+    await this.drawCollapsibleSection({
       className: 'references',
       openIconPath: 'img/reference.svg',
       closedIconPath: 'img/reference.svg',
@@ -235,12 +240,10 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => d.value.$members || d.value.$edges || d.value.$nodes,
-      setBadgeCount: (d3el, d) => {
-        d3el.text(
-          (d.value.$members ? Object.keys(d.value.$members).length : 0) +
+      badgeCount: d => {
+        return (d.value.$members ? Object.keys(d.value.$members).length : 0) +
           (d.value.$edges ? Object.keys(d.value.$edges).length : 0) +
-          (d.value.$nodes ? Object.keys(d.value.$nodes).length : 0)
-        );
+          (d.value.$nodes ? Object.keys(d.value.$nodes).length : 0);
       },
       drawContents: (d3el, d, offset) => {
         d3el.text('todo: references');
@@ -248,7 +251,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     });
 
     // Item contents button and section
-    this.drawCollapsibleSection({
+    await this.drawCollapsibleSection({
       className: 'containerContents',
       closedIconPath: 'img/container.svg',
       openIconPath: 'img/openContainer.svg',
@@ -257,20 +260,14 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.contentItems,
-      setBadgeCount: (d3el, d) => {
-        if (d.contentItems) {
-          (async () => { d3el.text(await d.contentItemCount()); })();
-        } else {
-          d3el.text('0');
-        }
-      },
+      badgeCount: async d => d.contentItems ? d.contentItemCount() : 0,
       drawContents: async (d3el, d, offset) => {
-        this.drawRows(d3el, await d.contentItems(), offset);
+        await this.drawRows(d3el, await d.contentItems(), offset);
       }
     });
 
     // Meta items button and section (for documents)
-    this.drawCollapsibleSection({
+    await this.drawCollapsibleSection({
       className: 'meta',
       closedIconPath: 'img/meta.svg',
       openIconPath: 'img/meta.svg',
@@ -279,15 +276,9 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.metaItems,
-      setBadgeCount: (d3el, d) => {
-        if (d.metaItems) {
-          (async () => { d3el.text(await d.metaItemCount()); })();
-        } else {
-          d3el.text('0');
-        }
-      },
+      badgeCount: async d => d.metatItems ? d.metaItemCount() : 0,
       drawContents: async (d3el, d, offset) => {
-        this.drawRows(d3el, await d.metaItems(), offset);
+        await this.drawRows(d3el, await d.metaItems(), offset);
       }
     });
 
