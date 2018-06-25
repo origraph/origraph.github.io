@@ -44,7 +44,7 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     rowsEnter,
     summaryEnter,
     visibleWhen,
-    badgeCount,
+    setBadgeCount,
     drawContents
   }) {
     const sectionIsExpanded = d => {
@@ -84,8 +84,6 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     button.select(`img`)
       .attr('src', d => sectionIsExpanded(d) ? openIconPath : closedIconPath);
     buttonEnter.append('div').classed('badge', true);
-    button.select(`.badge`)
-      .text(badgeCount);
 
     rowsEnter.append('div')
       .classed(className, true);
@@ -97,8 +95,9 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
     let contentOffset = contentNode.getBoundingClientRect().left;
     contentOffset -= contentNode.scrollLeft;
     rows.each(function (d) {
+      const d3el = d3.select(this);
+      setBadgeCount(d3el.select(`:scope > .summary > .${className}.button > .badge`), d);
       if (sectionIsExpanded(d)) {
-        const d3el = d3.select(this);
         // Calculate the child offset = the left edge of the button, relative
         // to this.contentDiv
         let offset = d3el.select(`:scope > .summary > .${className}`).node()
@@ -218,7 +217,9 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.value.$tags,
-      badgeCount: d => d.value.$tags ? Object.keys(d.value.$tags).length : 0,
+      setBadgeCount: (d3el, d) => {
+        d3el.text(d.value.$tags ? Object.keys(d.value.$tags).length : 0);
+      },
       drawContents: (d3el, d) => {
         d3el.text('todo: tags');
       }
@@ -234,10 +235,12 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => d.value.$members || d.value.$edges || d.value.$nodes,
-      badgeCount: d => {
-        return (d.value.$members ? Object.keys(d.value.$members).length : 0) +
-               (d.value.$edges ? Object.keys(d.value.$edges).length : 0) +
-               (d.value.$nodes ? Object.keys(d.value.$nodes).length : 0);
+      setBadgeCount: (d3el, d) => {
+        d3el.text(
+          (d.value.$members ? Object.keys(d.value.$members).length : 0) +
+          (d.value.$edges ? Object.keys(d.value.$edges).length : 0) +
+          (d.value.$nodes ? Object.keys(d.value.$nodes).length : 0)
+        );
       },
       drawContents: (d3el, d, offset) => {
         d3el.text('todo: references');
@@ -254,9 +257,15 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.contentItems,
-      badgeCount: d => d.contentItems ? d.contentItemCount() : 0,
-      drawContents: (d3el, d, offset) => {
-        this.drawRows(d3el, d.contentItems(), offset);
+      setBadgeCount: (d3el, d) => {
+        if (d.contentItems) {
+          (async () => { d3el.text(await d.contentItemCount()); })();
+        } else {
+          d3el.text('0');
+        }
+      },
+      drawContents: async (d3el, d, offset) => {
+        this.drawRows(d3el, await d.contentItems(), offset);
       }
     });
 
@@ -270,9 +279,15 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.metaItems,
-      badgeCount: d => d.metaItems ? d.metaItemCount() : 0,
-      drawContents: (d3el, d, offset) => {
-        this.drawRows(d3el, d.metaItems(), offset);
+      setBadgeCount: (d3el, d) => {
+        if (d.metaItems) {
+          (async () => { d3el.text(await d.metaItemCount()); })();
+        } else {
+          d3el.text('0');
+        }
+      },
+      drawContents: async (d3el, d, offset) => {
+        this.drawRows(d3el, await d.metaItems(), offset);
       }
     });
 

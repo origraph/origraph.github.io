@@ -19,7 +19,7 @@ class ConvertMenu extends SortedSubMenu {
     super.draw();
     this.d3el.select('.button')
       .classed('disabled', !window.mainView.availableOperations ||
-        Object.keys(window.mainView.availableOperations.possibleConversions).length === 0);
+        Object.keys(window.mainView.availableOperations.conversions).length === 0);
   }
   compare (a, b) {
     if (a.enabled && !b.enabled) {

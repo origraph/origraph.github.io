@@ -218,7 +218,7 @@ class ConvertMenuOption extends ActionMenuOption {
   }
   get enabled () {
     return !!(window.mainView.availableOperations &&
-      window.mainView.availableOperations.possibleConversions[this.typeName]);
+      window.mainView.availableOperations.conversions[this.typeName]);
   }
 }
 
