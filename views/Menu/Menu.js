@@ -152,7 +152,7 @@ class ModalMenuOption extends CollapsibleMenu {
 class ActionMenuOption extends BaseMenu {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
-    this.requireProperties(['executeAction', 'enabled']);
+    this.requireProperties(['executeAction']);
   }
   setup () {
     super.setup();
@@ -160,9 +160,86 @@ class ActionMenuOption extends BaseMenu {
       this.executeAction();
     });
   }
+}
+
+const DisableableOptionMixin = (superclass) => class extends superclass {
+  constructor (parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.requireProperties(['isEnabled']);
+  }
   draw () {
-    this.summary.select('.button')
-      .classed('disabled', !this.enabled);
+    super.draw();
+    (async () => {
+      this.summary.select('.button')
+        .classed('disabled', !(await this.isEnabled()));
+    })();
+  }
+};
+
+const OperationMixin = (superclass) => class extends DisableableOptionMixin(superclass) {
+  constructor (operation, parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.operation = operation;
+    this.icon = `img/${operation.lowerCamelCaseName}.svg`;
+    this.label = operation.humanReadableName;
+  }
+  async isEnabled () {
+    if (!window.mainView.userSelection) {
+      return false;
+    }
+    const availableOps = await window.mainView.userSelection.getAvailableOperations();
+    return !!availableOps[this.operation.name];
+  }
+};
+
+class ActionOperationOption extends OperationMixin(ActionMenuOption) {
+  async executeAction () {
+    if (window.mainView.userSelection) {
+      const newSelection = await window.mainView.userSelection.execute(this.operation);
+      window.mainView.setUserSelection(newSelection);
+    }
+  }
+}
+
+class ModalOperationOption extends OperationMixin(ModalMenuOption) {
+  draw () {
+    super.draw();
+    if (window.mainView.userSelection) {
+      (async () => {
+        const availableOps = await window.mainView.userSelection.getAvailableOperations();
+        this.drawOptions(availableOps[this.operation.name]);
+      })();
+    }
+  }
+  drawOptions (inputSpec) {
+    // TODO: draw settings based on the inputSpec that's given inside this.contentDiv
+  }
+}
+
+class ContextualOperationOption extends ModalOperationOption {
+  setup () {
+    super.setup();
+    const contextSwitch = this.contentDiv.append('div')
+      .classed('contextSwitch', true);
+    const switches = contextSwitch.selectAll('input')
+      .data(d3.entries(this.operation.subOperations));
+    switches.enter().append('input')
+      .attr('type', 'radio')
+      .text(d => d.value.humanReadableName);
+
+    this.optionsDiv = this.contentDiv.append('div');
+  }
+  drawOptions (inputSpecs) {
+    // TODO: draw currently active context settings in this.optionsDiv
+  }
+  async isEnabled () {
+    if (!window.mainView.userSelection) {
+      return false;
+    }
+    const availableOps = await window.mainView.userSelection.getAvailableOperations();
+    return Object.values(availableOps[this.operation.name]).some(context => {
+      return context !== null;
+    });
   }
 }
 
@@ -204,24 +281,6 @@ class ViewMenuOption extends CheckableMenuOption {
   }
 }
 
-class ConvertMenuOption extends ActionMenuOption {
-  constructor (typeName, ItemType, parentMenu, d3el) {
-    super(parentMenu, d3el);
-    this.typeName = typeName;
-    this.ItemType = ItemType;
-    this.icon = `img/${ItemType.getHumanReadableType().toLowerCase()}.svg`;
-    this.label = ItemType.getHumanReadableType();
-  }
-  async executeAction () {
-    window.mainView.userSelection.convertToType(this.ItemType);
-    await window.mainView.userSelection.save();
-  }
-  get enabled () {
-    return !!(window.mainView.availableOperations &&
-      window.mainView.availableOperations.conversions[this.typeName]);
-  }
-}
-
 const AnimatedIconMixin = (superclass) => class extends superclass {
   setup () {
     super.setup();
@@ -244,8 +303,11 @@ export {
   SortedSubMenu,
   ModalMenuOption,
   ActionMenuOption,
+  DisableableOptionMixin,
+  ActionOperationOption,
+  ModalOperationOption,
+  ContextualOperationOption,
   CheckableMenuOption,
   ViewMenuOption,
-  ConvertMenuOption,
   AnimatedIconMixin
 };

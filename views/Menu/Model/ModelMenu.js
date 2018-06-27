@@ -1,9 +1,7 @@
 import { SubMenu } from '../Menu.js';
+import ConvertOption from './ConvertOption.js';
+import AssignClassOption from './AssignClassOption.js';
 import ConnectOption from './ConnectOption.js';
-import MergeEdgeOption from './MergeEdgeOption.js';
-import DissolveOption from './DissolveOption.js';
-import CreateClassOption from './CreateClassOption.js';
-import PromoteOption from './PromoteOption.js';
 
 class ModelMenu extends SubMenu {
   constructor (parentMenu, d3el) {
@@ -11,11 +9,9 @@ class ModelMenu extends SubMenu {
     this.icon = 'img/networkModel.svg';
     this.label = 'Model';
     this.items = [
-      new ConnectOption(this),
-      new MergeEdgeOption(this),
-      new DissolveOption(this),
-      new CreateClassOption(this),
-      new PromoteOption(this)
+      new ConvertOption(this),
+      new AssignClassOption(this),
+      new ConnectOption(this)
     ];
   }
 }

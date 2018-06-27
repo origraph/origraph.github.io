@@ -28,35 +28,24 @@ class HelpView extends ScrollableGoldenLayoutView {
     window.mainView.loadWorkspace({
       content: [
         {
-          type: 'row',
+          type: 'column',
           content: [{
-            type: 'column',
+            type: 'row',
             content: [{
-              type: 'row',
-              content: [{
-                type: 'component',
-                componentName: 'RawDataView',
-                componentState: {}
-              }, {
-                type: 'component',
-                componentName: 'SetView',
-                componentState: {}
-              }, {
-                type: 'component',
-                componentName: 'NetworkModelView',
-                componentState: {}
-              }]
+              type: 'component',
+              componentName: 'NetworkModelView',
+              componentState: {}
             }, {
-              type: 'row',
-              content: [{
-                type: 'component',
-                componentName: 'InstanceView',
-                componentState: {}
-              }, {
-                type: 'component',
-                componentName: 'TableView',
-                componentState: {}
-              }]
+              type: 'component',
+              componentName: 'InstanceView',
+              componentState: {}
+            }]
+          }, {
+            type: 'row',
+            content: [{
+              type: 'component',
+              componentName: 'TableView',
+              componentState: {}
             }]
           }]
         }
