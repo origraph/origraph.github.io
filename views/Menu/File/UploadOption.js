@@ -34,7 +34,8 @@ class UploadOption extends ModalMenuOption {
     }));
     this.spinner.style('display', 'none');
     window.mainView.setNavigationContext(fileSelections.reduce((agg, selection) => {
-      return agg.concat(selection.selectorList);
+      agg.push(selection.selectorList[0] + '.contents[*]');
+      return agg;
     }, []));
   }
 }

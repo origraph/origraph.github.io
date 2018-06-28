@@ -114,12 +114,14 @@ class MainView extends View {
         } catch (err) {
           if (!err.INVALID_SELECTOR) {
             throw err;
-          } else {
-            window.location.pathname = '';
           }
         }
       }
     });
+    if (!result) {
+      // Got some kind of garbage in the URL; clean it
+      window.history.replaceState({}, '', window.location.pathname);
+    }
     // Default: return the root selection
     result = result || mure.selectAll();
     return result;
@@ -160,7 +162,7 @@ class MainView extends View {
       mure.warn(err);
     }
     const newFile = await mure.uploadString(filename, null, null, fileContents);
-    await this.setNavigationContext(newFile.selectorList);
+    await this.setNavigationContext(newFile.selectorList[0] + '.contents[*]');
   }
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
