@@ -14,9 +14,9 @@ class MainMenu extends SubMenu {
     this.items = [
       new FileMenu(this),
       new EditMenu(this),
-      new ViewMenu(this),
       new SelectMenu(this),
       new ModelMenu(this),
+      new ViewMenu(this),
       new ViewMenuOption('HelpView', this)
     ];
     this.hideContents = false;

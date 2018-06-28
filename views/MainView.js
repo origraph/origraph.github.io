@@ -53,13 +53,13 @@ class MainView extends View {
     this.SLICE_MODES = SLICE_MODES;
     this.VIEW_CLASSES = VIEW_CLASSES;
 
-    this.context = this.initContext();
+    this.navigationContext = this.initContext();
 
     mure.on('linkedViewChange', linkedViewSpec => {
       if (linkedViewSpec.userSelection ||
          (linkedViewSpec.settings &&
-          linkedViewSpec.settings[this.context.hash] &&
-          linkedViewSpec.settings[this.context.hash].origraph)) {
+          linkedViewSpec.settings[this.navigationContext.hash] &&
+          linkedViewSpec.settings[this.navigationContext.hash].origraph)) {
         this.refresh({ linkedViewSpec });
       }
     });
@@ -105,7 +105,7 @@ class MainView extends View {
   }
   initContext () {
     let result = null;
-    // Select the view context specified by the URL
+    // Select the view navigationContext specified by the URL
     window.location.search.substr(1).split('&').forEach(chunk => {
       let [key, value] = chunk.split('=');
       if (key === 'viewSelectors') {
@@ -123,7 +123,7 @@ class MainView extends View {
     return result;
   }
   setContext (selectorList) {
-    this.context = mure.selectAll(selectorList);
+    this.navigationContext = mure.selectAll(selectorList);
     window.history.replaceState({}, '',
       window.location.pathname + '?viewSelectors=' +
       encodeURIComponent(selectorList));
@@ -133,7 +133,7 @@ class MainView extends View {
   }
   async saveSettings () {
     const temp = { settings: {} };
-    temp.settings[this.context.hash] = {
+    temp.settings[this.navigationContext.hash] = {
       origraph: this.settings || this._lastSettings || defaultSettings
     };
     await mure.setLinkedViews(temp);
@@ -188,9 +188,9 @@ class MainView extends View {
         // Force a full read of the settings if we only got a userSelection delta
         linkedViewSpec = await mure.getLinkedViews();
       }
-      if (!linkedViewSpec.settings[this.context.hash] ||
-          !linkedViewSpec.settings[this.context.hash].origraph) {
-        // Origraph hasn't seen this context before; use this._lastSettings if
+      if (!linkedViewSpec.settings[this.navigationContext.hash] ||
+          !linkedViewSpec.settings[this.navigationContext.hash].origraph) {
+        // Origraph hasn't seen this navigationContext before; use this._lastSettings if
         // we have them, or apply the default settings (this.settings will be
         // undefined). This will trigger a linkedViewChange event and call
         // render again.
@@ -198,12 +198,12 @@ class MainView extends View {
         return;
       } else {
         // Initialize the settings and layout
-        this.settings = linkedViewSpec.settings[this.context.hash].origraph;
+        this.settings = linkedViewSpec.settings[this.navigationContext.hash].origraph;
         this.initSubViews(this.d3el.select('#contents'));
       }
     } else if (linkedViewSpec.settings) {
       // We got a simple update for the settings
-      this.settings = linkedViewSpec.settings[this.context.hash].origraph;
+      this.settings = linkedViewSpec.settings[this.navigationContext.hash].origraph;
     }
 
     if (contentUpdated || !this.allDocItems) {

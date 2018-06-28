@@ -183,12 +183,16 @@ const OperationMixin = (superclass) => class extends DisableableOptionMixin(supe
     this.icon = `img/${operation.lowerCamelCaseName}.svg`;
     this.label = operation.humanReadableName;
   }
-  async isEnabled () {
+  async getInputSpec () {
     if (!window.mainView.userSelection) {
-      return false;
+      return null;
+    } else {
+      const availableOps = await window.mainView.userSelection.getAvailableOperations();
+      return availableOps[this.operation.name];
     }
-    const availableOps = await window.mainView.userSelection.getAvailableOperations();
-    return !!availableOps[this.operation.name];
+  }
+  async isEnabled () {
+    return !!(await this.getInputSpec());
   }
 };
 
@@ -204,33 +208,71 @@ class ActionOperationOption extends OperationMixin(ActionMenuOption) {
 class ModalOperationOption extends OperationMixin(ModalMenuOption) {
   draw () {
     super.draw();
-    if (window.mainView.userSelection) {
-      (async () => {
-        const availableOps = await window.mainView.userSelection.getAvailableOperations();
-        this.drawOptions(availableOps[this.operation.name]);
-      })();
-    }
+    this.drawOptions();
   }
-  drawOptions (inputSpec) {
-    // TODO: draw settings based on the inputSpec that's given inside this.contentDiv
+  async drawOptions (containerDiv = this.contentDiv) {
+    containerDiv.html('');
+    const inputSpec = await this.getInputSpec();
+    const applyButton = containerDiv.append('div')
+      .classed('button', true)
+      .classed('disabled', !inputSpec);
+    applyButton.append('a');
+    applyButton.append('span')
+      .text('Apply');
+    applyButton.on('click', () => {
+      if (inputSpec) {
+        console.log('todo: execute operation');
+      }
+      console.log(inputSpec);
+    });
   }
 }
 
 class ContextualOperationOption extends ModalOperationOption {
+  constructor (operation, parentMenu, d3el) {
+    super(operation, parentMenu, d3el);
+    this.currentOperation = Object.keys(operation.subOperations)[0];
+  }
+  async getInputSpec () {
+    const specs = await super.getInputSpec();
+    return specs[this.currentOperation];
+  }
   setup () {
     super.setup();
-    const contextSwitch = this.contentDiv.append('div')
-      .classed('contextSwitch', true);
-    const switches = contextSwitch.selectAll('input')
+    const contextSwitchContainer = this.contentDiv.append('div');
+    const switches = contextSwitchContainer.selectAll('div.contextSwitch')
       .data(d3.entries(this.operation.subOperations));
-    switches.enter().append('input')
+    const switchesEnter = switches.enter().append('label')
+      .classed('contextSwitch', true);
+    switchesEnter.append('input')
       .attr('type', 'radio')
+      .attr('value', d => d.value.name)
+      .attr('name', this.operation.name)
+      .on('change', async d => {
+        this.currentOperation = d.key;
+        this.drawOptions();
+      });
+    switchesEnter.append('span')
       .text(d => d.value.humanReadableName);
 
     this.optionsDiv = this.contentDiv.append('div');
   }
-  drawOptions (inputSpecs) {
-    // TODO: draw currently active context settings in this.optionsDiv
+  draw () {
+    super.draw();
+    if (window.mainView.userSelection) {
+      (async () => {
+        const availableOps = await window.mainView.userSelection.getAvailableOperations();
+        const switches = this.contentDiv.selectAll('.contextSwitch');
+        switches
+          .property('selected', d => d.value.name === this.currentOperation)
+          .classed('disabled', d => !availableOps[this.operation.name][d.key])
+          .select('input')
+          .property('disabled', d => !availableOps[this.operation.name][d.key]);
+      })();
+    }
+  }
+  async drawOptions () {
+    return super.drawOptions(this.optionsDiv);
   }
   async isEnabled () {
     if (!window.mainView.userSelection) {
