@@ -27,7 +27,7 @@
 // Placeholder Container of target position
 .lm_dropTargetIndicator {
   box-shadow: inset 0 0 1em @shadowColor;
-  outline: 1px dashed @accentColor;
+  outline: 1px dashed @shadowColor;
 
   // Inner Placeholder
   .lm_inner {
@@ -38,13 +38,13 @@
 
 // Separator line (handle to change pane size)
 .lm_splitter {
-  background: desaturate(@accentColor, 5%);
+  background: desaturate(@shadowColor, 5%);
   opacity: 0.001;
   transition: opacity 200ms ease;
 
   &:hover, // When hovered by mouse...
   &.lm_dragging {
-    background: @accentColor;
+    background: @shadowColor;
     opacity: 1;
   }
 }
@@ -96,7 +96,7 @@
 
       &:hover {
         opacity: 1;
-        filter: @accentImageFilter;
+        filter: @textColorImageFilter;
       }
     }
 
@@ -119,7 +119,7 @@
 // If Pane Header (container of Tabs for each pane) is selected (used only if addition of new Contents is made "by selection" and not "by drag")
 .lm_selected {
   .lm_header {
-    background-color: @darkAccentColor;
+    background-color: @darkShadowColor;
   }
 }
 
@@ -148,7 +148,7 @@
 
     &:hover {
       opacity: 1;
-      filter: @accentImageFilter;
+      filter: @textColorImageFilter;
     }
   }
 
