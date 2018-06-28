@@ -26,22 +26,16 @@ class UploadOption extends ModalMenuOption {
       .attr('height', '18px')
       .attr('src', 'img/spinner.gif');
   }
-  uploadFiles () {
+  async uploadFiles () {
     this.spinner.style('display', null);
     const fileList = Array.from(this.uploadInput.node().files);
-    const remainingFiles = {};
-    const finishFile = mureFile => {
-      delete remainingFiles[mureFile.filename];
-      if (Object.keys(remainingFiles).length === 0) {
-        this.spinner.style('display', 'none');
-        mure.off('docChange', finishFile);
-      }
-    };
-    fileList.forEach(fileObj => {
-      remainingFiles[fileObj.name] = true;
-      mure.uploadFileObj(fileObj);
-    });
-    mure.on('docChange', finishFile);
+    let fileSelections = await Promise.all(fileList.map(fileObj => {
+      return mure.uploadFileObj(fileObj);
+    }));
+    this.spinner.style('display', 'none');
+    window.mainView.setNavigationContext(fileSelections.reduce((agg, selection) => {
+      return agg.concat(selection.selectorList);
+    }, []));
   }
 }
 export default UploadOption;

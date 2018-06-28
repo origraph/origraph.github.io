@@ -8,7 +8,7 @@ class NavigateOption extends DisableableOptionMixin(ActionMenuOption) {
   }
   executeAction () {
     if (window.mainView.userSelection) {
-      throw new Error('unimplemented');
+      window.mainView.setNavigationContext(window.mainView.userSelection.selectorList);
     }
   }
   isEnabled () {

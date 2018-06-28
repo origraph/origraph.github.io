@@ -1,7 +1,7 @@
 /* globals d3 */
-import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
+import GoldenLayoutView from './GoldenLayoutView.js';
 
-class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
+class AttributeSummaryView extends GoldenLayoutView {
   constructor (container) {
     super({
       container,
@@ -9,58 +9,54 @@ class AttributeSummaryView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       label: AttributeSummaryView.label
     });
   }
-  draw () {
-    if (!this.drawEmptyState()) {
-      (async () => {
-        let histograms = await window.mainView.userSelection.histograms();
-        histograms = [{
-          key: 'Raw Values',
-          value: histograms.raw
-        }].concat(d3.entries(histograms.attributes));
-        let sections = this.contentDiv.selectAll('details')
-          .data(histograms, d => d.key);
-        sections.exit().remove();
-        let sectionsEnter = sections.enter().append('details');
-        sections = sections.merge(sectionsEnter);
+  async drawReadyState () {
+    let histograms = await window.mainView.userSelection.histograms();
+    histograms = [{
+      key: 'Raw Values',
+      value: histograms.raw
+    }].concat(d3.entries(histograms.attributes));
+    let sections = this.contentDiv.selectAll('details')
+      .data(histograms, d => d.key);
+    sections.exit().remove();
+    let sectionsEnter = sections.enter().append('details');
+    sections = sections.merge(sectionsEnter);
 
-        sectionsEnter.append('summary');
-        sections.select('summary')
-          .text(d => d.key);
+    sectionsEnter.append('summary');
+    sections.select('summary')
+      .text(d => d.key);
 
-        this.drawCategoricalHistogram({
-          sectionsEnter,
-          sections,
-          className: 'typeBins',
-          label: 'Item type(s)'
-        });
-        this.drawCategoricalHistogram({
-          sectionsEnter,
-          sections,
-          className: 'categoricalBins',
-          label: 'Categorical value(s)'
-        });
-        this.drawHistogram({
-          sectionsEnter,
-          sections,
-          className: 'quantitativeBins',
-          label: 'Quantitative distribution',
-          dataAccessor: histogramSpec => histogramSpec.quantitativeBins || null,
-          generateXScaleFunction: ({ histogramSpec }) => histogramSpec.quantitativeScale,
-          xAccessor: d => d.x0,
-          generateYScaleFunction: ({ data }) => {
-            const max = d3.extent(data, bin => bin.length)[1];
-            return d3.scaleLinear()
-              .domain([0, max]);
-          },
-          yAccessor: d => d.length,
-          generateBandwidthFunction: ({ xScale }) => {
-            return (bin) => {
-              return Math.max(0, xScale(bin.x1) - xScale(bin.x0) - 1);
-            };
-          }
-        });
-      })();
-    }
+    this.drawCategoricalHistogram({
+      sectionsEnter,
+      sections,
+      className: 'typeBins',
+      label: 'Item type(s)'
+    });
+    this.drawCategoricalHistogram({
+      sectionsEnter,
+      sections,
+      className: 'categoricalBins',
+      label: 'Categorical value(s)'
+    });
+    this.drawHistogram({
+      sectionsEnter,
+      sections,
+      className: 'quantitativeBins',
+      label: 'Quantitative distribution',
+      dataAccessor: histogramSpec => histogramSpec.quantitativeBins || null,
+      generateXScaleFunction: ({ histogramSpec }) => histogramSpec.quantitativeScale,
+      xAccessor: d => d.x0,
+      generateYScaleFunction: ({ data }) => {
+        const max = d3.extent(data, bin => bin.length)[1];
+        return d3.scaleLinear()
+          .domain([0, max]);
+      },
+      yAccessor: d => d.length,
+      generateBandwidthFunction: ({ xScale }) => {
+        return (bin) => {
+          return Math.max(0, xScale(bin.x1) - xScale(bin.x0) - 1);
+        };
+      }
+    });
   }
   drawCategoricalHistogram ({sectionsEnter, sections, className, label}) {
     this.drawHistogram({

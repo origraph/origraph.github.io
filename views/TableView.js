@@ -1,6 +1,6 @@
-import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
+import GoldenLayoutView from './GoldenLayoutView.js';
 
-class TableView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
+class TableView extends GoldenLayoutView {
   constructor (container) {
     super({
       container,

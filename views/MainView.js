@@ -53,7 +53,7 @@ class MainView extends View {
     this.SLICE_MODES = SLICE_MODES;
     this.VIEW_CLASSES = VIEW_CLASSES;
 
-    this.navigationContext = this.initContext();
+    this.navigationContext = this.initNavigationContext();
 
     mure.on('linkedViewChange', linkedViewSpec => {
       if (linkedViewSpec.userSelection ||
@@ -103,17 +103,19 @@ class MainView extends View {
 
     this.refresh();
   }
-  initContext () {
+  initNavigationContext () {
     let result = null;
     // Select the view navigationContext specified by the URL
     window.location.search.substr(1).split('&').forEach(chunk => {
       let [key, value] = chunk.split('=');
       if (key === 'viewSelectors') {
         try {
-          result = mure.selectAll(decodeURIComponent(value));
+          result = mure.selectAll(JSON.parse(decodeURIComponent(value)));
         } catch (err) {
           if (!err.INVALID_SELECTOR) {
             throw err;
+          } else {
+            window.location.pathname = '';
           }
         }
       }
@@ -122,21 +124,25 @@ class MainView extends View {
     result = result || mure.selectAll();
     return result;
   }
-  setContext (selectorList) {
+  async setNavigationContext (selectorList) {
     this.navigationContext = mure.selectAll(selectorList);
     window.history.replaceState({}, '',
       window.location.pathname + '?viewSelectors=' +
-      encodeURIComponent(selectorList));
-    this._lastSettings = this.settings;
-    delete this.settings;
-    this.refresh();
+      encodeURIComponent(JSON.stringify(selectorList)));
+    await this.saveSettings();
   }
   async saveSettings () {
     const temp = { settings: {} };
     temp.settings[this.navigationContext.hash] = {
-      origraph: this.settings || this._lastSettings || defaultSettings
+      origraph: this.settings || defaultSettings
     };
     await mure.setLinkedViews(temp);
+  }
+  setUserSelection (selection) {
+    if (selection !== this.userSelection) {
+      this.userSelection = selection;
+      mure.setLinkedViews({ userSelection: this.userSelection });
+    }
   }
   selectItem (item, toggleMode = false) {
     const options = {};
@@ -146,10 +152,6 @@ class MainView extends View {
     this.setUserSelection(this.userSelection
       .deriveSelection([item.uniqueSelector], options));
   }
-  setUserSelection (selection) {
-    this.userSelection = selection;
-    mure.setLinkedViews({ userSelection: this.userSelection });
-  }
   async loadExampleFile (filename) {
     let fileContents;
     try {
@@ -157,7 +159,8 @@ class MainView extends View {
     } catch (err) {
       mure.warn(err);
     }
-    mure.uploadString(filename, null, null, fileContents);
+    const newFile = await mure.uploadString(filename, null, null, fileContents);
+    await this.setNavigationContext(newFile.selectorList);
   }
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
@@ -190,10 +193,8 @@ class MainView extends View {
       }
       if (!linkedViewSpec.settings[this.navigationContext.hash] ||
           !linkedViewSpec.settings[this.navigationContext.hash].origraph) {
-        // Origraph hasn't seen this navigationContext before; use this._lastSettings if
-        // we have them, or apply the default settings (this.settings will be
-        // undefined). This will trigger a linkedViewChange event and call
-        // render again.
+        // Origraph hasn't seen this navigationContext before; wait for it
+        // to be saved
         this.saveSettings();
         return;
       } else {
@@ -206,10 +207,9 @@ class MainView extends View {
       this.settings = linkedViewSpec.settings[this.navigationContext.hash].origraph;
     }
 
-    if (contentUpdated || !this.allDocItems) {
-      delete this.allDocItems;
-      this.render(); // 'Collecting metadata...'
-      this.allDocItems = await mure.allDocItems();
+    if (contentUpdated || !this.allDocsPromise) {
+      delete this.allDocsPromise;
+      this.allDocsPromise = mure.allDocItems();
     }
 
     this.render();
@@ -334,11 +334,6 @@ sites in your browser settings.`);
     } else if (!this.settings) {
       this.showOverlay({
         message: 'Syncing view settings...',
-        spinner: true
-      });
-    } else if (!this.allDocItems) {
-      this.showOverlay({
-        message: 'Collecting metadata...',
         spinner: true
       });
     } else {

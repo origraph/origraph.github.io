@@ -213,6 +213,11 @@ class ModalOperationOption extends OperationMixin(ModalMenuOption) {
   async drawOptions (containerDiv = this.contentDiv) {
     containerDiv.html('');
     const inputSpec = await this.getInputSpec();
+
+    // TODO: draw toggleOptions
+    // TODO: draw valueOptions
+    // TODO: draw itemRequirements
+
     const applyButton = containerDiv.append('div')
       .classed('button', true)
       .classed('disabled', !inputSpec);
@@ -221,10 +226,14 @@ class ModalOperationOption extends OperationMixin(ModalMenuOption) {
       .text('Apply');
     applyButton.on('click', () => {
       if (inputSpec) {
-        console.log('todo: execute operation');
+        // TODO: extract these from the GUI elements above
+        this.applyOperation({});
       }
-      console.log(inputSpec);
     });
+  }
+  async applyOperation (inputOptions) {
+    const newSelection = await window.mainView.userSelection.execute(this.operation, inputOptions);
+    window.mainView.setUserSelection(newSelection);
   }
 }
 
@@ -235,7 +244,7 @@ class ContextualOperationOption extends ModalOperationOption {
   }
   async getInputSpec () {
     const specs = await super.getInputSpec();
-    return specs[this.currentOperation];
+    return specs ? specs[this.currentOperation] : null;
   }
   setup () {
     super.setup();
@@ -273,6 +282,10 @@ class ContextualOperationOption extends ModalOperationOption {
   }
   async drawOptions () {
     return super.drawOptions(this.optionsDiv);
+  }
+  async applyOperation (inputOptions) {
+    inputOptions.context = this.currentOperation;
+    return super.applyOperation(inputOptions);
   }
   async isEnabled () {
     if (!window.mainView.userSelection) {

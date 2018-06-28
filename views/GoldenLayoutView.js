@@ -23,46 +23,53 @@ class GoldenLayoutView extends View {
   }
   setup () {
     this.d3el.classed(this.constructor.name, true);
+    this.contentDiv = this.d3el.append('div')
+      .classed('scrollArea', true);
+    this.overlay = this.d3el.append('div')
+      .classed('overlay', true);
+    this.overlay.append('img')
+      .attr('src', 'img/spinner.gif')
+      .classed('spinner', true);
   }
   draw () {
+    this.showSpinner();
+    (async () => {
+      if (await this.isEmpty()) {
+        this._wasEmpty = true;
+        await this.drawEmptyState();
+      } else {
+        if (this._wasEmpty) {
+          this.clearEmptyState();
+        }
+        this._wasEmpty = false;
+        await this.drawReadyState();
+      }
+      this.hideSpinner();
+    })();
+  }
+  showSpinner () {
+    this.overlay.style('display', null);
+  }
+  hideSpinner () {
+    this.overlay.style('display', 'none');
+  }
+  async isEmpty () {
+    const temp = await window.mainView.allDocsPromise;
+    return !(window.mainView.userSelection &&
+      window.mainView.settings &&
+      temp && temp.length > 0);
+  }
+  drawEmptyState () {
+    this.contentDiv.html('<img class="emptyState" src="img/noDataEmptyState.svg"/>');
+  }
+  clearEmptyState () {
+    this.contentDiv.html('');
+  }
+  drawReadyState () {
     this.drawCount = this.drawCount || 0;
     this.drawCount++;
     this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
   }
 }
 
-class ScrollableGoldenLayoutView extends GoldenLayoutView {
-  setup () {
-    super.setup();
-    this.contentDiv = this.d3el.append('div')
-      .classed('scrollArea', true);
-  }
-}
-
-const EmptyStateMixin = (superclass) => class extends superclass {
-  constructor (options) {
-    super(options);
-    this.emptyState = options.emptyState || 'img/noDataEmptyState.svg';
-  }
-  setup () {
-    super.setup();
-    this.d3el.append('img')
-      .classed('emptyState', true)
-      .attr('src', this.emptyState);
-  }
-  draw () {
-    if (!this.drawEmptyState()) {
-      super.draw();
-    }
-  }
-  drawEmptyState () {
-    const notEmpty = window.mainView.userSelection &&
-      window.mainView.settings &&
-      window.mainView.allDocItems &&
-      window.mainView.allDocItems.length > 0;
-    this.d3el.select('.emptyState').style('display', notEmpty ? 'none' : null);
-    return !notEmpty;
-  }
-};
-
-export { GoldenLayoutView, ScrollableGoldenLayoutView, EmptyStateMixin };
+export default GoldenLayoutView;

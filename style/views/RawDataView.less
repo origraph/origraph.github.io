@@ -21,14 +21,28 @@
         background: @selectionColor;
       }
     }
+    &.selected,
+    &.navigationContext {
+      & > .selectionTarget {
+        opacity: 0.8;
+        &:hover {
+          opacity: 1;
+        }
+      }
+      & > .summary > .type img {
+        filter: @backgroundImageFilter;
+      }
+    }
     &.selected > .selectionTarget {
       background: @selectionColor;
       color: @darkBackgroundColor;
-      opacity: 0.8;
-
-      &:hover {
-        opacity: 1;
-      }
+    }
+    &.navigationContext > .selectionTarget {
+      background: @textColor;
+      color: @backgroundColor;
+    }
+    &.selected.navigationContext > .selectionTarget {
+      background: darken(@selectionColor, 25%);
     }
     .summary {
       // left is set in JS, controlling the whole layout
@@ -65,11 +79,6 @@
       }
       .button, .value {
         margin: 0 0.25em;
-      }
-    }
-    &.selected > .summary {
-      .type img {
-        filter: @backgroundImageFilter;
       }
     }
   }

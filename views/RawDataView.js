@@ -1,5 +1,5 @@
 /* globals d3, mure */
-import { ScrollableGoldenLayoutView, EmptyStateMixin } from './GoldenLayoutView.js';
+import GoldenLayoutView from './GoldenLayoutView.js';
 
 const ICONS = {
   RootItem: 'img/root.svg',
@@ -18,7 +18,7 @@ const ICONS = {
   SupernodeItem: 'img/missing.svg'
 };
 
-class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
+class RawDataView extends GoldenLayoutView {
   constructor (container) {
     super({
       container,
@@ -26,16 +26,12 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       label: RawDataView.label
     });
   }
-  draw () {
-    if (!this.drawEmptyState()) {
-      (async () => {
-        await this.drawRows(this.contentDiv, window.mainView.allDocItems);
-        // Once everything has been draw, stretch the selectionTargets out
-        // to be the width of the window
-        this.contentDiv.selectAll('.selectionTarget')
-          .style('width', this.contentDiv.node().scrollWidth + 'px');
-      })();
-    }
+  async drawReadyState () {
+    await this.drawRows(this.contentDiv, await window.mainView.allDocsPromise);
+    // Once everything has been draw, stretch the selectionTargets out
+    // to be the width of the window
+    this.contentDiv.selectAll('.selectionTarget')
+      .style('width', this.contentDiv.node().scrollWidth + 'px');
   }
   async drawCollapsibleSection ({
     className,
@@ -164,12 +160,14 @@ class RawDataView extends EmptyStateMixin(ScrollableGoldenLayoutView) {
       .on('click', d => {
         window.mainView.selectItem(d, d3.event.shiftKey);
       });
-    (async () => {
-      const selectedItems = await window.mainView.userSelection.items();
-      rows.classed('selected', d => {
-        return !!selectedItems[d.uniqueSelector];
-      });
-    })();
+    const selectedItems = await window.mainView.userSelection.items();
+    rows.classed('selected', d => {
+      return !!selectedItems[d.uniqueSelector];
+    });
+    const navigationContextItems = await window.mainView.navigationContext.items();
+    rows.classed('navigationContext', d => {
+      return !!navigationContextItems[d.uniqueSelector];
+    });
 
     let summaryEnter = rowsEnter.append('div')
       .classed('summary', true);

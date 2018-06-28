@@ -1,6 +1,6 @@
-import { ScrollableGoldenLayoutView } from './GoldenLayoutView.js';
+import GoldenLayoutView from './GoldenLayoutView.js';
 
-class HelpView extends ScrollableGoldenLayoutView {
+class HelpView extends GoldenLayoutView {
   constructor (container) {
     super({
       container,
@@ -23,7 +23,9 @@ class HelpView extends ScrollableGoldenLayoutView {
         window.mainView.loadExampleFile(this.dataset.exampleDataset);
       });
   }
-  draw () {}
+  async isEmpty () { return false; }
+  drawEmptyState () {}
+  drawReadyState () {}
   openDefaultViews () {
     window.mainView.loadWorkspace({
       content: [
