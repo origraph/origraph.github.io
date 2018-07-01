@@ -23,8 +23,7 @@ class HelpView extends GoldenLayoutView {
         window.mainView.loadExampleFile(this.dataset.exampleDataset);
       });
   }
-  async isEmpty () { return false; }
-  drawEmptyState () {}
+  async getEmptyState () { return null; }
   drawReadyState () {}
   openDefaultViews () {
     window.mainView.loadWorkspace({

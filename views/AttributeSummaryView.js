@@ -9,13 +9,13 @@ class AttributeSummaryView extends GoldenLayoutView {
       label: AttributeSummaryView.label
     });
   }
-  async drawReadyState () {
+  async drawReadyState (contentDiv) {
     let histograms = await window.mainView.userSelection.histograms();
     histograms = [{
       key: 'Raw Values',
       value: histograms.raw
     }].concat(d3.entries(histograms.attributes));
-    let sections = this.contentDiv.selectAll('details')
+    let sections = contentDiv.selectAll('details')
       .data(histograms, d => d.key);
     sections.exit().remove();
     let sectionsEnter = sections.enter().append('details');

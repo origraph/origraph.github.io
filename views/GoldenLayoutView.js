@@ -23,6 +23,8 @@ class GoldenLayoutView extends View {
   }
   setup () {
     this.d3el.classed(this.constructor.name, true);
+    this.emptyStateDiv = this.d3el.append('div')
+      .classed('emptyState', true);
     this.contentDiv = this.d3el.append('div')
       .classed('scrollArea', true);
     this.overlay = this.d3el.append('div')
@@ -34,15 +36,13 @@ class GoldenLayoutView extends View {
   draw () {
     this.showSpinner();
     (async () => {
-      if (await this.isEmpty()) {
-        this._wasEmpty = true;
-        await this.drawEmptyState();
+      const emptyStateFunc = await this.getEmptyState();
+      if (emptyStateFunc) {
+        this.emptyStateDiv.style('display', null);
+        await emptyStateFunc(this.emptyStateDiv);
       } else {
-        if (this._wasEmpty) {
-          this.clearEmptyState();
-        }
-        this._wasEmpty = false;
-        await this.drawReadyState();
+        this.emptyStateDiv.style('display', 'none');
+        await this.drawReadyState(this.contentDiv);
       }
       this.hideSpinner();
     })();
@@ -53,17 +53,18 @@ class GoldenLayoutView extends View {
   hideSpinner () {
     this.overlay.style('display', 'none');
   }
-  async isEmpty () {
+  async getEmptyState () {
+    if (!window.mainView.userSelection || !window.mainView.settings) {
+      // No op; there will be a global spinner
+      return () => {};
+    }
     const temp = await window.mainView.allDocsPromise;
-    return !(window.mainView.userSelection &&
-      window.mainView.settings &&
-      temp && temp.length > 0);
-  }
-  drawEmptyState () {
-    this.contentDiv.html('<img class="emptyState" src="img/noDataEmptyState.svg"/>');
-  }
-  clearEmptyState () {
-    this.contentDiv.html('');
+    if (!temp || temp.length === 0) {
+      return emptyStateDiv => {
+        emptyStateDiv.html('<img class="emptyState" src="img/noDataEmptyState.svg"/>');
+      };
+    }
+    return null;
   }
   drawReadyState () {
     this.drawCount = this.drawCount || 0;

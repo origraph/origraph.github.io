@@ -26,12 +26,19 @@ class RawDataView extends GoldenLayoutView {
       label: RawDataView.label
     });
   }
-  async drawReadyState () {
-    await this.drawRows(this.contentDiv, await window.mainView.allDocsPromise);
+  async drawReadyState (contentDiv) {
+    const selectedItems = await window.mainView.userSelection.items();
+    const navigationContextItems = await window.mainView.navigationContext.items();
+    await this.drawRows({
+      contentEl: contentDiv,
+      itemList: await window.mainView.allDocsPromise,
+      selectedItems,
+      navigationContextItems
+    });
     // Once everything has been draw, stretch the selectionTargets out
     // to be the width of the window
-    this.contentDiv.selectAll('.selectionTarget')
-      .style('width', this.contentDiv.node().scrollWidth + 'px');
+    contentDiv.selectAll('.selectionTarget')
+      .style('width', contentDiv.node().scrollWidth + 'px');
   }
   async drawCollapsibleSection ({
     className,
@@ -146,7 +153,13 @@ class RawDataView extends GoldenLayoutView {
       }
     });
   }
-  async drawRows (contentEl, itemList, offset = null) {
+  async drawRows ({
+    contentEl,
+    itemList,
+    selectedItems,
+    navigationContextItems,
+    offset = null
+  }) {
     let rows = contentEl.selectAll(':scope > .row')
       .data(this.sortItems(itemList), d => d.uniqueSelector);
     rows.exit().remove();
@@ -160,11 +173,11 @@ class RawDataView extends GoldenLayoutView {
       .on('click', d => {
         window.mainView.selectItem(d, d3.event.shiftKey);
       });
-    const selectedItems = await window.mainView.userSelection.items();
+
     rows.classed('selected', d => {
       return !!selectedItems[d.uniqueSelector];
     });
-    const navigationContextItems = await window.mainView.navigationContext.items();
+
     rows.classed('navigationContext', d => {
       return !!navigationContextItems[d.uniqueSelector];
     });
@@ -260,7 +273,13 @@ class RawDataView extends GoldenLayoutView {
       visibleWhen: d => !!d.contentItems,
       badgeCount: async d => d.contentItems ? d.contentItemCount() : 0,
       drawContents: async (d3el, d, offset) => {
-        await this.drawRows(d3el, await d.contentItems(), offset);
+        await this.drawRows({
+          contentEl: d3el,
+          itemList: await d.contentItems(),
+          selectedItems,
+          navigationContextItems,
+          offset
+        });
       }
     });
 
@@ -276,7 +295,13 @@ class RawDataView extends GoldenLayoutView {
       visibleWhen: d => !!d.metaItems,
       badgeCount: async d => d.metatItems ? d.metaItemCount() : 0,
       drawContents: async (d3el, d, offset) => {
-        await this.drawRows(d3el, await d.metaItems(), offset);
+        await this.drawRows({
+          contentEl: d3el,
+          itemList: await d.metaItems(),
+          selectedItems,
+          navigationContextItems,
+          offset
+        });
       }
     });
 
