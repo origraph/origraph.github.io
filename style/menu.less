@@ -2,12 +2,6 @@
 @import './measurements.less';
 
 #menu {
-  hr {
-    margin: 0.25em;
-    background-color: @separatorColor;
-    height: 1px;
-    border: none;
-  }
   .menuOption {
     position: relative;
     display: block;
@@ -41,6 +35,15 @@
 
     .contextSwitch {
       display: block;
+    }
+
+    .option {
+      display: block;
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
+      label {
+        margin-right: 0.25em;
+      }
     }
   }
 }
