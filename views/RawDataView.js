@@ -26,19 +26,19 @@ class RawDataView extends GoldenLayoutView {
       label: RawDataView.label
     });
   }
-  async drawReadyState (contentDiv) {
+  async drawReadyState (content) {
     const selectedItems = await window.mainView.userSelection.items();
     const navigationContextItems = await window.mainView.navigationContext.items();
     await this.drawRows({
-      contentEl: contentDiv,
+      contentEl: content,
       itemList: await window.mainView.allDocsPromise,
       selectedItems,
       navigationContextItems
     });
     // Once everything has been draw, stretch the selectionTargets out
     // to be the width of the window
-    contentDiv.selectAll('.selectionTarget')
-      .style('width', contentDiv.node().scrollWidth + 'px');
+    content.selectAll('.selectionTarget')
+      .style('width', content.node().scrollWidth + 'px');
   }
   async drawCollapsibleSection ({
     className,
@@ -96,7 +96,7 @@ class RawDataView extends GoldenLayoutView {
       .style('display', d => sectionIsExpanded(d) ? null : 'none');
 
     // Calculate the global coordinate of the left side of the pane
-    const contentNode = this.contentDiv.node();
+    const contentNode = this.content.node();
     let contentOffset = contentNode.getBoundingClientRect().left;
     contentOffset -= contentNode.scrollLeft;
     let contentPromises = [];
@@ -107,7 +107,7 @@ class RawDataView extends GoldenLayoutView {
           .text(await badgeCount(d));
         if (sectionIsExpanded(d)) {
           // Calculate the child offset = the left edge of the button, relative
-          // to this.contentDiv
+          // to this.content
           let offset = d3el.select(`:scope > .summary > .${className}`).node()
             .getBoundingClientRect().left;
           offset -= contentOffset;

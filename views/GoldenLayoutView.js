@@ -25,13 +25,16 @@ class GoldenLayoutView extends View {
     this.d3el.classed(this.constructor.name, true);
     this.emptyStateDiv = this.d3el.append('div')
       .classed('emptyState', true);
-    this.contentDiv = this.d3el.append('div')
-      .classed('scrollArea', true);
+    this.content = this.setupContentElement(this.d3el);
     this.overlay = this.d3el.append('div')
       .classed('overlay', true);
     this.overlay.append('img')
       .attr('src', 'img/spinner.gif')
       .classed('spinner', true);
+  }
+  setupContentElement () {
+    return this.d3el.append('div')
+      .classed('scrollArea', true);
   }
   draw () {
     this.showSpinner();
@@ -39,10 +42,12 @@ class GoldenLayoutView extends View {
       const emptyStateFunc = await this.getEmptyState();
       if (emptyStateFunc) {
         this.emptyStateDiv.style('display', null);
+        this.content.style('display', 'none');
         await emptyStateFunc(this.emptyStateDiv);
       } else {
         this.emptyStateDiv.style('display', 'none');
-        await this.drawReadyState(this.contentDiv);
+        this.content.style('display', null);
+        await this.drawReadyState(this.content);
       }
       this.hideSpinner();
     })();
@@ -66,10 +71,10 @@ class GoldenLayoutView extends View {
     }
     return null;
   }
-  drawReadyState () {
+  drawReadyState (content) {
     this.drawCount = this.drawCount || 0;
     this.drawCount++;
-    this.d3el.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
+    this.content.html(`TODO: view not implemented<br/>Draw called ${this.drawCount} times`);
   }
 }
 

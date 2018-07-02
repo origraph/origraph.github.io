@@ -218,7 +218,6 @@ class ModalOperationOption extends OperationMixin(ModalMenuOption) {
     this.drawOptions();
   }
   async drawOptions (containerDiv = this.contentDiv) {
-    containerDiv.html('');
     const inputSpec = await this.getInputSpec();
     const self = this;
 

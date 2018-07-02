@@ -9,13 +9,13 @@ class AttributeSummaryView extends GoldenLayoutView {
       label: AttributeSummaryView.label
     });
   }
-  async drawReadyState (contentDiv) {
+  async drawReadyState (content) {
     let histograms = await window.mainView.userSelection.histograms();
     histograms = [{
       key: 'Raw Values',
       value: histograms.raw
     }].concat(d3.entries(histograms.attributes));
-    let sections = contentDiv.selectAll('details')
+    let sections = content.selectAll('details')
       .data(histograms, d => d.key);
     sections.exit().remove();
     let sectionsEnter = sections.enter().append('details');
@@ -120,7 +120,7 @@ class AttributeSummaryView extends GoldenLayoutView {
         };
         svg.select('.bars')
           .attr('transform', `translate(${margins.left},${margins.top})`);
-        const width = self.contentDiv.node().getBoundingClientRect()
+        const width = self.content.node().getBoundingClientRect()
           .width - self.scrollBarSize - margins.left - margins.right;
         const height = 200;
         svg.attr('width', width + margins.left + margins.right)
