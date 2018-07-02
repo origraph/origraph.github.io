@@ -74,7 +74,6 @@ class SubMenu extends CollapsibleMenu {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.requireProperties(['items']);
-    this.hideContents = true;
   }
   toggle (state) {
     super.toggle(state);
@@ -102,13 +101,9 @@ class SubMenu extends CollapsibleMenu {
   }
   draw () {
     super.draw();
-    if (this.hideContents) {
-      this.d3el.selectAll(':scope > .menuOption, :scope > hr')
-        .style('display', this.expanded ? null : 'none');
-      if (this.expanded) {
-        this.items.forEach(d => d.render());
-      }
-    } else {
+    this.d3el.selectAll(':scope > .menuOption, :scope > hr')
+      .style('display', this.expanded ? null : 'none');
+    if (this.expanded) {
       this.items.forEach(d => d.render());
     }
   }
@@ -268,10 +263,13 @@ class ModalOperationOption extends OperationMixin(ModalMenuOption) {
       });
   }
   setupToggleInputOption (containerDiv, option) {
-    containerDiv.append('fieldset').append('legend').text(option.name);
+    containerDiv.append('fieldset')
+      .classed(option.name, true)
+      .append('legend').text(option.name);
   }
   drawToggleInputOption (containerDiv, option) {
-    let radios = containerDiv.select('fieldset').selectAll('.radio')
+    let radios = containerDiv.select(`.${option.name}`)
+      .selectAll('.radio')
       .data(option.choices, d => d);
     radios.exit().remove();
     let radiosEnter = radios.enter().append('div')
@@ -287,7 +285,8 @@ class ModalOperationOption extends OperationMixin(ModalMenuOption) {
     radios.select('label').text(d => d);
   }
   getToggleInputOption (containerDiv, option) {
-    return containerDiv.select('.radios').selectAll('.radio')
+    return containerDiv.select(`.${option.name}`)
+      .selectAll('input[type="radio"]')
       .filter(function () { return this.checked; })
       .node().value;
   }
