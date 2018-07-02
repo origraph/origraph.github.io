@@ -182,8 +182,7 @@ const OperationMixin = (superclass) => class extends DisableableOptionMixin(supe
     if (!window.mainView.userSelection) {
       return null;
     } else {
-      const availableOps = await window.mainView.userSelection.getAvailableOperations();
-      return availableOps[this.operation.name];
+      return window.mainView.userSelection.inferInputs(this.operation);
     }
   }
   async isEnabled () {
@@ -345,11 +344,14 @@ class ModalOperationOption extends OperationMixin(ModalMenuOption) {
 class ContextualOperationOption extends ModalOperationOption {
   constructor (operation, parentMenu, d3el) {
     super(operation, parentMenu, d3el);
-    this.currentOperation = Object.keys(operation.subOperations)[0];
+    this.currentOperation = Object.keys(operation.subOperations)[0].name;
+  }
+  async getInputSpecs () {
+    return super.getInputSpec();
   }
   async getInputSpec () {
-    const specs = await super.getInputSpec();
-    return specs ? specs[this.currentOperation] : null;
+    const specs = await this.getInputSpecs();
+    return specs ? (specs[this.currentOperation] || null) : null;
   }
   setup () {
     super.setup();
@@ -375,13 +377,13 @@ class ContextualOperationOption extends ModalOperationOption {
     super.draw();
     if (window.mainView.userSelection) {
       (async () => {
-        const availableOps = await window.mainView.userSelection.getAvailableOperations();
+        const specs = await this.getInputSpecs();
         const switches = this.contentDiv.selectAll('.contextSwitch');
         switches
-          .property('selected', d => d.value.name === this.currentOperation)
-          .classed('disabled', d => !availableOps[this.operation.name][d.key])
+          .property('checked', d => d.value.name === this.currentOperation)
+          .classed('disabled', d => !specs[d.key])
           .select('input')
-          .property('disabled', d => !availableOps[this.operation.name][d.key]);
+          .property('disabled', d => !specs[d.key]);
       })();
     }
   }
@@ -396,8 +398,8 @@ class ContextualOperationOption extends ModalOperationOption {
     if (!window.mainView.userSelection) {
       return false;
     }
-    const availableOps = await window.mainView.userSelection.getAvailableOperations();
-    return Object.values(availableOps[this.operation.name]).some(context => {
+    const specs = await this.getInputSpecs();
+    return specs && Object.values(specs).some(context => {
       return context !== null;
     });
   }

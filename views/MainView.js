@@ -167,7 +167,6 @@ class MainView extends View {
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
 
-    let changedUserSelection = false;
     if (!this.userSelection) {
       // We need to initialize the userSelection
       this.render(); // 'Syncing user selection...' spinner
@@ -176,14 +175,9 @@ class MainView extends View {
         linkedViewSpec = await mure.getLinkedViews();
       }
       this.userSelection = linkedViewSpec.userSelection;
-      changedUserSelection = true;
     } else if (linkedViewSpec.userSelection) {
       // We got a simple update for the userSelection
       this.userSelection = linkedViewSpec.userSelection;
-      changedUserSelection = true;
-    }
-    if (changedUserSelection) {
-      this.availableOperations = await this.userSelection.getAvailableOperations();
     }
 
     if (!this.settings) {
@@ -328,7 +322,7 @@ sites in your browser settings.`);
   draw () {
     this.d3el.select(':scope > .emptyState')
       .style('display', 'none');
-    if (!this.userSelection || !this.availableOperations) {
+    if (!this.userSelection) {
       this.showOverlay({
         message: 'Syncing user selection...',
         spinner: true
