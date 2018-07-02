@@ -29,15 +29,18 @@ class UploadOption extends ModalMenuOption {
   async uploadFiles () {
     this.spinner.style('display', null);
     const fileList = Array.from(this.uploadInput.node().files);
-    let fileSelections = await Promise.all(fileList.map(fileObj => {
+    const fileSelections = await Promise.all(fileList.map(fileObj => {
       return mure.uploadFileObj(fileObj);
     }));
+    const unifiedSelection = fileSelections.reduce((agg, selection) => {
+      if (!agg) {
+        return selection;
+      } else {
+        return agg.merge(selection);
+      }
+    }, null);
+    await window.mainView.setUserSelection(unifiedSelection);
     this.spinner.style('display', 'none');
-    const selectorList = fileSelections.reduce((agg, selection) => {
-      agg.push(selection.selectorList[0] + '.contents[*]');
-      return agg;
-    }, []);
-    await window.mainView.setUserSelection(mure.selectAll(selectorList));
   }
 }
 export default UploadOption;

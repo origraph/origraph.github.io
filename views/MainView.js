@@ -4,13 +4,13 @@ import MainMenu from './Menu/MainMenu.js';
 import NetworkModelView from './NetworkModelView.js';
 import InstanceView from './InstanceView.js';
 import SetView from './SetView.js';
-import RawDataView from './RawDataView.js';
+import FileView from './FileView.js';
 import TableView from './TableView.js';
 import AttributeSummaryView from './AttributeSummaryView.js';
 import HelpView from './HelpView.js';
 
 const VIEW_CLASSES = {
-  RawDataView,
+  FileView,
   SetView,
   NetworkModelView,
   InstanceView,
@@ -127,7 +127,7 @@ class MainView extends View {
       mure.warn(err);
     }
     const newFile = await mure.uploadString(filename, null, null, fileContents);
-    await this.setUserSelection(newFile.selectAll('$.contents[*]'));
+    await this.setUserSelection(newFile);
   }
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();

@@ -18,12 +18,12 @@ const ICONS = {
   SupernodeItem: 'img/missing.svg'
 };
 
-class RawDataView extends GoldenLayoutView {
+class FileView extends GoldenLayoutView {
   constructor (container) {
     super({
       container,
-      icon: RawDataView.icon,
-      label: RawDataView.label
+      icon: FileView.icon,
+      label: FileView.label
     });
   }
   async drawReadyState (content) {
@@ -309,6 +309,6 @@ class RawDataView extends GoldenLayoutView {
     }).style('display', d => d.stringValue ? null : 'none');
   }
 }
-RawDataView.icon = 'img/rawData.svg';
-RawDataView.label = 'Raw Data';
-export default RawDataView;
+FileView.icon = 'img/document.svg';
+FileView.label = 'File Hierarchy';
+export default FileView;
