@@ -19,7 +19,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   async getEmptyState () {
     const temp = await super.getEmptyState();
     if (temp) { return temp; }
-    const networkModel = await window.mainView.navigationContext.getFlatGraphSchema();
+    const networkModel = await window.mainView.userSelection.getFlatGraphSchema();
     if (Object.keys(networkModel.nodeClasses).length === 0) {
       return emptyStateDiv => {
         emptyStateDiv.html('<img class="emptyState" src="img/noNodesEmptyState.svg"/>');
@@ -28,7 +28,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   }
   async drawReadyState (content) {
     const bounds = this.getContentBounds(content);
-    const networkModel = await window.mainView.navigationContext.getFlatGraphSchema();
+    const networkModel = await window.mainView.userSelection.getFlatGraphSchema();
     const graph = this.deriveGraphFromNetworkModel(networkModel);
 
     let edgeLayer = content.select('.edgeLayer');

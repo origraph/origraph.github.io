@@ -33,10 +33,11 @@ class UploadOption extends ModalMenuOption {
       return mure.uploadFileObj(fileObj);
     }));
     this.spinner.style('display', 'none');
-    window.mainView.setNavigationContext(fileSelections.reduce((agg, selection) => {
+    const selectorList = fileSelections.reduce((agg, selection) => {
       agg.push(selection.selectorList[0] + '.contents[*]');
       return agg;
-    }, []));
+    }, []);
+    await window.mainView.setUserSelection(mure.selectAll(selectorList));
   }
 }
 export default UploadOption;

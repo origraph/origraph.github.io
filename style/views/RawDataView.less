@@ -21,27 +21,16 @@
         background: @selectionColor;
       }
     }
-    &.selected,
-    &.navigationContext {
-      & > .selectionTarget {
-        opacity: 0.8;
-        &:hover {
-          opacity: 1;
-        }
-      }
-    }
     &.selected > .selectionTarget {
+      opacity: 0.8;
+      &:hover {
+        opacity: 1;
+      }
       background: @selectionColor;
       color: @darkBackgroundColor;
       & > .summary > .type img {
         filter: @backgroundImageFilter;
       }
-    }
-    &.navigationContext > .selectionTarget {
-      background: @navigationContextColor;
-    }
-    &.selected.navigationContext > .selectionTarget {
-      background: darken(@selectionColor, 5%);
     }
     .summary {
       // left is set in JS, controlling the whole layout

@@ -1,5 +1,4 @@
 import { SubMenu } from '../Menu.js';
-import NavigateOption from './NavigateOption.js';
 import PivotOption from './PivotOption.js';
 
 class SelectMenu extends SubMenu {
@@ -8,7 +7,6 @@ class SelectMenu extends SubMenu {
     this.icon = 'img/select.svg';
     this.label = 'Select';
     this.items = [
-      new NavigateOption(this),
       new PivotOption(this)
     ];
   }

@@ -53,13 +53,10 @@ class MainView extends View {
     this.SLICE_MODES = SLICE_MODES;
     this.VIEW_CLASSES = VIEW_CLASSES;
 
-    this.navigationContext = this.initNavigationContext();
-
     mure.on('linkedViewChange', linkedViewSpec => {
       if (linkedViewSpec.userSelection ||
          (linkedViewSpec.settings &&
-          linkedViewSpec.settings[this.navigationContext.hash] &&
-          linkedViewSpec.settings[this.navigationContext.hash].origraph)) {
+          linkedViewSpec.settings.origraph)) {
         this.refresh({ linkedViewSpec });
       }
     });
@@ -103,42 +100,10 @@ class MainView extends View {
 
     this.refresh();
   }
-  initNavigationContext () {
-    let result = null;
-    // Select the view navigationContext specified by the URL
-    window.location.search.substr(1).split('&').forEach(chunk => {
-      let [key, value] = chunk.split('=');
-      if (key === 'viewSelectors') {
-        try {
-          result = mure.selectAll(JSON.parse(decodeURIComponent(value)));
-        } catch (err) {
-          if (!err.INVALID_SELECTOR) {
-            throw err;
-          }
-        }
-      }
-    });
-    if (!result) {
-      // Got some kind of garbage in the URL; clean it
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-    // Default: return the root selection
-    result = result || mure.selectAll();
-    return result;
-  }
-  async setNavigationContext (selectorList) {
-    this.navigationContext = mure.selectAll(selectorList);
-    window.history.replaceState({}, '',
-      window.location.pathname + '?viewSelectors=' +
-      encodeURIComponent(JSON.stringify(selectorList)));
-    await this.saveSettings();
-  }
   async saveSettings () {
-    const temp = { settings: {} };
-    temp.settings[this.navigationContext.hash] = {
-      origraph: this.settings || defaultSettings
-    };
-    await mure.setLinkedViews(temp);
+    await mure.setLinkedViews({
+      settings: { origraph: this.settings || defaultSettings }
+    });
   }
   setUserSelection (selection) {
     if (selection !== this.userSelection) {
@@ -162,7 +127,7 @@ class MainView extends View {
       mure.warn(err);
     }
     const newFile = await mure.uploadString(filename, null, null, fileContents);
-    await this.setNavigationContext(newFile.selectorList[0] + '.contents[*]');
+    await this.setUserSelection(newFile.selectAll('$.contents[*]'));
   }
   async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
     linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
@@ -187,20 +152,12 @@ class MainView extends View {
         // Force a full read of the settings if we only got a userSelection delta
         linkedViewSpec = await mure.getLinkedViews();
       }
-      if (!linkedViewSpec.settings[this.navigationContext.hash] ||
-          !linkedViewSpec.settings[this.navigationContext.hash].origraph) {
-        // Origraph hasn't seen this navigationContext before; wait for it
-        // to be saved
-        this.saveSettings();
-        return;
-      } else {
-        // Initialize the settings and layout
-        this.settings = linkedViewSpec.settings[this.navigationContext.hash].origraph;
-        this.initSubViews(this.d3el.select('#contents'));
-      }
+      // Initialize the settings and layout
+      this.settings = linkedViewSpec.settings.origraph || defaultSettings;
+      this.initSubViews(this.d3el.select('#contents'));
     } else if (linkedViewSpec.settings) {
       // We got a simple update for the settings
-      this.settings = linkedViewSpec.settings[this.navigationContext.hash].origraph;
+      this.settings = linkedViewSpec.settings.origraph;
     }
 
     if (contentUpdated || !this.allDocsPromise) {

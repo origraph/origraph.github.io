@@ -28,12 +28,10 @@ class RawDataView extends GoldenLayoutView {
   }
   async drawReadyState (content) {
     const selectedItems = await window.mainView.userSelection.items();
-    const navigationContextItems = await window.mainView.navigationContext.items();
     await this.drawRows({
       contentEl: content,
       itemList: await window.mainView.allDocsPromise,
-      selectedItems,
-      navigationContextItems
+      selectedItems
     });
     // Once everything has been draw, stretch the selectionTargets out
     // to be the width of the window
@@ -157,7 +155,6 @@ class RawDataView extends GoldenLayoutView {
     contentEl,
     itemList,
     selectedItems,
-    navigationContextItems,
     offset = null
   }) {
     let rows = contentEl.selectAll(':scope > .row')
@@ -176,10 +173,6 @@ class RawDataView extends GoldenLayoutView {
 
     rows.classed('selected', d => {
       return !!selectedItems[d.uniqueSelector];
-    });
-
-    rows.classed('navigationContext', d => {
-      return !!navigationContextItems[d.uniqueSelector];
     });
 
     let summaryEnter = rowsEnter.append('div')
@@ -277,7 +270,6 @@ class RawDataView extends GoldenLayoutView {
           contentEl: d3el,
           itemList: await d.contentItems(),
           selectedItems,
-          navigationContextItems,
           offset
         });
       }
@@ -299,7 +291,6 @@ class RawDataView extends GoldenLayoutView {
           contentEl: d3el,
           itemList: await d.metaItems(),
           selectedItems,
-          navigationContextItems,
           offset
         });
       }
