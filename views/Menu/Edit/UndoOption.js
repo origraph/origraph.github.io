@@ -1,6 +1,6 @@
-import ActionMenuOption from '../Common/ActionMenuOption.js';
+import ActionMenuItem from '../Common/ActionMenuItem.js';
 
-class UndoOption extends ActionMenuOption {
+class UndoOption extends ActionMenuItem {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/undo.svg';

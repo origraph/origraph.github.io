@@ -4,12 +4,11 @@ import LocatedViewMixin from './Common/LocatedViewMixin.js';
 import SvgViewMixin from './Common/SvgViewMixin.js';
 
 class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) {
-  constructor ({ container, location }) {
-    super({
-      container,
+  constructor (container, { locationSelectorList }) {
+    super(container, {
       icon: NetworkModelView.icon,
       label: NetworkModelView.label,
-      location
+      locationSelectorList
     });
   }
   setup () {

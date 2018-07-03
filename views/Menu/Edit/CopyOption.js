@@ -1,6 +1,6 @@
-import ActionMenuOption from '../Common/ActionMenuOption.js';
+import ActionMenuItem from '../Common/ActionMenuItem.js';
 
-class CopyOption extends ActionMenuOption {
+class CopyOption extends ActionMenuItem {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/copy.svg';

@@ -2,8 +2,6 @@
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './Menu/MainMenu.js';
 import NetworkModelView from './NetworkModelView.js';
-import InstanceView from './InstanceView.js';
-import SetView from './SetView.js';
 import FileView from './FileView.js';
 import TableView from './TableView.js';
 import AttributeSummaryView from './AttributeSummaryView.js';
@@ -11,9 +9,7 @@ import HelpView from './HelpView.js';
 
 const VIEW_CLASSES = {
   FileView,
-  SetView,
   NetworkModelView,
-  InstanceView,
   TableView,
   AttributeSummaryView,
   HelpView
@@ -155,14 +151,9 @@ class MainView extends View {
       // Initialize the settings and layout
       this.settings = linkedViewSpec.settings.origraph || defaultSettings;
       this.initSubViews(this.d3el.select('#contents'));
-    } else if (linkedViewSpec.settings) {
+    } else if (linkedViewSpec.settings && linkedViewSpec.settings.origraph) {
       // We got a simple update for the settings
       this.settings = linkedViewSpec.settings.origraph;
-    }
-
-    if (contentUpdated || !this.allDocsPromise) {
-      delete this.allDocsPromise;
-      this.allDocsPromise = mure.allDocItems();
     }
 
     this.render();

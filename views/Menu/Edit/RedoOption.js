@@ -1,6 +1,6 @@
-import ActionMenuOption from '../Common/ActionMenuOption.js';
+import ActionMenuItem from '../Common/ActionMenuItem.js';
 
-class RedoOption extends ActionMenuOption {
+class RedoOption extends ActionMenuItem {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/redo.svg';

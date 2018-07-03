@@ -1,9 +1,8 @@
 import GoldenLayoutView from './Common/GoldenLayoutView.js';
 
 class HelpView extends GoldenLayoutView {
-  constructor ({ container }) {
-    super({
-      container,
+  constructor (container) {
+    super(container, {
       icon: HelpView.icon,
       label: HelpView.label,
       resources: {

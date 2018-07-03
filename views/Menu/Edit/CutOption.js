@@ -1,6 +1,6 @@
-import ActionMenuOption from '../Common/ActionMenuOption.js';
+import ActionMenuItem from '../Common/ActionMenuItem.js';
 
-class CutOption extends ActionMenuOption {
+class CutOption extends ActionMenuItem {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/cut.svg';

@@ -1,9 +1,8 @@
 /* globals d3 */
-import { View } from '../node_modules/uki/dist/uki.esm.js';
+import { View } from '../../node_modules/uki/dist/uki.esm.js';
 
 class GoldenLayoutView extends View {
-  constructor ({
-    container,
+  constructor (container, {
     icon,
     label,
     resources = {}
@@ -60,14 +59,9 @@ class GoldenLayoutView extends View {
   }
   async getEmptyState () {
     if (!window.mainView.userSelection || !window.mainView.settings) {
-      // No op; there will be a global spinner
-      return () => {};
-    }
-    const temp = await window.mainView.allDocsPromise;
-    if (!temp || temp.length === 0) {
-      return emptyStateDiv => {
-        emptyStateDiv.html('<img class="emptyState" src="img/noDataEmptyState.svg"/>');
-      };
+      // In either of these cases, there will be a global spinner, so this one
+      // is reduntant
+      return () => { this.hideSpinner(); };
     }
     return null;
   }

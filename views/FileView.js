@@ -20,19 +20,19 @@ const ICONS = {
 };
 
 class FileView extends LocatedViewMixin(GoldenLayoutView) {
-  constructor ({ container, location }) {
-    super({
-      container,
+  constructor (container, { locationSelectorList }) {
+    super(container, {
       icon: FileView.icon,
       label: FileView.label,
-      location
+      locationSelectorList
     });
   }
   async drawReadyState (content) {
     const selectedItems = await window.mainView.userSelection.items();
+    const itemList = Object.values(await this.location.items());
     await this.drawRows({
       contentEl: content,
-      itemList: await window.mainView.allDocsPromise,
+      itemList,
       selectedItems
     });
     // Once everything has been draw, stretch the selectionTargets out
