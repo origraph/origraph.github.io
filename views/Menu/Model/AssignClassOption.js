@@ -1,5 +1,5 @@
 /* globals mure */
-import { ModalOperationOption } from '../Menu.js';
+import ModalOperationOption from '../Common/ModalOperationOption.js';
 
 class AssignClassOption extends ModalOperationOption {
   constructor (parentMenu, d3el) {

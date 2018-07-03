@@ -1,4 +1,4 @@
-import { SubMenu } from '../Menu.js';
+import SubMenu from '../Common/SubMenu.js';
 import UndoOption from './UndoOption.js';
 import RedoOption from './RedoOption.js';
 import CutOption from './CutOption.js';

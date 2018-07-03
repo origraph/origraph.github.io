@@ -1,11 +1,13 @@
-import GoldenLayoutView from './GoldenLayoutView.js';
+import GoldenLayoutView from './Common/GoldenLayoutView.js';
+import LocatedViewMixin from './Common/LocatedViewMixin.js';
 
-class TableView extends GoldenLayoutView {
-  constructor (container) {
+class TableView extends LocatedViewMixin(GoldenLayoutView) {
+  constructor ({ container, location }) {
     super({
       container,
       icon: TableView.icon,
-      label: TableView.label
+      label: TableView.label,
+      location
     });
     // TODO
   }

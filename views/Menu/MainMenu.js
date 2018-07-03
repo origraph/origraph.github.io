@@ -1,5 +1,8 @@
 /* globals d3 */
-import { SubMenu, CollapsibleMenu, ViewMenuOption } from './Menu.js';
+import SubMenu from './Common/SubMenu.js';
+import CollapsibleMenu from './Common/CollapsibleMenu.js';
+import ViewMenuOption from './Common/ViewMenuOption.js';
+
 import FileMenu from './File/FileMenu.js';
 import EditMenu from './Edit/EditMenu.js';
 import ViewMenu from './View/ViewMenu.js';

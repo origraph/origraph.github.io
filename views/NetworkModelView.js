@@ -1,13 +1,15 @@
 /* globals d3 */
-import GoldenLayoutView from './GoldenLayoutView.js';
-import SvgViewMixin from './SvgViewMixin.js';
+import GoldenLayoutView from './Common/GoldenLayoutView.js';
+import LocatedViewMixin from './Common/LocatedViewMixin.js';
+import SvgViewMixin from './Common/SvgViewMixin.js';
 
-class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
-  constructor (container) {
+class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) {
+  constructor ({ container, location }) {
     super({
       container,
       icon: NetworkModelView.icon,
-      label: NetworkModelView.label
+      label: NetworkModelView.label,
+      location
     });
   }
   setup () {

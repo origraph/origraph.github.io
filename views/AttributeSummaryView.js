@@ -1,12 +1,14 @@
 /* globals d3 */
-import GoldenLayoutView from './GoldenLayoutView.js';
+import GoldenLayoutView from './Common/GoldenLayoutView.js';
+import LocatedViewMixin from './Common/LocatedViewMixin.js';
 
-class AttributeSummaryView extends GoldenLayoutView {
-  constructor (container) {
+class AttributeSummaryView extends LocatedViewMixin(GoldenLayoutView) {
+  constructor ({ container, location }) {
     super({
       container,
       icon: AttributeSummaryView.icon,
-      label: AttributeSummaryView.label
+      label: AttributeSummaryView.label,
+      location
     });
   }
   async drawReadyState (content) {

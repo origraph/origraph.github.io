@@ -1,4 +1,4 @@
-import { SubMenu } from '../Menu.js';
+import SubMenu from '../Common/SubMenu.js';
 import PivotOption from './PivotOption.js';
 
 class SelectMenu extends SubMenu {

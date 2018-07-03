@@ -1,4 +1,4 @@
-import { ActionMenuOption } from '../Menu.js';
+import ActionMenuOption from '../Common/ActionMenuOption.js';
 
 class UndoOption extends ActionMenuOption {
   constructor (parentMenu, d3el) {

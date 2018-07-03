@@ -1,4 +1,4 @@
-import { ModalMenuOption } from '../Menu.js';
+import ModalMenuOption from '../Common/ModalMenuOption.js';
 
 class NewFileOption extends ModalMenuOption {
   constructor (parentMenu, d3el) {

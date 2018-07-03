@@ -1,4 +1,4 @@
-import { SubMenu } from '../Menu.js';
+import SubMenu from '../Common/SubMenu.js';
 import NewFileOption from './NewFileOption.js';
 import UploadOption from './UploadOption.js';
 import ExampleFileOption from './ExampleFileOption.js';

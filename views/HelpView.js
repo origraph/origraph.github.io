@@ -1,7 +1,7 @@
-import GoldenLayoutView from './GoldenLayoutView.js';
+import GoldenLayoutView from './Common/GoldenLayoutView.js';
 
 class HelpView extends GoldenLayoutView {
-  constructor (container) {
+  constructor ({ container }) {
     super({
       container,
       icon: HelpView.icon,

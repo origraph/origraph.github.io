@@ -1,4 +1,5 @@
-import { SubMenu, ViewMenuOption } from '../Menu.js';
+import SubMenu from '../Common/SubMenu.js';
+import ViewMenuOption from '../Common/ViewMenuOption.js';
 
 class ViewMenu extends SubMenu {
   constructor (parentMenu, d3el) {

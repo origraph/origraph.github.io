@@ -1,4 +1,4 @@
-import { SubMenu } from '../Menu.js';
+import SubMenu from '../Common/SubMenu.js';
 import ConvertOption from './ConvertOption.js';
 import AssignClassOption from './AssignClassOption.js';
 import ConnectOption from './ConnectOption.js';

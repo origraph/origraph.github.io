@@ -1,5 +1,6 @@
 /* globals d3, mure */
-import GoldenLayoutView from './GoldenLayoutView.js';
+import GoldenLayoutView from './Common/GoldenLayoutView.js';
+import LocatedViewMixin from './Common/LocatedViewMixin.js';
 
 const ICONS = {
   RootItem: 'img/root.svg',
@@ -18,12 +19,13 @@ const ICONS = {
   SupernodeItem: 'img/missing.svg'
 };
 
-class FileView extends GoldenLayoutView {
-  constructor (container) {
+class FileView extends LocatedViewMixin(GoldenLayoutView) {
+  constructor ({ container, location }) {
     super({
       container,
       icon: FileView.icon,
-      label: FileView.label
+      label: FileView.label,
+      location
     });
   }
   async drawReadyState (content) {

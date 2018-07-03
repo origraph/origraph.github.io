@@ -1,5 +1,5 @@
 /* globals mure */
-import { ContextualOperationOption } from '../Menu.js';
+import ContextualOperationOption from '../Common/ContextualOperationOption.js';
 
 class ConnectOption extends ContextualOperationOption {
   constructor (parentMenu, d3el) {
