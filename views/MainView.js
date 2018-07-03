@@ -97,14 +97,18 @@ class MainView extends View {
     this.refresh();
   }
   async saveSettings () {
-    await mure.setLinkedViews({
+    const promise = mure.setLinkedViews({
       settings: { origraph: this.settings || defaultSettings }
     });
+    this.render(); // potentially show a spinner
+    return promise;
   }
-  setUserSelection (selection) {
+  async setUserSelection (selection) {
     if (selection !== this.userSelection) {
       this.userSelection = selection;
-      mure.setLinkedViews({ userSelection: this.userSelection });
+      const promise = mure.setLinkedViews({ userSelection: this.userSelection });
+      this.render(); // potentially show a spinner
+      return promise;
     }
   }
   selectItem (item, toggleMode = false) {
@@ -112,8 +116,9 @@ class MainView extends View {
     if (toggleMode) {
       options.mode = mure.DERIVE_MODES.XOR;
     }
-    this.setUserSelection(this.userSelection
-      .deriveSelection([item.uniqueSelector], options));
+    const newSelection = this.userSelection
+      .deriveSelection([item.uniqueSelector], options);
+    this.setUserSelection(newSelection);
   }
   async loadExampleFile (filename) {
     let fileContents;

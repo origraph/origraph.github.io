@@ -5,7 +5,11 @@ class ModalMenuOption extends CollapsibleMenu {
     super.setup();
     this.contentDiv = this.d3el.append('div')
       .classed('menuOptionContent', true);
-    this.d3el.append('hr');
+    this.optionsDiv = this.contentDiv.append('div');
+    this.applyButton = this.contentDiv.append('div')
+      .classed('button', true);
+    this.applyButton.append('a');
+    this.applyButton.append('span').text('Apply');
   }
   toggle (state) {
     super.toggle(state);

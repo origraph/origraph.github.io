@@ -1,7 +1,7 @@
 /* globals mure */
-import ContextualOperationOption from '../Common/ContextualOperationOption.js';
+import ModalOperationOption from '../Common/ModalOperationOption.js';
 
-class PivotOption extends ContextualOperationOption {
+class PivotOption extends ModalOperationOption {
   constructor (parentMenu, d3el) {
     super(mure.OPERATIONS.Pivot, parentMenu, d3el);
   }

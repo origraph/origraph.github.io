@@ -7,14 +7,15 @@ export default (superclass) => class extends DisableableOptionMixin(superclass) 
     this.icon = `img/${operation.lowerCamelCaseName}.svg`;
     this.label = operation.humanReadableName;
   }
-  async getInputSpec () {
-    if (!window.mainView.userSelection) {
-      return null;
-    } else {
-      return window.mainView.userSelection.inferInputs(this.operation);
-    }
-  }
   async isEnabled () {
-    return !!(await this.getInputSpec());
+    if (!window.mainView.userSelection) {
+      return false;
+    }
+    const specOrSpecs = await window.mainView.userSelection.inferInputs(this.operation);
+    if (this.operation.subOperations) {
+      return Object.values(specOrSpecs).some(spec => !!spec);
+    } else {
+      return !!specOrSpecs;
+    }
   }
 };
