@@ -40,7 +40,6 @@ class GoldenLayoutView extends View {
       .classed('scrollArea', true);
   }
   draw () {
-    this.showSpinner();
     (async () => {
       const emptyStateFunc = await this.getEmptyState();
       if (emptyStateFunc) {
@@ -50,8 +49,14 @@ class GoldenLayoutView extends View {
       } else {
         this.emptyStateDiv.style('display', 'none');
         this.content.style('display', null);
+        window.clearTimeout(this._spinnerTimeout);
+        this._spinnerTimeout = window.setTimeout(() => {
+          // Show a spinner if it takes longer than a second to render the view
+          this.showSpinner();
+        }, 1000);
         await this.drawReadyState(this.content);
       }
+      window.clearTimeout(this._spinnerTimeout);
       this.hideSpinner();
     })();
   }

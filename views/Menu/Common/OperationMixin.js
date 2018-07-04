@@ -7,6 +7,14 @@ export default (superclass) => class extends DisableableOptionMixin(superclass) 
     this.icon = `img/${operation.lowerCamelCaseName}.svg`;
     this.label = operation.humanReadableName;
   }
+  setup () {
+    super.setup();
+    this.optionsDiv = this.contentDiv.append('div');
+    this.applyButton = this.contentDiv.append('div')
+      .classed('button', true);
+    this.applyButton.append('a');
+    this.applyButton.append('span').text('Apply');
+  }
   async isEnabled () {
     if (!window.mainView.userSelection) {
       return false;
