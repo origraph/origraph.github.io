@@ -4,12 +4,14 @@ import LocatedViewMixin from './Common/LocatedViewMixin.js';
 import OperationOptionsRenderer from '../Common/OperationOptionsRenderer.js';
 
 class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
-  constructor (container, {
+  constructor ({
+    container,
     locationSelectorList,
     operationList,
     drawFinishedState = (element) => { this.drawDefaultFinishedState(element); }
   }) {
-    super(container, {
+    super({
+      container,
       icon: GuidedTourView.icon,
       label: GuidedTourView.label,
       locationSelectorList
@@ -70,8 +72,8 @@ class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
             .on('click', async () => {
               if (await optionRenderer.ready()) {
                 const settings = await optionRenderer.getSettings();
-                this.location = await window.mainView.userSelection
-                  .execute(settings.operation, settings.parameters);
+                this.setLocation(await window.mainView.userSelection
+                  .execute(settings.operation, settings.parameters));
                 this.currentStep += 1;
               }
             });

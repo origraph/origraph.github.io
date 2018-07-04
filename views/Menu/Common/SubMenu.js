@@ -10,7 +10,8 @@ class SubMenu extends CollapsibleMenu {
     super.toggle(state);
     if (!this.expanded) {
       this.items.forEach(item => {
-        if (item instanceof CollapsibleMenu) {
+        if (item instanceof CollapsibleMenu &&
+            !(item instanceof SubMenu)) {
           item.toggle(false);
         }
       });
@@ -18,25 +19,31 @@ class SubMenu extends CollapsibleMenu {
   }
   setup () {
     super.setup();
-    let menuOptions = this.d3el.selectAll(':scope > .menuOption')
-      .data(this.items, d => d);
+    this.d3el.append('div')
+      .classed('submenu', true);
+    this.d3el.append('hr');
+    this.drawItems(true);
+  }
+  draw () {
+    super.draw();
+    this.d3el.selectAll(':scope > hr, :scope > .submenu')
+      .style('display', this.expanded ? null : 'none');
+    if (this.expanded) {
+      this.drawItems();
+    }
+  }
+  drawItems (setup = false) {
+    let menuOptions = this.d3el.select(':scope > .submenu')
+      .selectAll(':scope > .menuOption')
+      .data(this.items, d => d.id);
+    menuOptions.exit().remove();
     menuOptions = menuOptions.enter()
       .append('div')
       .classed('menuOption', true)
       .merge(menuOptions);
-
     menuOptions.each(function (d) {
       d.render(d3.select(this));
     });
-    this.d3el.append('hr');
-  }
-  draw () {
-    super.draw();
-    this.d3el.selectAll(':scope > .menuOption, :scope > hr')
-      .style('display', this.expanded ? null : 'none');
-    if (this.expanded) {
-      this.items.forEach(d => d.render());
-    }
   }
 }
 export default SubMenu;

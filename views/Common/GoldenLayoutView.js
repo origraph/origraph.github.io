@@ -2,7 +2,8 @@
 import { View } from '../../node_modules/uki/dist/uki.esm.js';
 
 class GoldenLayoutView extends View {
-  constructor (container, {
+  constructor ({
+    container,
     icon,
     label,
     resources = {}
@@ -19,6 +20,9 @@ class GoldenLayoutView extends View {
     });
     this.container.on('show', () => this.render());
     this.container.on('resize', () => this.render());
+  }
+  getId () {
+    return this.constructor.name;
   }
   setup () {
     this.d3el.classed(this.constructor.name, true);

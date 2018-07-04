@@ -2,11 +2,12 @@ import GoldenLayoutView from './Common/GoldenLayoutView.js';
 import LocatedViewMixin from './Common/LocatedViewMixin.js';
 
 class TableView extends LocatedViewMixin(GoldenLayoutView) {
-  constructor (container, { locationSelectorList }) {
-    super(container, {
+  constructor ({ container, state }) {
+    super({
+      container,
       icon: TableView.icon,
       label: TableView.label,
-      locationSelectorList
+      state
     });
     // TODO
   }

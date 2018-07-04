@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="766.09082"
+   height="353.64615"
+   version="1.1"
+   id="svg8"
+   sodipodi:docname="emptyLocation.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)">
+  <metadata
+     id="metadata823">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs821" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1080"
+     id="namedview819"
+     showgrid="false"
+     inkscape:pagecheckerboard="true"
+     inkscape:zoom="1"
+     inkscape:cx="293.31775"
+     inkscape:cy="107.17959"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg8"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:snap-global="true" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;line-height:1.25;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#666666;fill-opacity:1;stroke:none"
+     x="86.038139"
+     y="109.64616"
+     id="text911"><tspan
+       sodipodi:role="line"
+       x="86.038139"
+       y="109.64616"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:42.66666794px;font-family:'josefin slab';-inkscape-font-specification:'josefin slab Bold';fill:#666666"
+       id="tspan854">This view isn't pointing at anything.</tspan><tspan
+       sodipodi:role="line"
+       x="86.038139"
+       y="140.20416"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:42.66666794px;font-family:'josefin slab';-inkscape-font-specification:'josefin slab Bold';fill:#666666"
+       id="tspan858" /><tspan
+       sodipodi:role="line"
+       x="86.038139"
+       y="182.97949"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:42.66666794px;font-family:'josefin slab';-inkscape-font-specification:'josefin slab Bold';fill:#666666"
+       id="tspan862">TODO: in the future, there should be</tspan><tspan
+       sodipodi:role="line"
+       x="86.038139"
+       y="236.31282"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:42.66666794px;font-family:'josefin slab';-inkscape-font-specification:'josefin slab Bold';fill:#666666"
+       id="tspan864">a   <tspan
+   style="fill:#333333"
+   id="tspan939">Navigation</tspan> breadcrumb at the</tspan><tspan
+       sodipodi:role="line"
+       x="86.038139"
+       y="289.64615"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:42.66666794px;font-family:'josefin slab';-inkscape-font-specification:'josefin slab Bold';fill:#666666"
+       id="tspan872">top of this window to customize /</tspan><tspan
+       sodipodi:role="line"
+       x="86.038139"
+       y="342.97949"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:42.66666794px;font-family:'josefin slab';-inkscape-font-specification:'josefin slab Bold';fill:#666666"
+       id="tspan888">figure out where it's pointing.</tspan></text>
+  <path
+     style="fill:#e7298a;stroke-width:1"
+     d="m 1.5939586,63.619759 c -1.08828005,-0.60192 -1.82507005,-2.10371 -1.52760005,-3.11368 0.12077,-0.41005 3.20721005,-3.75005 6.85874005,-7.42221 l 6.6391504,-6.67667 -1.42047,-2.35517 c -5.5770404,-9.24687 -4.1681004,-20.79649 3.46856,-28.43316 7.63667,-7.6366697 19.1863,-9.0455997 28.43316,-3.46856 l 2.35518,1.42047 6.67666,-6.6391497 c 3.67217,-3.65154 7.01216,-6.73796999 7.42221,-6.85873999 1.70718,-0.50283 3.92981,1.70044999 3.4285,3.39861999 -0.12473,0.42252 -3.21441,3.77272 -6.86594,7.4448897 l -6.63915,6.67667 1.42047,2.35517 c 5.57704,9.24687 4.1681,20.79649 -3.46856,28.43315 -7.63667,7.63667 -19.18629,9.04561 -28.43316,3.46856 l -2.35517,-1.42047 -6.67667,6.65357 c -3.9850204,3.97125 -7.0285904,6.72961 -7.5496304,6.84219 -0.48014,0.10373 -1.27496,-0.0337 -1.76628,-0.30548 z M 35.555589,49.073619 c 6.70081,-1.39736 12.2452,-7.06212 13.56755,-13.86209 0.75736,-3.89462 -0.009,-8.42546 -2.01265,-11.89838 l -0.8819,-1.52863 -12.18444,12.17885 c -13.52909,13.52288 -12.71542,12.3217 -9.38348,13.8523 3.37471,1.55026 7.3128,2.00496 10.89492,1.25795 z m 5.95711,-31.69115 c -1.05272,-0.81429 -4.02347,-2.03461 -5.95711,-2.44703 -11.19897,-2.38863 -21.88229,7.00297 -20.92247,18.39273 0.22696,2.69317 0.9836,5.17494 2.2436,7.35894 l 0.8819,1.52863 12.18445,-12.17885 c 11.07285,-11.06777 12.12835,-12.22224 11.56963,-12.65442 z"
+     id="path4658-2"
+     inkscape:connector-curvature="0" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;line-height:1.25;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#e7298a;fill-opacity:1;stroke:none"
+     x="82.019707"
+     y="56.118484"
+     id="text907"><tspan
+       sodipodi:role="line"
+       id="tspan905"
+       x="82.019707"
+       y="56.118484"
+       style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:64px;font-family:'Josefin Sans';-inkscape-font-specification:'Josefin Sans Semi-Bold';fill:#e7298a">Empty location...</tspan></text>
+  <path
+     inkscape:connector-curvature="0"
+     id="path4310"
+     d="m 128.65338,235.28457 c -3.10939,-3.77803 -6.01863,-8.12634 -7.74275,-11.57272 -1.35044,-2.69942 -2.08045,-4.8367 -2.35144,-6.88444 -0.77541,-5.85933 3.25775,-11.29749 9.16957,-12.3639 0.95528,-0.17232 2.85125,-0.1699 3.82008,0.005 3.51989,0.63498 6.47048,2.85436 8.06539,6.06664 0.66505,1.33948 0.97638,2.48824 1.12059,4.13484 0.12774,1.45858 -0.0197,2.63901 -0.56842,4.54979 -1.05606,3.67775 -3.94166,8.74498 -7.9398,13.94261 -0.78666,1.02267 -2.21454,2.78708 -2.55828,3.16121 -0.0658,0.0717 -0.2886,-0.15636 -1.01494,-1.0389 z m 1.89325,-15.18542 c 1.61884,-0.30974 3.06052,-1.59879 3.57591,-3.19731 0.15367,-0.47664 0.19438,-0.74945 0.19841,-1.3297 0.006,-0.85158 -0.0937,-1.33019 -0.43004,-2.0669 -1.32992,-2.91275 -5.06447,-3.66467 -7.46807,-1.50362 -0.52392,0.47105 -1.06174,1.31046 -1.29541,2.02183 -0.16186,0.49275 -0.19757,0.73633 -0.20028,1.36619 -0.004,0.93189 0.0959,1.38059 0.48779,2.19005 0.42058,0.86878 1.2238,1.67622 2.09572,2.10671 1.01567,0.50148 1.92564,0.62519 3.03597,0.41275 z"
+     style="fill:#333333;stroke-width:0.99999994" />
+</svg>

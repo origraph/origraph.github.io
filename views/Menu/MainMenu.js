@@ -1,13 +1,15 @@
 /* globals d3 */
 import SubMenu from './Common/SubMenu.js';
 import CollapsibleMenu from './Common/CollapsibleMenu.js';
-import ViewMenuOption from './Common/ViewMenuOption.js';
+import ViewMenuOption from './View/ViewMenuOption.js';
 
 import FileMenu from './File/FileMenu.js';
 import EditMenu from './Edit/EditMenu.js';
 import ViewMenu from './View/ViewMenu.js';
 import SelectMenu from './Select/SelectMenu.js';
 import ModelMenu from './Model/ModelMenu.js';
+
+import HelpView from '../HelpView.js';
 
 class MainMenu extends SubMenu {
   constructor (d3el) {
@@ -20,7 +22,10 @@ class MainMenu extends SubMenu {
       new SelectMenu(this),
       new ModelMenu(this),
       new ViewMenu(this),
-      new ViewMenuOption('HelpView', this)
+      new ViewMenuOption({
+        parentMenu: this,
+        ViewClass: HelpView
+      })
     ];
   }
   setup () {
@@ -36,7 +41,7 @@ class MainMenu extends SubMenu {
     if (wasSquished !== this.expanded) {
       window.mainView.resize();
     }
-    this.items.forEach(d => d.render());
+    this.drawItems();
   }
 }
 export default MainMenu;

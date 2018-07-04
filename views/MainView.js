@@ -49,6 +49,10 @@ class MainView extends View {
     this.SLICE_MODES = SLICE_MODES;
     this.VIEW_CLASSES = VIEW_CLASSES;
 
+    // Lookup for all active views, because GoldenLayout doesn't allow us to
+    // access the classes it generates directly
+    this.views = {};
+
     mure.on('linkedViewChange', linkedViewSpec => {
       if (linkedViewSpec.userSelection ||
          (linkedViewSpec.settings &&
@@ -196,12 +200,26 @@ class MainView extends View {
     }
   }
   initSubViews (contentsElement) {
+    const self = this;
     this.goldenLayout = new GoldenLayout(this.settings.goldenLayoutConfig, contentsElement.node());
     Object.entries(VIEW_CLASSES).forEach(([className, ViewClass]) => {
-      this.goldenLayout.registerComponent(className, ViewClass);
+      this.goldenLayout.registerComponent(className, function (container, state) {
+        const view = new ViewClass({ container, state });
+        self.views[view.getId()] = view;
+        return view;
+      });
     });
-    this.goldenLayout.on('initialised', () => { this.saveLayoutState(); });
-    this.goldenLayout.on('stateChanged', () => { this.saveLayoutState(); });
+    this.goldenLayout.on('initialised', () => {
+      this.saveLayoutState();
+    });
+    this.goldenLayout.on('stateChanged', event => {
+      this.saveLayoutState();
+    });
+    this.goldenLayout.on('itemDestroyed', event => {
+      if (event.instance) {
+        delete this.views[event.instance.getId()];
+      }
+    });
 
     try {
       this.goldenLayout.init();
@@ -224,39 +242,24 @@ sites in your browser settings.`);
       }
     }
   }
-  isShowingSubView (className) {
-    if (!this.goldenLayout) {
-      return false;
-    } else {
-      return this.goldenLayout.root.getComponentsByName(className).length > 0;
-    }
-  }
-  toggleSubView (className, state) {
-    const viewIsShowing = this.isShowingSubView(className);
-    state = state === undefined ? !viewIsShowing : state;
-    if (state) {
+  toggleSubView (ViewClass, location, show) {
+    let id = ViewClass.name + (location ? location.hash : '');
+    show = show === undefined ? !this.views[id] : show;
+
+    if (show) {
       // Show the subview
       let targetIndex = this.goldenLayout.root.contentItems.length - 1;
       let target = targetIndex === -1 ? this.goldenLayout.root
         : this.goldenLayout.root.contentItems[targetIndex];
+      let componentState = location ? { selectorList: location.selectorList } : {};
       target.addChild({
         type: 'component',
-        componentName: className,
-        componentState: {}
+        componentName: ViewClass.name,
+        componentState
       });
     } else {
-      // Close the subview
-      const componentList = this.goldenLayout.root.getComponentsByName(className);
-      // Should be exactly length 1, but just in case...
-      componentList.forEach(component => {
-        component.container.close();
-      });
+      this.views[id].container.close();
     }
-  }
-  getAllSubViews () {
-    return Object.keys(VIEW_CLASSES).reduce((agg, className) => {
-      return agg.concat(this.goldenLayout.root.getComponentsByName(className));
-    }, []);
   }
   loadWorkspace (configObj) {
     this.settings.goldenLayoutConfig = configObj;
@@ -293,8 +296,7 @@ sites in your browser settings.`);
         .node().childNodes.length;
       this.d3el.select(':scope > .emptyState')
         .style('display', nChildren === 0 ? null : 'none');
-      const subViewList = this.getAllSubViews();
-      subViewList.forEach(subView => {
+      Object.values(this.views).forEach(subView => {
         subView.render();
       });
       this.hideOverlay();

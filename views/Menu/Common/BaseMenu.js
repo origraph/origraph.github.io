@@ -6,6 +6,9 @@ class BaseMenu extends View {
     this.parentMenu = parentMenu;
     this.requireProperties(['icon', 'label']);
   }
+  get id () {
+    return this.label;
+  }
   getRootMenu () {
     let temp = this;
     while (temp.parentMenu) {

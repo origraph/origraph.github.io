@@ -3,11 +3,12 @@ import GoldenLayoutView from './Common/GoldenLayoutView.js';
 import LocatedViewMixin from './Common/LocatedViewMixin.js';
 
 class AttributeSummaryView extends LocatedViewMixin(GoldenLayoutView) {
-  constructor (container, { locationSelectorList }) {
-    super(container, {
+  constructor ({ container, state }) {
+    super({
+      container,
       icon: AttributeSummaryView.icon,
       label: AttributeSummaryView.label,
-      locationSelectorList
+      state
     });
   }
   async drawReadyState (content) {

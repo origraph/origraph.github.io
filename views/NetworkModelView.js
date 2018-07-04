@@ -4,11 +4,12 @@ import LocatedViewMixin from './Common/LocatedViewMixin.js';
 import SvgViewMixin from './Common/SvgViewMixin.js';
 
 class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) {
-  constructor (container, { locationSelectorList }) {
-    super(container, {
+  constructor ({ container, state }) {
+    super({
+      container,
       icon: NetworkModelView.icon,
       label: NetworkModelView.label,
-      locationSelectorList
+      state
     });
   }
   setup () {
@@ -23,7 +24,7 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
     const networkModel = await window.mainView.userSelection.getFlatGraphSchema();
     if (Object.keys(networkModel.nodeClasses).length === 0) {
       return emptyStateDiv => {
-        emptyStateDiv.html('<img class="emptyState" src="img/noNodesEmptyState.svg"/>');
+        emptyStateDiv.html('<img class="emptyState" src="img/emptyStates/noNodes.svg"/>');
       };
     }
   }

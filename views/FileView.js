@@ -3,7 +3,7 @@ import GoldenLayoutView from './Common/GoldenLayoutView.js';
 import LocatedViewMixin from './Common/LocatedViewMixin.js';
 
 const ICONS = {
-  RootItem: 'img/root.svg',
+  RootItem: 'img/home.svg',
   DocumentItem: 'img/document.svg',
   NullItem: 'img/null.svg',
   BooleanItem: 'img/boolean.svg',
@@ -20,11 +20,12 @@ const ICONS = {
 };
 
 class FileView extends LocatedViewMixin(GoldenLayoutView) {
-  constructor (container, { locationSelectorList }) {
-    super(container, {
+  constructor ({ container, state }) {
+    super({
+      container,
       icon: FileView.icon,
       label: FileView.label,
-      locationSelectorList
+      state
     });
   }
   async drawReadyState (content) {

@@ -1,8 +1,17 @@
 /* globals mure */
 export default (superclass) => class extends superclass {
-  constructor (container, { icon, label, resources, locationSelectorList }) {
-    super(container, { icon, label, resources });
-    this.location = mure.selectAll(locationSelectorList || '@ $');
+  constructor ({ container, icon, label, resources, state = {} }) {
+    super({ container, icon, label, resources });
+    this.location = mure.selectAll(state.selectorList || '@ $');
+  }
+  setLocation (selection) {
+    this.container.setState({
+      selectorList: selection.selectorList
+    });
+    this.location = selection;
+  }
+  getId () {
+    return this.constructor.name + this.location.hash;
   }
   async getEmptyState () {
     const temp = await super.getEmptyState();

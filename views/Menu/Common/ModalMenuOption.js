@@ -20,8 +20,6 @@ class ModalMenuOption extends CollapsibleMenu {
   draw () {
     super.draw();
     this.contentDiv.style('display', this.expanded ? null : 'none');
-    this.d3el.selectAll(':scope > hr')
-      .style('display', this.expanded ? null : 'none');
   }
 }
 export default ModalMenuOption;
