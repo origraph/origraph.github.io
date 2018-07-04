@@ -88,7 +88,7 @@ class OperationOptionsRenderer {
     const inputSpec = await this.getInputSpec();
     if (inputSpec && this.rendered) {
       let settings = {
-        opertation: this.operation.subOperations
+        operation: this.operation.subOperations
           ? this.operation.subOperations[this.currentOperation] : this.operation,
         parameters: {}
       };
