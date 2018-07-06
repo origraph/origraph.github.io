@@ -25,7 +25,7 @@ class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
     this.content.append('h2')
       .text(this.label);
     this.content.append('p')
-      .text(this.description);
+      .html(this.description);
     this.content.append('div')
       .classed('steps', true);
     this.content.append('div')
@@ -100,7 +100,7 @@ class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
                 const settings = await optionRenderer.getSettings();
                 self.setLocation(await window.mainView.userSelection
                   .execute(settings.operation, settings.parameters));
-                self.currentStep += 1;
+                self.currentStep = self.currentStep + 1;
               }
             });
         })();

@@ -5,7 +5,7 @@ export default (superclass) => class extends superclass {
     this.location = mure.selectAll(state.selectorList || '@ $');
   }
   setLocation (selection) {
-    this.container.setState({
+    this.container.extendState({
       selectorList: selection.selectorList
     });
     this.location = selection;
