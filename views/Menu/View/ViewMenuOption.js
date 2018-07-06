@@ -10,8 +10,8 @@ class ViewMenuOption extends CheckableMenuOption {
     super(parentMenu, d3el);
     this.ViewClass = ViewClass;
     this.getLocation = getLocation;
-    this.icon = window.mainView.VIEW_CLASSES[ViewClass.name].icon;
-    this.label = window.mainView.VIEW_CLASSES[ViewClass.name].label;
+    this.icon = window.VIEW_CLASSES[ViewClass.name].icon;
+    this.label = window.VIEW_CLASSES[ViewClass.name].label;
   }
   get id () {
     let id = this.ViewClass.name;

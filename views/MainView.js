@@ -1,53 +1,11 @@
 /* globals d3, mure, GoldenLayout */
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './Menu/MainMenu.js';
-import NetworkModelView from './NetworkModelView.js';
-import FileView from './FileView.js';
-import TableView from './TableView.js';
-import AttributeSummaryView from './AttributeSummaryView.js';
-import HelpView from './HelpView.js';
-
-const VIEW_CLASSES = {
-  FileView,
-  NetworkModelView,
-  TableView,
-  AttributeSummaryView,
-  HelpView
-};
-
-const SLICE_MODES = {
-  intersections: 'intersections',
-  union: 'union'
-};
-
-const defaultSettings = {
-  sliceMode: SLICE_MODES.union,
-  sliceSettings: {
-    // if not in union mode, there should be a key for every intersection
-    union: {
-      scrollIndex: 0
-      // no sortAttr means to sort on item labels
-    }
-  },
-  hierarchyExpansion: {},
-  goldenLayoutConfig: {
-    content: [
-      {
-        type: 'component',
-        componentName: 'HelpView',
-        componentState: {}
-      }
-    ]
-  }
-};
+import Workspace from './Common/Workspace.js';
 
 class MainView extends View {
   constructor (d3el) {
     super(d3el);
-
-    // Expose global enums that other views need access to
-    this.SLICE_MODES = SLICE_MODES;
-    this.VIEW_CLASSES = VIEW_CLASSES;
 
     // Lookup for all active views, because GoldenLayout doesn't allow us to
     // access the classes it generates directly
@@ -102,7 +60,7 @@ class MainView extends View {
   }
   async saveSettings () {
     const promise = mure.setLinkedViews({
-      settings: { origraph: this.settings || defaultSettings }
+      settings: { origraph: this.currentWorkspace ? this.currentWorkspace.toFlatObject() : window.WORKSPACES.intro }
     });
     this.render(); // potentially show a spinner
     return promise;
@@ -150,7 +108,7 @@ class MainView extends View {
       this.userSelection = linkedViewSpec.userSelection;
     }
 
-    if (!this.settings) {
+    if (!this.currentWorkspace) {
       // We need to initialize the settings
       this.render(); // 'Syncing view settings...' spinner
       if (!linkedViewSpec.settings) {
@@ -158,11 +116,12 @@ class MainView extends View {
         linkedViewSpec = await mure.getLinkedViews();
       }
       // Initialize the settings and layout
-      this.settings = linkedViewSpec.settings.origraph || defaultSettings;
+      this.currentWorkspace = linkedViewSpec.settings.origraph
+        ? new Workspace(linkedViewSpec.settings.origraph) : window.WORKSPACES.intro;
       this.initSubViews(this.d3el.select('#contents'));
     } else if (linkedViewSpec.settings && linkedViewSpec.settings.origraph) {
       // We got a simple update for the settings
-      this.settings = linkedViewSpec.settings.origraph;
+      this.currentWorkspace = new Workspace(linkedViewSpec.settings.origraph);
     }
 
     this.render();
@@ -187,7 +146,7 @@ class MainView extends View {
         this.saveLayoutState();
       }, 200);
     } else {
-      this.settings.goldenLayoutConfig = this.goldenLayout.toConfig();
+      this.currentWorkspace.goldenLayoutConfig = this.goldenLayout.toConfig();
       // Save the settings (auto-triggers a render once they're saved, but for
       // snappier menu feedback, we manually trigger its render function right
       // away)
@@ -201,14 +160,15 @@ class MainView extends View {
   }
   initSubViews (contentsElement) {
     const self = this;
-    this.goldenLayout = new GoldenLayout(this.settings.goldenLayoutConfig, contentsElement.node());
-    Object.entries(VIEW_CLASSES).forEach(([className, ViewClass]) => {
-      this.goldenLayout.registerComponent(className, function (container, state) {
-        const view = new ViewClass({ container, state });
-        self.views[view.getId()] = view;
-        return view;
+    this.goldenLayout = new GoldenLayout(this.currentWorkspace.goldenLayoutConfig, contentsElement.node());
+    Object.entries(window.VIEW_CLASSES)
+      .forEach(([className, ViewClass]) => {
+        this.goldenLayout.registerComponent(className, function (container, state) {
+          const view = new ViewClass({ container, state });
+          self.views[view.getId()] = view;
+          return view;
+        });
       });
-    });
     this.goldenLayout.on('initialised', () => {
       this.saveLayoutState();
     });
@@ -261,8 +221,8 @@ sites in your browser settings.`);
       this.views[id].container.close();
     }
   }
-  loadWorkspace (configObj) {
-    this.settings.goldenLayoutConfig = configObj;
+  loadWorkspace (workspace) {
+    this.currentWorkspace = workspace;
     this.goldenLayout.destroy();
     this.initSubViews(this.d3el.select('#contents'));
     this.saveSettings();
@@ -283,7 +243,7 @@ sites in your browser settings.`);
         message: 'Syncing user selection...',
         spinner: true
       });
-    } else if (!this.settings) {
+    } else if (!this.currentWorkspace) {
       this.showOverlay({
         message: 'Syncing view settings...',
         spinner: true

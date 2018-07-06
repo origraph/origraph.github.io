@@ -1,0 +1,31 @@
+@import '../colors.less';
+@import '../measurements.less';
+
+.GuidedTourView {
+  .step {
+    display: block;
+
+    img {
+      width: @buttonImageSize;
+      height: @buttonImageSize;
+      filter: @textColorImageFilter;
+      margin-right: 0.5em;
+    }
+
+    img,
+    .stepTitle {
+      display: inline-block;
+      line-height: @buttonSize;
+      vertical-align: middle;
+    }
+
+    &.complete,
+    &.future {
+      opacity: 0.5;
+      .settings,
+      .button {
+        display: none;
+      }
+    }
+  }
+}

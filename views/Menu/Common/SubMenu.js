@@ -9,13 +9,17 @@ class SubMenu extends CollapsibleMenu {
   toggle (state) {
     super.toggle(state);
     if (!this.expanded) {
-      this.items.forEach(item => {
-        if (item instanceof CollapsibleMenu &&
-            !(item instanceof SubMenu)) {
-          item.toggle(false);
-        }
-      });
+      this.closeNestedNonSubMenus();
     }
+  }
+  closeNestedNonSubMenus () {
+    this.items.forEach(item => {
+      if (item instanceof SubMenu) {
+        item.closeNestedNonSubMenus();
+      } else if (item instanceof CollapsibleMenu) {
+        item.toggle(false);
+      }
+    });
   }
   setup () {
     super.setup();

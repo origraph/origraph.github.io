@@ -67,7 +67,7 @@ class GoldenLayoutView extends View {
     this.overlay.style('display', 'none');
   }
   async getEmptyState () {
-    if (!window.mainView.userSelection || !window.mainView.settings) {
+    if (!window.mainView.userSelection || !window.mainView.currentWorkspace) {
       // In either of these cases, there will be a global spinner, so this one
       // is reduntant
       return () => { this.hideSpinner(); };

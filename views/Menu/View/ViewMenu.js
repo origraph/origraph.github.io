@@ -9,8 +9,12 @@ class ViewMenu extends SubMenu {
     this.icon = 'img/view.svg';
     this.label = 'View';
 
-    const locatedViewClassList = Object.values(window.mainView.VIEW_CLASSES)
-      .filter(ViewClass => !!ViewClass.prototype.setLocation);
+    const viewClassNames = [
+      'FileView',
+      'TableView',
+      'AttributeSummaryView',
+      'NetworkModelView'
+    ];
 
     this.rootSubMenu = new SubViewMenu({
       parentMenu: this,
@@ -18,10 +22,10 @@ class ViewMenu extends SubMenu {
       icon: 'img/home.svg',
       items: []
     });
-    this.rootSubMenu.items = locatedViewClassList.map(ViewClass => {
+    this.rootSubMenu.items = viewClassNames.map(className => {
       return new ViewMenuOption({
         parentMenu: this.rootSubMenu,
-        ViewClass,
+        ViewClass: window.VIEW_CLASSES[className],
         getLocation: () => mure.selectAll('@ $')
       });
     });
@@ -32,10 +36,10 @@ class ViewMenu extends SubMenu {
       icon: 'img/select.svg',
       items: []
     });
-    this.selectionSubMenu.items = locatedViewClassList.map(ViewClass => {
+    this.selectionSubMenu.items = viewClassNames.map(className => {
       return new ViewMenuOption({
         parentMenu: this.selectionSubMenu,
-        ViewClass,
+        ViewClass: window.VIEW_CLASSES[className],
         getLocation: () => window.mainView.userSelection
       });
     });

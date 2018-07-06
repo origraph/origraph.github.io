@@ -1,41 +1,64 @@
 /* globals d3 */
-import GoldenLayoutView from './Common/GoldenLayoutView.js';
-import LocatedViewMixin from './Common/LocatedViewMixin.js';
+import GoldenLayoutView from '../Common/GoldenLayoutView.js';
+import LocatedViewMixin from '../Common/LocatedViewMixin.js';
 import OperationOptionsRenderer from '../Common/OperationOptionsRenderer.js';
 
 class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
   constructor ({
     container,
-    locationSelectorList,
-    operationList,
-    drawFinishedState = (element) => { this.drawDefaultFinishedState(element); }
+    state,
+    operationList
   }) {
     super({
       container,
       icon: GuidedTourView.icon,
       label: GuidedTourView.label,
-      locationSelectorList
+      state
     });
     this.operationList = operationList;
-    this.currentStep = 0;
-    this.drawFinishedState = drawFinishedState;
   }
   setup () {
     super.setup();
-    this.container.append('h2')
+    // normally views are classed by their immediate class name, but we
+    // want some styles to apply across all guided tours
+    this.content.classed('GuidedTourView', true);
+    this.content.append('h2')
       .text(this.label);
-    this.container.append('p')
+    this.content.append('p')
       .text(this.description);
-    this.container.append('div')
+    this.content.append('div')
       .classed('steps', true);
-    this.container.append('div')
+    this.content.append('div')
       .classed('allDone', true);
   }
-  defaultFinishedState (element) {
-    element.text('All done! Go ahead and close this view.');
+  drawFinishedState (element) {
+    let message = element.select('.message');
+    if (message.size() === 0) {
+      message = element.append('div')
+        .classed('message', true);
+      message.text('All done!');
+    }
+
+    let changeWorkspaceButton = element.select('.button');
+    if (changeWorkspaceButton.size() === 0) {
+      changeWorkspaceButton = element.append('div')
+        .classed('button', true);
+      changeWorkspaceButton.append('a');
+      changeWorkspaceButton.append('span')
+        .text('Open Modeling Workspace');
+      changeWorkspaceButton.on('click', () => {
+        window.mainView.loadWorkspace(window.WORKSPACES.modeling);
+      });
+    }
+  }
+  get currentStep () {
+    return this.container.getState().currentStep;
+  }
+  set currentStep (stepNo) {
+    this.container.extendState({ currentStep: stepNo });
   }
   async drawReadyState (content) {
-    let steps = this.d3el.select('.steps').selectAll('.step')
+    let steps = content.select('.steps').selectAll('.step')
       .data(this.operationList);
     steps.exit().remove();
     let stepsEnter = steps.enter().append('div')
@@ -44,7 +67,10 @@ class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
 
     stepsEnter.append('img');
     steps.select('img')
-      .attr('src', d => `img/${d.lowerCamelCaseName}.svg`);
+      .attr('src', d => {
+        return `img/${d.parentOperation
+          ? d.parentOperation.lowerCamelCaseName : d.lowerCamelCaseName}.svg`;
+      });
 
     stepsEnter.append('div').classed('stepTitle', true);
     steps.select('.stepTitle').text(d => d.humanReadableName);
@@ -66,15 +92,15 @@ class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
       if (i === self.currentStep) {
         (async () => {
           let optionRenderer = new OperationOptionsRenderer(
-            el.select('.settings'), d, this.location);
+            el.select('.settings'), d, self.location);
           optionRenderer.drawOptions();
           el.select('.button').classed('disabled', !(await optionRenderer.ready()))
             .on('click', async () => {
-              if (await optionRenderer.ready()) {
+              if (i === self.currentStep && await optionRenderer.ready()) {
                 const settings = await optionRenderer.getSettings();
-                this.setLocation(await window.mainView.userSelection
+                self.setLocation(await window.mainView.userSelection
                   .execute(settings.operation, settings.parameters));
-                this.currentStep += 1;
+                self.currentStep += 1;
               }
             });
         })();
@@ -82,12 +108,13 @@ class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
     });
 
     const allDone = this.d3el.select('.allDone')
-      .style('display', this.currentStep >= this.steps.length ? null : 'none');
-    if (this.currentStep >= this.steps.length) {
+      .style('display', this.currentStep >= this.operationList.length ? null : 'none');
+    if (this.currentStep >= this.operationList.length) {
       this.drawFinishedState(allDone);
     }
   }
 }
 GuidedTourView.icon = 'img/guidedTour.svg';
 GuidedTourView.label = 'Guided Tour';
+
 export default GuidedTourView;

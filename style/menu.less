@@ -37,6 +37,29 @@
       display: block;
     }
 
+    .lastFiles {
+      .file {
+        min-height: @buttonSize;
+        margin: @buttonPadding 0;
+        display: flex;
+        align-items: center;
+
+        .filename {
+          max-width: 10em;
+          min-width: 10em;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          text-align: right;
+          margin-right: 0.25em;
+        }
+        .spinner {
+          width: @buttonImageSize;
+          height: @buttonImageSize;
+          margin-right: 0.25em;
+        }
+      }
+    }
+
     .option {
       display: block;
       margin-top: 0.25em;

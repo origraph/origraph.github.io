@@ -54,16 +54,16 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
     drawContents
   }) {
     const sectionIsExpanded = d => {
-      return window.mainView.settings.hierarchyExpansion[d.uniqueSelector] === className;
+      return window.mainView.currentWorkspace.hierarchyExpansion[d.uniqueSelector] === className;
     };
     const toggleSection = d => {
-      let selectedSection = window.mainView.settings.hierarchyExpansion[d.uniqueSelector];
+      let selectedSection = window.mainView.currentWorkspace.hierarchyExpansion[d.uniqueSelector];
       if (selectedSection === className) {
         // Close the section
-        delete window.mainView.settings.hierarchyExpansion[d.uniqueSelector];
+        delete window.mainView.currentWorkspace.hierarchyExpansion[d.uniqueSelector];
       } else {
         // Expand / change the section
-        window.mainView.settings.hierarchyExpansion[d.uniqueSelector] = className;
+        window.mainView.currentWorkspace.hierarchyExpansion[d.uniqueSelector] = className;
       }
       this.render();
       window.mainView.saveSettings();
@@ -224,8 +224,8 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
     // Item tags button and section
     await this.drawCollapsibleSection({
       className: 'tags',
-      openIconPath: 'img/tag.svg',
-      closedIconPath: 'img/tag.svg',
+      openIconPath: 'img/assignClass.svg',
+      closedIconPath: 'img/assignClass.svg',
       tooltip: 'Tags',
       rows,
       rowsEnter,
