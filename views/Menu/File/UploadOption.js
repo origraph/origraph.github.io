@@ -72,7 +72,6 @@ class UploadOption extends ModalMenuOption {
         let fileSelection = this.loadedFiles[d.name];
         if (tourWorkspace && fileSelection) {
           tourWorkspace = tourWorkspace.copy();
-          tourWorkspace.assignLocation(fileSelection);
           tourWorkspace.assignModes(window.mainView.currentWorkspace);
           window.mainView.loadWorkspace(tourWorkspace);
         }

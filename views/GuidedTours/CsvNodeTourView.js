@@ -10,7 +10,7 @@ class CsvNodeTourView extends GuidedTourView {
         mure.OPERATIONS.Pivot.subOperations.PivotToContents,
         mure.OPERATIONS.Convert.subOperations.ConvertContainerToNode,
         mure.OPERATIONS.AssignClass,
-        mure.OPERATIONS.Connect.subOperations.ConnectSetsOnAttribute,
+        mure.OPERATIONS.Connect.subOperations.ConnectNodesOnAttribute,
         mure.OPERATIONS.AssignClass
       ]
     });
@@ -20,7 +20,7 @@ This series of operations will convert the rows in the CSV file to nodes, and
 optionally:
 <ul>
   <li>Assist you in assigning classes to the nodes</li>
-  <li>Connecting edges between the nodes</li>
+  <li>Creating edges between the nodes</li>
   <li>Assigning classes to the new edges</li>
 </ul>
 You can close this view at any point if you want to do something else.`;

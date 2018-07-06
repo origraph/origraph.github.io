@@ -1,9 +1,8 @@
 /* globals d3 */
 import GoldenLayoutView from '../Common/GoldenLayoutView.js';
-import LocatedViewMixin from '../Common/LocatedViewMixin.js';
 import OperationOptionsRenderer from '../Common/OperationOptionsRenderer.js';
 
-class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
+class GuidedTourView extends GoldenLayoutView {
   constructor ({
     container,
     state,
@@ -92,13 +91,13 @@ class GuidedTourView extends LocatedViewMixin(GoldenLayoutView) {
       if (i === self.currentStep) {
         (async () => {
           let optionRenderer = new OperationOptionsRenderer(
-            el.select('.settings'), d, self.location);
+            el.select('.settings'), d, window.mainView.userSelection);
           optionRenderer.drawOptions();
           el.select('.button').classed('disabled', !(await optionRenderer.ready()))
             .on('click', async () => {
               if (i === self.currentStep && await optionRenderer.ready()) {
                 const settings = await optionRenderer.getSettings();
-                self.setLocation(await window.mainView.userSelection
+                window.mainView.setUserSelection(await window.mainView.userSelection
                   .execute(settings.operation, settings.parameters));
                 self.currentStep = self.currentStep + 1;
               }
