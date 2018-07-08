@@ -37,18 +37,6 @@ class GuidedTourView extends GoldenLayoutView {
         .classed('message', true);
       message.text('All done!');
     }
-
-    let changeWorkspaceButton = element.select('.button');
-    if (changeWorkspaceButton.size() === 0) {
-      changeWorkspaceButton = element.append('div')
-        .classed('button', true);
-      changeWorkspaceButton.append('a');
-      changeWorkspaceButton.append('span')
-        .text('Open Modeling Workspace');
-      changeWorkspaceButton.on('click', () => {
-        window.mainView.loadWorkspace(window.WORKSPACES.modeling);
-      });
-    }
   }
   get currentStep () {
     return this.container.getState().currentStep;
