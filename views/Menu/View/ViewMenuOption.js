@@ -13,19 +13,19 @@ class ViewMenuOption extends CheckableMenuOption {
     this.icon = window.VIEW_CLASSES[ViewClass.name].icon;
     this.label = window.VIEW_CLASSES[ViewClass.name].label;
   }
-  get id () {
+  async getId () {
     let id = this.ViewClass.name;
-    let location = this.getLocation && this.getLocation();
+    let location = this.getLocation && await this.getLocation();
     if (location) {
       id += location.hash;
     }
     return id;
   }
-  get checked () {
-    return !!window.mainView.views[this.id];
+  async isChecked () {
+    return !!window.mainView.views[await this.getId()];
   }
-  toggle (state) {
-    let location = this.getLocation && this.getLocation();
+  async toggle (state) {
+    let location = this.getLocation && await this.getLocation();
     window.mainView.toggleSubView(this.ViewClass, location, state);
   }
 }

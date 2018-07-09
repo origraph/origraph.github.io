@@ -22,14 +22,20 @@ class ViewMenu extends SubMenu {
       icon: 'img/home.svg',
       items: []
     });
-    this.rootSubMenu.items = viewClassNames.map(className => {
+    this.rootSubMenu.items = viewClassNames.map((className, index) => {
+      let getLocation;
+      if (className === 'NetworkModelView') {
+        getLocation = () => mure.selectAll('@ $.classes[*]')
+          .pivot({ context: 'PivotToMembers' });
+      } else {
+        getLocation = () => mure.selectAll('@ $');
+      }
       return new ViewMenuOption({
         parentMenu: this.rootSubMenu,
         ViewClass: window.VIEW_CLASSES[className],
-        getLocation: () => mure.selectAll('@ $')
+        getLocation
       });
     });
-
     this.selectionSubMenu = new SubViewMenu({
       parentMenu: this,
       label: 'Selection',

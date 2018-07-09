@@ -21,7 +21,7 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
   async getEmptyState () {
     const temp = await super.getEmptyState();
     if (temp) { return temp; }
-    const networkModel = await window.mainView.userSelection.getFlatGraphSchema();
+    const networkModel = await this.location.getFlatGraphSchema();
     if (Object.keys(networkModel.nodeClasses).length === 0) {
       return emptyStateDiv => {
         emptyStateDiv.html('<img class="emptyState" src="img/emptyStates/noNodes.svg"/>');
@@ -30,7 +30,7 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
   }
   async drawReadyState (content) {
     const bounds = this.getContentBounds(content);
-    const networkModel = await window.mainView.userSelection.getFlatGraphSchema();
+    const networkModel = await this.location.getFlatGraphSchema();
     const graph = this.deriveGraphFromNetworkModel(networkModel);
 
     let edgeLayer = content.select('.edgeLayer');
@@ -74,18 +74,20 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
         return `translate(${node.x},${node.y})`;
       });
       edges.select('path').attr('d', d => {
-        const links = graph.linkLookup['edge' + d.key];
+        let links = graph.linkLookup['edge' + d.key];
         return this.computeHyperedgePath({
           edge: graph.nodes[graph.nodeLookup['edge' + d.key]],
-          sources: links.sources.map(i => graph.links[i]),
-          targets: links.targets.map(i => graph.links[i]),
+          sourceLinks: links.sources.map(i => graph.links[i]),
+          targetLinks: links.targets.map(i => graph.links[i]),
           undirecteds: links.undirecteds.map(i => graph.links[i])
         });
       });
     });
   }
-  computeHyperedgePath ({ edge, sources, targets, undirecteds }) {
-    console.log(edge);
+  computeHyperedgePath ({ edge, sourceLinks, targetLinks, undirecteds }) {
+    return sourceLinks.concat(targetLinks)
+      .map(d => `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`)
+      .join();
   }
   deriveGraphFromNetworkModel (networkModel) {
     let graph = {
