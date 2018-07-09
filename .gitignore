@@ -41,3 +41,10 @@ node_modules/less/*
 !node_modules/less/dist/
 node_modules/less/dist/*
 !node_modules/less/dist/less.min.js
+
+!node_modules/handsontable/
+node_modules/handsontable/*
+!node_modules/handsontable/dist/
+node_modules/handsontable/dist/*
+!node_modules/handsontable/dist/handsontable.full.min.js
+!node_modules/handsontable/dist/handsontable.full.min.css
