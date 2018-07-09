@@ -25,26 +25,58 @@ class TableView extends LocatedViewMixin(GoldenLayoutView) {
       columns: []
     });
   }
+  getTextCellSpec (valueAccessor, isSelected) {
+    return {
+      data: (uniqueSelector, value) => {
+        if (value) {
+          mure.alert('Editing cell values is not yet supported');
+        } else {
+          return valueAccessor(uniqueSelector);
+        }
+      },
+      renderer: function (instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.TextRenderer.apply(this, arguments);
+        const uniqueSelector = instance.getSourceDataAtRow(row);
+        d3.select(td).classed('selected', isSelected(uniqueSelector));
+      }
+    };
+  }
   async drawReadyState (content) {
-    const [items, histograms] = await Promise.all([
+    const [items, histograms, selectedItems] = await Promise.all([
       this.location.items(),
-      this.location.histograms()
+      this.location.histograms(),
+      window.mainView.userSelection.items()
     ]);
+
+    // Regular columns
+    let colHeaders = Object.keys(histograms.attributes);
+    let columns = colHeaders.map(attr => this.getTextCellSpec(
+      d => items[d].value[attr],
+      d => selectedItems[d]
+    ));
+
+    // Meta columns
+    colHeaders = ['Label', 'Type', 'Classes'].concat(colHeaders);
+    columns = [
+      this.getTextCellSpec(
+        d => items[d].label,
+        d => selectedItems[d]
+      ),
+      this.getTextCellSpec(
+        d => items[d].type,
+        d => selectedItems[d]
+      ),
+      this.getTextCellSpec(
+        d => items[d].getClasses ? items[d].getClasses() : '',
+        d => selectedItems[d]
+      )
+    ].concat(columns);
+
     const spec = {
       data: Object.keys(items),
-      colHeaders: Object.keys(histograms.attributes)
+      colHeaders,
+      columns
     };
-    spec.columns = spec.colHeaders.map(attr => {
-      return {
-        data: (uniqueSelector, value) => {
-          if (value) {
-            mure.alert('Editing cell values is not yet supported');
-          } else {
-            return items[uniqueSelector].value[attr];
-          }
-        }
-      };
-    });
     this.renderer.updateSettings(spec);
     this.renderer.render();
   }
