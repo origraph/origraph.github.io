@@ -130,10 +130,11 @@ class OperationOptionsRenderer {
     radios.select('label').text(d => d);
   }
   getToggleInputOption (containerDiv, option) {
-    return containerDiv.select(`.${option.name}`)
+    const checkedRadio = containerDiv.select(`.${option.name}`)
       .selectAll('input[type="radio"]')
       .filter(function () { return this.checked; })
-      .node().value;
+      .node();
+    return checkedRadio && checkedRadio.value;
   }
   setupValueInputOption (containerDiv, option) {
     containerDiv.append('label').text(option.name);
@@ -162,7 +163,8 @@ class OperationOptionsRenderer {
       {
         key: null,
         value: {
-          label: `Selected ${option.ItemType.getHumanReadableType()} items:`,
+          label: `Selected \
+${option.itemTypes.map(t => t.getHumanReadableType()).join(', ')} items:`,
           disabled: true
         }
       },
@@ -179,7 +181,7 @@ class OperationOptionsRenderer {
   }
   getItemRequirement (containerDiv, option) {
     const key = containerDiv.select('select').node().value;
-    return key ? option.eligibleItems[key] : null;
+    return key ? option.suggestions[key] : null;
   }
 }
 export default OperationOptionsRenderer;

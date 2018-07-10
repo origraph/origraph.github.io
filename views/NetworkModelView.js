@@ -83,6 +83,8 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
         });
       });
     });
+    this.simulation.alpha(1)
+      .restart();
   }
   computeHyperedgePath ({ edge, sourceLinks, targetLinks, undirecteds }) {
     return sourceLinks.concat(targetLinks)
