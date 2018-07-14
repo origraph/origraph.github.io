@@ -7,7 +7,7 @@ class CsvNodeTourView extends GuidedTourView {
       container,
       state,
       operationList: [
-        mure.OPERATIONS.Pivot.subOperations.PivotToContents,
+        mure.OPERATIONS.Navigate.subOperations.NavigateToContents,
         mure.OPERATIONS.Convert.subOperations.ConvertContainerToNode,
         mure.OPERATIONS.AssignClass,
         mure.OPERATIONS.Connect.subOperations.ConnectNodesOnAttribute,

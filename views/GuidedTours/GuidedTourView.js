@@ -56,11 +56,11 @@ class GuidedTourView extends GoldenLayoutView {
     steps.select('img')
       .attr('src', d => {
         return `img/${d.parentOperation
-          ? d.parentOperation.lowerCamelCaseName : d.lowerCamelCaseName}.svg`;
+          ? d.parentOperation.lowerCamelCaseType : d.lowerCamelCaseType}.svg`;
       });
 
     stepsEnter.append('div').classed('stepTitle', true);
-    steps.select('.stepTitle').text(d => d.humanReadableName);
+    steps.select('.stepTitle').text(d => d.humanReadableType);
 
     stepsEnter.append('div').classed('settings', true);
 

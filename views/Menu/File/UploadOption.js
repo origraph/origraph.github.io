@@ -75,7 +75,7 @@ class UploadOption extends ModalMenuOption {
           // TODO: Hard-coding the table state assignment... need to generalize this...
           tourWorkspace.goldenLayoutConfig.content[0].content[1].content[0]
             .componentState.selectorList = (await fileSelection
-              .pivot({context: 'PivotToContents'})).selectorList;
+              .pivot({context: 'NavigateToContents'})).selectorList;
           tourWorkspace.assignModes(window.mainView.currentWorkspace);
           window.mainView.loadWorkspace(tourWorkspace);
         }

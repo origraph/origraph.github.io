@@ -1,5 +1,5 @@
 import SubMenu from '../Common/SubMenu.js';
-import PivotOption from './PivotOption.js';
+import NavigateOption from './NavigateOption.js';
 
 class SelectMenu extends SubMenu {
   constructor (parentMenu, d3el) {
@@ -7,7 +7,7 @@ class SelectMenu extends SubMenu {
     this.icon = 'img/select.svg';
     this.label = 'Select';
     this.items = [
-      new PivotOption(this)
+      new NavigateOption(this)
     ];
   }
 }

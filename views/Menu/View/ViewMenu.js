@@ -26,7 +26,7 @@ class ViewMenu extends SubMenu {
       let getLocation;
       if (className === 'NetworkModelView') {
         getLocation = () => mure.selectAll('@ $.classes[*]')
-          .pivot({ context: 'PivotToMembers' });
+          .pivot({ context: 'NavigateToMembers' });
       } else {
         getLocation = () => mure.selectAll('@ $');
       }

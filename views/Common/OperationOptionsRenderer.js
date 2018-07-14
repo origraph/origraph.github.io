@@ -42,7 +42,7 @@ class OperationOptionsRenderer {
         this.drawOptions();
       });
     switchesEnter.append('span')
-      .text(d => d.value.humanReadableName);
+      .text(d => d.value.humanReadableType);
     (async () => {
       const allSpecs = await this.selection.inferInputs(this.operation);
       switches.classed('disabled', d => !allSpecs[d.key])

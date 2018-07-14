@@ -4,8 +4,8 @@ export default (superclass) => class extends DisableableOptionMixin(superclass) 
   constructor (operation, parentMenu, d3el) {
     super(parentMenu, d3el);
     this.operation = operation;
-    this.icon = `img/${operation.lowerCamelCaseName}.svg`;
-    this.label = operation.humanReadableName;
+    this.icon = `img/${operation.lowerCamelCaseType}.svg`;
+    this.label = operation.humanReadableType;
   }
   setup () {
     super.setup();
