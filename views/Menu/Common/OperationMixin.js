@@ -19,11 +19,6 @@ export default (superclass) => class extends DisableableOptionMixin(superclass) 
     if (!window.mainView.userSelection) {
       return false;
     }
-    const specOrSpecs = await window.mainView.userSelection.inferInputs(this.operation);
-    if (this.operation.subOperations) {
-      return Object.values(specOrSpecs).some(spec => !!spec);
-    } else {
-      return !!specOrSpecs;
-    }
+    return this.operation.potentiallyExecutableOnSelection(window.mainView.userSelection);
   }
 };

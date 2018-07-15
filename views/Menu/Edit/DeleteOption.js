@@ -1,6 +1,6 @@
-import ActionMenuItem from '../Common/ActionMenuItem.js';
+import ActionMenuOption from '../Common/ActionMenuOption.js';
 
-class DeleteOption extends ActionMenuItem {
+class DeleteOption extends ActionMenuOption {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/delete.svg';

@@ -1,6 +1,6 @@
-import ActionMenuItem from '../Common/ActionMenuItem.js';
+import ActionMenuOption from '../Common/ActionMenuOption.js';
 
-class PasteOption extends ActionMenuItem {
+class PasteOption extends ActionMenuOption {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/paste.svg';
