@@ -254,7 +254,7 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
       drawContents: async (d3el, d, offset) => {
         await this.drawRows({
           contentEl: d3el,
-          itemList: await d.getContents(),
+          itemList: Object.values(await d.getContents()),
           selectedItems,
           offset
         });
@@ -275,7 +275,7 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
       drawContents: async (d3el, d, offset) => {
         await this.drawRows({
           contentEl: d3el,
-          itemList: await d.getContents(d),
+          itemList: Object.values(await d.getContents(d)),
           selectedItems,
           offset
         });

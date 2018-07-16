@@ -28,7 +28,7 @@ class OperationOptionsRenderer {
     const self = this;
     optionsEnter.each(function (d) {
       const el = d3.select(this);
-      if (d.openEnded) {
+      if (d.option.openEnded) {
         el.append('input')
           .attr('list', self.operation.type + d.option.parameterName)
           .classed('optionValue', true);
@@ -47,20 +47,24 @@ class OperationOptionsRenderer {
     let choicesEnter = choices.enter().append('option');
     choices = choices.merge(choicesEnter);
     choices.attr('value', d => d)
-      .text(d => d);
+      .text(d => d === null ? 'key' : (d.label || d));
 
     options.select('.optionValue')
-      .property('value', d => d.currentValue);
+      .property('value', d => d.currentValue)
+      .on('change', () => { this.drawOptions(); });
   }
   getOptionList () {
     let inputOptions = [];
-    Object.entries(this.inputSpec.options).forEach(([opName, option]) => {
-      let el = this.container.select(`.option[data-parameter-name="${option.parameterName}] .optionValue"`);
-      inputOptions.push({
-        currentValue: el.size() > 0 ? el.node().value : option.defaultValue,
-        option
-      });
-    });
+
+    const helper = option => {
+      const el = this.container.select(`.option[data-parameter-name="${option.parameterName}"] .optionValue`);
+      const currentValue = el.size() > 0 ? el.node().value : option.defaultValue;
+      inputOptions.push({ currentValue, option });
+      if (option.specs && option.specs[currentValue]) {
+        Object.values(option.specs[currentValue].options).forEach(helper);
+      }
+    };
+    Object.values(this.inputSpec.options).forEach(helper);
     return inputOptions;
   }
   getInputOptions () {
