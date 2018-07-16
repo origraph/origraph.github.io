@@ -13,9 +13,9 @@ class ModalOperationOption extends OperationMixin(ModalMenuOption) {
         this.applyButton.classed('disabled', !(await optionRenderer.ready()))
           .on('click', async () => {
             if (await optionRenderer.ready()) {
-              const settings = await optionRenderer.getSettings();
+              const inputOptions = await optionRenderer.getInputOptions();
               const newSelection = await window.mainView.userSelection
-                .execute(settings.operation, settings.parameters);
+                .execute(this.operation, inputOptions);
               window.mainView.setUserSelection(newSelection);
             }
           });

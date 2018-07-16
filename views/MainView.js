@@ -73,14 +73,12 @@ class MainView extends View {
       return promise;
     }
   }
-  selectItem (item, toggleMode = false) {
-    const options = {};
-    if (toggleMode) {
-      options.mode = mure.DERIVE_MODES.XOR;
-    }
-    const newSelection = this.userSelection
-      .deriveSelection([item.uniqueSelector], options);
-    this.setUserSelection(newSelection);
+  async selectItem (item, toggleMode = false) {
+    this.setUserSelection(await this.userSelection.selectAll({
+      context: 'Selector List',
+      selectorList: [item.uniqueSelector],
+      mode: toggleMode ? 'XOR' : 'Replace'
+    }));
   }
   async loadExampleFile (filename) {
     let fileContents;

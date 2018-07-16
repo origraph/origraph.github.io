@@ -2,23 +2,6 @@
 import GoldenLayoutView from './Common/GoldenLayoutView.js';
 import LocatedViewMixin from './Common/LocatedViewMixin.js';
 
-const ICONS = {
-  RootItem: 'img/home.svg',
-  DocumentItem: 'img/document.svg',
-  NullItem: 'img/null.svg',
-  BooleanItem: 'img/boolean.svg',
-  NumberItem: 'img/number.svg',
-  StringItem: 'img/string.svg',
-  DateItem: 'img/date.svg',
-  ReferenceItem: 'img/reference.svg',
-  ContainerItem: 'img/container.svg',
-  TaggableItem: 'img/taggable.svg',
-  SetItem: 'img/set.svg',
-  EdgeItem: 'img/edge.svg',
-  NodeItem: 'img/node.svg',
-  SupernodeItem: 'img/missing.svg'
-};
-
 class FileView extends LocatedViewMixin(GoldenLayoutView) {
   constructor ({ container, state }) {
     super({
@@ -139,10 +122,10 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
   }
   sortItems (itemList) {
     return itemList.sort((a, b) => {
-      if (a.contentItems && !b.contentItems) {
+      if (a.getContents && !b.getContents) {
         // a has contents and b doesn't; put a after b
         return 1;
-      } else if (b.contentItems && !a.contentItems) {
+      } else if (b.getContents && !a.getContents) {
         // b has contents and a doesn't; put b after a
         return -1;
       } else if (!isNaN(Number(a.label)) && !isNaN(Number(b.label))) {
@@ -219,7 +202,7 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
         window.mainView.hideTooltip();
       });
     rows.select(':scope > .summary > .type > img')
-      .attr('src', d => ICONS[d.constructor.name]);
+      .attr('src', d => `img/${d.lowerCamelCaseType}.svg`);
 
     // Item tags button and section
     await this.drawCollapsibleSection({
@@ -260,18 +243,18 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
     // Item contents button and section
     await this.drawCollapsibleSection({
       className: 'containerContents',
-      closedIconPath: 'img/container.svg',
-      openIconPath: 'img/openContainer.svg',
+      closedIconPath: 'img/item.svg',
+      openIconPath: 'img/openItem.svg',
       tooltip: 'Contents',
       rows,
       rowsEnter,
       summaryEnter,
-      visibleWhen: d => !!d.contentItems,
-      badgeCount: async d => d.contentItems ? d.contentItemCount() : 0,
+      visibleWhen: d => !!d.getContents,
+      badgeCount: async d => d.getContents ? d.getContentCount() : 0,
       drawContents: async (d3el, d, offset) => {
         await this.drawRows({
           contentEl: d3el,
-          itemList: await d.contentItems(),
+          itemList: await d.getContents(),
           selectedItems,
           offset
         });
@@ -287,12 +270,12 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
       rows,
       rowsEnter,
       summaryEnter,
-      visibleWhen: d => !!d.metaItems,
-      badgeCount: async d => d.metatItems ? d.metaItemCount() : 0,
+      visibleWhen: d => d.type === 'Document',
+      badgeCount: async d => d.type === 'Document' ? d.getContentCount(d) : 0,
       drawContents: async (d3el, d, offset) => {
         await this.drawRows({
           contentEl: d3el,
-          itemList: await d.metaItems(),
+          itemList: await d.getContents(d),
           selectedItems,
           offset
         });
