@@ -25,7 +25,7 @@ class TableView extends LocatedViewMixin(GoldenLayoutView) {
       columns: []
     });
   }
-  getTextCellSpec (valueAccessor, isSelected) {
+  getTextCellSpec (valueAccessor, isSelected, special = false) {
     return {
       data: (uniqueSelector, value) => {
         if (value) {
@@ -37,7 +37,8 @@ class TableView extends LocatedViewMixin(GoldenLayoutView) {
       renderer: function (instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
         const uniqueSelector = instance.getSourceDataAtRow(row);
-        d3.select(td).classed('selected', isSelected(uniqueSelector));
+        d3.select(td).classed('selected', isSelected(uniqueSelector))
+          .classed('special', special);
       }
     };
   }
@@ -56,19 +57,22 @@ class TableView extends LocatedViewMixin(GoldenLayoutView) {
     ));
 
     // Meta columns
-    colHeaders = ['Label', 'Type', 'Classes'].concat(colHeaders);
+    colHeaders = ['key', 'Type', 'Classes'].concat(colHeaders);
     columns = [
       this.getTextCellSpec(
         d => items[d].label,
-        d => selectedItems[d]
+        d => selectedItems[d],
+        true
       ),
       this.getTextCellSpec(
         d => items[d].type,
-        d => selectedItems[d]
+        d => selectedItems[d],
+        true
       ),
       this.getTextCellSpec(
         d => items[d].getClasses ? items[d].getClasses() : '',
-        d => selectedItems[d]
+        d => selectedItems[d],
+        true
       )
     ].concat(columns);
 

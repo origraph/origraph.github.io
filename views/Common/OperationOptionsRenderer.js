@@ -5,13 +5,18 @@ class OperationOptionsRenderer {
     this.operation = operation;
     this.selection = selection;
     this.inputSpec = this.operation.getInputSpec();
-    (async () => {
-      await this.inputSpec.populateChoicesFromSelection(window.mainView.userSelection);
-      this.drawOptions();
-    })();
+    this.updateChoices();
   }
   async ready () {
     return this.operation.canExecuteOnSelection(window.mainView.userSelection, this.getInputOptions());
+  }
+  async updateChoices () {
+    await this.inputSpec.updateChoices({
+      items: await window.mainView.userSelection.items(),
+      inputOptions: this.getInputOptions(),
+      reset: true
+    });
+    this.drawOptions();
   }
   drawOptions () {
     let options = this.container.selectAll(':scope > .option')
@@ -44,21 +49,34 @@ class OperationOptionsRenderer {
 
     let choices = options.select('.choiceList')
       .selectAll('option').data(d => d.option.choices);
+    choices.exit().remove();
     let choicesEnter = choices.enter().append('option');
     choices = choices.merge(choicesEnter);
-    choices.attr('value', d => d)
+    choices.attr('value', d => (d && d.uniqueSelector) || d)
       .text(d => d === null ? 'key' : (d.label || d));
 
     options.select('.optionValue')
-      .property('value', d => d.currentValue)
-      .on('change', () => { this.drawOptions(); });
+      .property('value', d => (d && d.currentValue && d.currentValue.uniqueSelector) || d.currentValue)
+      .on('change', () => { this.updateChoices(); });
   }
   getOptionList () {
     let inputOptions = [];
 
     const helper = option => {
-      const el = this.container.select(`.option[data-parameter-name="${option.parameterName}"] .optionValue`);
-      const currentValue = el.size() > 0 ? el.node().value : option.defaultValue;
+      const el = this.container.select(`.option[data-parameter-name="${option.parameterName}"] .optionValue`)
+        .node();
+      let currentValue;
+      if (el) {
+        if (el.tagName === 'SELECT') {
+          // Get the original data object, not the string stored in the option's
+          // value string
+          currentValue = option.choices[el.selectedIndex];
+        } else {
+          currentValue = el.value;
+        }
+      } else {
+        currentValue = option.defaultValue;
+      }
       inputOptions.push({ currentValue, option });
       if (option.specs && option.specs[currentValue]) {
         Object.values(option.specs[currentValue].options).forEach(helper);
