@@ -1,26 +1,26 @@
 import OperationOptionsRenderer from '../../Common/OperationOptionsRenderer.js';
 import ModalMenuOption from './ModalMenuOption.js';
-import OperationMixin from './OperationMixin.js';
+import DisableableOptionMixin from './DisableableOptionMixin.js';
 
-class ModalOperationOption extends OperationMixin(ModalMenuOption) {
+class ModalOperationOption extends DisableableOptionMixin(ModalMenuOption) {
+  constructor (operation, parentMenu, d3el) {
+    super(parentMenu, d3el);
+    this.operation = operation;
+    this.icon = `img/${operation.lowerCamelCaseType}.svg`;
+    this.label = operation.humanReadableType;
+    this.optionsRenderer = new OperationOptionsRenderer(null, this.operation);
+  }
+  setup () {
+    super.setup();
+    this.optionsRenderer.render(this.contentDiv);
+  }
   draw () {
     super.draw();
-    (async () => {
-      if (this.expanded && window.mainView.userSelection) {
-        let optionRenderer = new OperationOptionsRenderer(
-          this.optionsDiv, this.operation, window.mainView.userSelection);
-        optionRenderer.drawOptions();
-        this.applyButton.classed('disabled', !(await optionRenderer.ready()))
-          .on('click', async () => {
-            if (await optionRenderer.ready()) {
-              const inputOptions = await optionRenderer.getInputOptions();
-              const newSelection = await window.mainView.userSelection
-                .execute(this.operation, inputOptions);
-              window.mainView.setUserSelection(newSelection);
-            }
-          });
-      }
-    })();
+    this.optionsRenderer.render();
+  }
+  async isEnabled () {
+    return window.mainView.userSelection &&
+      this.operation.potentiallyExecutableOnSelection(window.mainView.userSelection);
   }
 }
 export default ModalOperationOption;

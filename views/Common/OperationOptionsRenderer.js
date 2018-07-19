@@ -1,24 +1,48 @@
 /* globals d3 */
-class OperationOptionsRenderer {
-  constructor (container, operation, selection) {
-    this.container = container;
+import { View } from '../../node_modules/uki/dist/uki.esm.js';
+
+class OperationOptionsRenderer extends View {
+  constructor (d3el, operation, applyButtonText = 'Apply') {
+    super(d3el);
     this.operation = operation;
-    this.selection = selection;
+    this.applyButtonText = applyButtonText;
     this.inputSpec = this.operation.getInputSpec();
-    this.updateChoices();
   }
   async ready () {
-    return this.operation.canExecuteOnSelection(window.mainView.userSelection, this.getInputOptions());
+    return !window.midOperation && window.mainView.userSelection &&
+      this.operation.canExecuteOnSelection(window.mainView.userSelection, this.getInputOptions());
   }
   async updateChoices () {
     await this.inputSpec.updateChoices({
-      items: await window.mainView.userSelection.items(),
+      items: window.mainView.userSelection
+        ? await window.mainView.userSelection.items() : {},
       inputOptions: this.getInputOptions(),
       reset: true
     });
-    this.drawOptions();
+    this.render();
   }
-  drawOptions () {
+  setup () {
+    this.container = this.d3el.append('div');
+    this.applyButton = this.d3el.append('div')
+      .classed('button', true);
+    this.applyButton.append('a');
+    this.applyButton.append('span')
+      .text(this.applyButtonText);
+    this.applyButton.on('click', async () => {
+      if (await this.ready()) {
+        window.midOperation = true;
+        const inputOptions = this.getInputOptions();
+        const newSelection = await window.mainView.userSelection
+          .execute(this.operation, inputOptions);
+        window.mainView.setUserSelection(newSelection);
+        await this.updateChoices();
+        window.midOperation = false;
+        this.render();
+        this.trigger('executed');
+      }
+    });
+  }
+  draw () {
     let options = this.container.selectAll(':scope > .option')
       .data(this.getOptionList(), d => d.option.parameterName);
     options.exit().remove();
@@ -58,6 +82,9 @@ class OperationOptionsRenderer {
     options.select('.optionValue')
       .property('value', d => (d && d.currentValue && d.currentValue.uniqueSelector) || d.currentValue)
       .on('change', () => { this.updateChoices(); });
+    (async () => {
+      this.applyButton.classed('disabled', !(await this.ready()));
+    })();
   }
   getOptionList () {
     let inputOptions = [];

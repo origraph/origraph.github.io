@@ -75,7 +75,7 @@ class UploadOption extends ModalMenuOption {
           // TODO: Hard-coding the table state assignment... need to generalize this...
           tourWorkspace.goldenLayoutConfig.content[0].content[1].content[0]
             .componentState.selectorList = (await fileSelection
-              .pivot({context: 'NavigateToContents'})).selectorList;
+              .subSelect('.contents[*]')).selectorList;
           tourWorkspace.assignModes(window.mainView.currentWorkspace);
           window.mainView.loadWorkspace(tourWorkspace);
         }
@@ -102,11 +102,11 @@ class UploadOption extends ModalMenuOption {
       this.render();
       return selection;
     }));
-    const unifiedSelection = fileSelections.reduce((agg, selection) => {
+    const unifiedSelection = await fileSelections.reduce(async (agg, selection) => {
       if (!agg) {
         return selection;
       } else {
-        return agg.merge(selection);
+        return (await agg).mergeSelection(selection);
       }
     }, null);
     await window.mainView.setUserSelection(unifiedSelection);

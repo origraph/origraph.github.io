@@ -250,11 +250,11 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => !!d.getContents,
-      badgeCount: async d => d.getContents ? d.getContentCount() : 0,
+      badgeCount: d => d.getContents ? d.getContentCount() : 0,
       drawContents: async (d3el, d, offset) => {
         await this.drawRows({
           contentEl: d3el,
-          itemList: Object.values(await d.getContents()),
+          itemList: Object.values(d.getContents()),
           selectedItems,
           offset
         });
@@ -271,11 +271,11 @@ class FileView extends LocatedViewMixin(GoldenLayoutView) {
       rowsEnter,
       summaryEnter,
       visibleWhen: d => d.type === 'Document',
-      badgeCount: async d => d.type === 'Document' ? d.getContentCount(d) : 0,
+      badgeCount: d => d.type === 'Document' ? d.getContentCount(d) : 0,
       drawContents: async (d3el, d, offset) => {
         await this.drawRows({
           contentEl: d3el,
-          itemList: Object.values(await d.getContents(d)),
+          itemList: Object.values(d.getContents(d)),
           selectedItems,
           offset
         });
