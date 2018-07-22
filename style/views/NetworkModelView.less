@@ -1,15 +1,33 @@
 @import '../colors.less';
 
 .NetworkModelView {
-  .node circle {
-    opacity: 0.5;
-    fill: @textColor;
-    stroke: none;
+  .node {
+    circle {
+      opacity: 0.5;
+      fill: @textColor;
+      stroke: none;
+    }
+    &.selected circle {
+      fill: @selectionColor;
+    }
+    &.hovered circle {
+      opacity: 1.0;
+      cursor: pointer;
+    }
   }
-  .edge path {
-    opacity: 0.5;
-    fill: none;
-    stroke: @textColor;
-    stroke-width: 2px;
+  .edge {
+    path {
+      opacity: 0.5;
+      fill: none;
+      stroke: @textColor;
+      stroke-width: 5px;
+    }
+    &.selected path {
+      stroke: @selectionColor;
+    }
+    &.hovered path {
+      opacity: 1.0;
+      cursor: pointer;
+    }
   }
 }

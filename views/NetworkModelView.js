@@ -3,6 +3,9 @@ import GoldenLayoutView from './Common/GoldenLayoutView.js';
 import LocatedViewMixin from './Common/LocatedViewMixin.js';
 import SvgViewMixin from './Common/SvgViewMixin.js';
 
+const MIN_NODE_SIZE = 2.5;
+const MAX_NODE_SIZE = 70;
+
 class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) {
   constructor ({ container, state }) {
     super({
@@ -16,7 +19,9 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
     super.setup();
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink().id(d => d.id))
-      .force('charge', d3.forceManyBody());
+      .force('charge', d3.forceManyBody().strength(-MAX_NODE_SIZE))
+      .force('center', d3.forceCenter())
+      .force('collide', d3.forceCollide());
   }
   async getEmptyState () {
     const temp = await super.getEmptyState();
@@ -44,7 +49,7 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
 
     let nodeScale = d3.scaleSqrt()
       .domain([0, d3.max(d3.values(networkModel.nodeClasses), d => d.count)])
-      .range([0, 20]); // Max radius is 100px
+      .range([MIN_NODE_SIZE, MAX_NODE_SIZE]);
     let nodes = nodeLayer.selectAll('.node')
       .data(d3.entries(networkModel.nodeClasses), d => d.key);
     nodes.exit().remove();
@@ -64,10 +69,39 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
     edges = edges.merge(edgesEnter);
     edgesEnter.append('path');
 
-    this.simulation
-      .force('center', d3.forceCenter(bounds.width / 2, bounds.height / 2))
-      .nodes(graph.nodes)
-      .force('link').links(graph.links);
+    const hover = function (d) {
+      window.mainView.showTooltip({
+        content: d.key,
+        targetBounds: this.getBoundingClientRect()
+      });
+      d3.select(this).classed('hovered', true);
+    };
+    const unhover = function () {
+      window.mainView.hideTooltip();
+      d3.select(this).classed('hovered', false);
+    };
+    const click = async d => {
+      window.mainView.setUserSelection(await this.location.filter({
+        className: d.key
+      }));
+    };
+    nodes.on('mouseover', hover);
+    edges.on('mouseover', hover);
+    nodes.on('mouseout', unhover);
+    edges.on('mouseout', unhover);
+    nodes.on('click', click);
+    edges.on('click', click);
+
+    this.simulation.force('collide')
+      .radius(d => {
+        return nodeScale(d.entity.count);
+      });
+    this.simulation.force('center')
+      .x(bounds.width / 2)
+      .y(bounds.height / 2);
+    this.simulation.nodes(graph.nodes);
+    this.simulation.force('link')
+      .links(graph.links);
     this.simulation.on('tick', () => {
       nodes.attr('transform', d => {
         const node = graph.nodes[graph.nodeLookup['node' + d.key]];
@@ -83,13 +117,41 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
         });
       });
     });
-    this.simulation.alpha(1)
-      .restart();
+    // this.simulation.restart();
   }
   computeHyperedgePath ({ edge, sourceLinks, targetLinks, undirecteds }) {
-    return sourceLinks.concat(targetLinks)
-      .map(d => `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`)
-      .join();
+    let sourceX = 0;
+    let sourceY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    sourceLinks.forEach(d => {
+      sourceX += d.target.x - d.source.x;
+      sourceY += d.target.y - d.source.y;
+    });
+    const thetaIn = Math.atan2(sourceY, sourceX);
+    targetLinks.forEach(d => {
+      targetX += d.target.x - d.source.x;
+      targetY += d.target.y - d.source.y;
+    });
+    const thetaOut = Math.atan2(targetY, targetX);
+    const theta = (thetaIn + thetaOut) / 2;
+    const anchorOffset = {
+      x: MAX_NODE_SIZE * Math.cos(theta),
+      y: MAX_NODE_SIZE * Math.sin(theta)
+    };
+    let sourceSegments = sourceLinks.map(d => `\
+M${d.source.x},${d.source.y}\
+Q${d.target.x - anchorOffset.x},${d.target.y - anchorOffset.y},
+${d.target.x},${d.target.y}`);
+    return sourceSegments + targetLinks.map(d => `\
+M${d.source.x},${d.source.y}\
+Q${d.source.x + anchorOffset.x},${d.source.y + anchorOffset.y},
+${d.target.x},${d.target.y}`);
+  }
+  computeTempHyperedgePath ({ edge, sourceLinks, targetLinks, undirecteds }) {
+    return sourceLinks.concat(targetLinks).map(d => `\
+M${d.source.x},${d.source.y}\
+L${d.target.x},${d.target.y}`);
   }
   deriveGraphFromNetworkModel (networkModel) {
     let graph = {
