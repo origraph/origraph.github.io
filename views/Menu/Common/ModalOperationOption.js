@@ -9,6 +9,9 @@ class ModalOperationOption extends DisableableOptionMixin(ModalMenuOption) {
     this.icon = `img/${operation.lowerCamelCaseType}.svg`;
     this.label = operation.humanReadableType;
     this.optionsRenderer = new OperationOptionsRenderer(null, this.operation);
+    window.mainView.on('selectionUpdated', () => {
+      this.optionsRenderer.updateChoices();
+    });
   }
   setup () {
     super.setup();

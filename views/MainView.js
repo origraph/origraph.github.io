@@ -101,9 +101,11 @@ class MainView extends View {
         linkedViewSpec = await mure.getLinkedViews();
       }
       this.userSelection = linkedViewSpec.userSelection;
+      this.trigger('selectionUpdated');
     } else if (linkedViewSpec.userSelection) {
       // We got a simple update for the userSelection
       this.userSelection = linkedViewSpec.userSelection;
+      this.trigger('selectionUpdated');
     }
 
     if (!this.currentWorkspace) {
@@ -117,9 +119,11 @@ class MainView extends View {
       this.currentWorkspace = linkedViewSpec.settings.origraph
         ? new Workspace(linkedViewSpec.settings.origraph) : window.WORKSPACES.intro;
       this.initSubViews(this.d3el.select('#contents'));
+      this.trigger('layoutUpdated');
     } else if (linkedViewSpec.settings && linkedViewSpec.settings.origraph) {
       // We got a simple update for the settings
       this.currentWorkspace = new Workspace(linkedViewSpec.settings.origraph);
+      this.trigger('layoutUpdated');
     }
 
     this.render();
