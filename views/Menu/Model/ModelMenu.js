@@ -1,6 +1,7 @@
 import SubMenu from '../Common/SubMenu.js';
 import ConvertOption from './ConvertOption.js';
 import AssignClassOption from './AssignClassOption.js';
+import AttachOption from './AttachOption.js';
 import ConnectOption from './ConnectOption.js';
 
 class ModelMenu extends SubMenu {
@@ -11,6 +12,7 @@ class ModelMenu extends SubMenu {
     this.items = [
       new ConvertOption(this),
       new AssignClassOption(this),
+      new AttachOption(this),
       new ConnectOption(this)
     ];
   }

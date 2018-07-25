@@ -100,6 +100,13 @@ class UploadOption extends ModalMenuOption {
       const selection = await mure.uploadFileObj(fileObj);
       this.loadedFiles[fileObj.name] = selection;
       this.render();
+      if (fileObj.type === 'text/csv') {
+        // Auto-assign file name as class to CSV rows
+        await (await (await selection
+          .selectAll({ context: 'Children' }))
+          .convert({ context: 'Taggable' }))
+          .assignClass({ className: fileObj.name });
+      }
       return selection;
     }));
     const unifiedSelection = await fileSelections.reduce(async (agg, selection) => {

@@ -99,9 +99,6 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
     this.simulation.force('center')
       .x(bounds.width / 2)
       .y(bounds.height / 2);
-    this.simulation.nodes(graph.nodes);
-    this.simulation.force('link')
-      .links(graph.links);
     this.simulation.on('tick', () => {
       nodes.attr('transform', d => {
         const node = graph.nodes[graph.nodeLookup['node' + d.key]];
@@ -117,7 +114,9 @@ class NetworkModelView extends SvgViewMixin(LocatedViewMixin(GoldenLayoutView)) 
         });
       });
     });
-    this.simulation.restart();
+    this.simulation.nodes(graph.nodes);
+    this.simulation.force('link')
+      .links(graph.links);
   }
   computeHyperedgePath ({ edge, sourceLinks, targetLinks, undirecteds }) {
     let sourceX = 0;
