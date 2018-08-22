@@ -1,7 +1,6 @@
-/* globals d3, mure, GoldenLayout */
+/* globals GoldenLayout */
 import { View } from '../node_modules/uki/dist/uki.esm.js';
-import MainMenu from './Menu/MainMenu.js';
-import Workspace from './Common/Workspace.js';
+import MainMenu from './MainMenu/MainMenu.js';
 
 class MainView extends View {
   constructor (d3el) {
@@ -9,133 +8,21 @@ class MainView extends View {
 
     // Lookup for all active views, because GoldenLayout doesn't allow us to
     // access the classes it generates directly
-    this.views = {};
+    this.subViews = {};
 
-    mure.on('linkedViewChange', linkedViewSpec => {
-      if (linkedViewSpec.userSelection ||
-         (linkedViewSpec.settings &&
-          linkedViewSpec.settings.origraph)) {
-        this.refresh({ linkedViewSpec });
-      }
-    });
-    mure.on('docChange', changedDoc => {
-      // TODO: stupidly just always update everything; in the future we might be
-      // able to ignore if our selection doesn't refer to the changed document
-      this.refresh({ contentUpdated: true });
-    });
-
-    mure.customizeAlertDialog(message => {
-      return new Promise((resolve, reject) => {
-        this.showOverlay({
-          message,
-          ok: () => { this.hideOverlay(); resolve(); }
-        });
-      });
-    });
-    mure.customizeConfirmDialog(message => {
-      return new Promise((resolve, reject) => {
-        this.showOverlay({
-          message,
-          ok: () => { this.hideOverlay(); resolve(true); },
-          cancel: () => { this.hideOverlay(); resolve(false); }
-        });
-      });
-    });
-    mure.customizePromptDialog((message, defaultValue = '') => {
-      return new Promise((resolve, reject) => {
-        this.showOverlay({
-          message,
-          ok: () => {
-            const value = d3.select('#overlay .prompt').property('value');
-            this.hideOverlay();
-            resolve(value);
-          },
-          cancel: () => { this.hideOverlay(); resolve(null); },
-          prompt: defaultValue
-        });
-      });
-    });
-
-    this.refresh();
-  }
-  async saveSettings () {
-    const promise = mure.setLinkedViews({
-      settings: { origraph: this.currentWorkspace ? this.currentWorkspace.toFlatObject() : window.WORKSPACES.intro }
-    });
-    this.render(); // potentially show a spinner
-    return promise;
-  }
-  async setUserSelection (selection) {
-    if (selection !== this.userSelection) {
-      this.userSelection = selection;
-      const promise = mure.setLinkedViews({ userSelection: this.userSelection });
-      this.render(); // potentially show a spinner
-      return promise;
-    }
-  }
-  async selectItem (item, toggleMode = false) {
-    this.setUserSelection(await this.userSelection.selectAll({
-      context: 'Selector List',
-      selectorList: [item.uniqueSelector],
-      mode: toggleMode ? 'XOR' : 'Replace'
-    }));
-  }
-  async loadExampleFile (filename) {
-    let fileContents;
-    try {
-      fileContents = await d3.text(`docs/exampleDatasets/${filename}`);
-    } catch (err) {
-      mure.warn(err);
-    }
-    const newFile = await mure.uploadString(filename, null, null, fileContents);
-    await this.setUserSelection(newFile);
-  }
-  async refresh ({ linkedViewSpec, contentUpdated = false } = {}) {
-    linkedViewSpec = linkedViewSpec || await mure.getLinkedViews();
-
-    if (!this.userSelection) {
-      // We need to initialize the userSelection
-      this.render(); // 'Syncing user selection...' spinner
-      if (!linkedViewSpec.settings) {
-        // Force a full read of userSelection if we only got a settings delta
-        linkedViewSpec = await mure.getLinkedViews();
-      }
-      this.userSelection = linkedViewSpec.userSelection;
-      this.trigger('selectionUpdated');
-    } else if (linkedViewSpec.userSelection) {
-      // We got a simple update for the userSelection
-      this.userSelection = linkedViewSpec.userSelection;
-      this.trigger('selectionUpdated');
-    }
-
-    if (!this.currentWorkspace) {
-      // We need to initialize the settings
-      this.render(); // 'Syncing view settings...' spinner
-      if (!linkedViewSpec.settings) {
-        // Force a full read of the settings if we only got a userSelection delta
-        linkedViewSpec = await mure.getLinkedViews();
-      }
-      // Initialize the settings and layout
-      this.currentWorkspace = linkedViewSpec.settings.origraph
-        ? new Workspace(linkedViewSpec.settings.origraph) : window.WORKSPACES.intro;
-      this.initSubViews(this.d3el.select('#contents'));
-      this.trigger('layoutUpdated');
-    } else if (linkedViewSpec.settings && linkedViewSpec.settings.origraph) {
-      // We got a simple update for the settings
-      this.currentWorkspace = new Workspace(linkedViewSpec.settings.origraph);
-      this.trigger('layoutUpdated');
-    }
-
+    // Initialize the layout and subviews
+    this.initSubViews(this.d3el.select('#contents'));
     this.render();
   }
   setup () {
     this.hideTooltip();
+    this.d3el.select(':scope > .emptyState')
+      .style('display', 'none');
     this.showOverlay({
       message: 'Loading assets...',
       spinner: true
     });
-    // Set up the subViews
-    this.menuView = new MainMenu(this.d3el.select('#menu'));
+    this.mainMenu = new MainMenu(this.d3el.select('#menu'));
   }
   saveLayoutState () {
     // debounce this call if goldenlayout isn't ready;
@@ -148,26 +35,20 @@ class MainView extends View {
         this.saveLayoutState();
       }, 200);
     } else {
-      this.currentWorkspace.goldenLayoutConfig = this.goldenLayout.toConfig();
-      // Save the settings (auto-triggers a render once they're saved, but for
-      // snappier menu feedback, we manually trigger its render function right
-      // away)
-      if (this.menuView) {
-        this.menuView.render();
-      }
-      this.saveSettings().then(() => {
-        this.render();
-      });
+      const config = this.goldenLayout.toConfig();
+      window.localStorage.setItem('layout', JSON.stringify(config));
     }
   }
   initSubViews (contentsElement) {
     const self = this;
-    this.goldenLayout = new GoldenLayout(this.currentWorkspace.goldenLayoutConfig, contentsElement.node());
-    Object.entries(window.VIEW_CLASSES)
+    let config = window.localStorage.getItem('layout');
+    config = config ? JSON.parse(config) : window.DEFAULT_LAYOUT;
+    this.goldenLayout = new GoldenLayout(config, contentsElement.node());
+    Object.entries(window.SUBVIEW_CLASSES)
       .forEach(([className, ViewClass]) => {
         this.goldenLayout.registerComponent(className, function (container, state) {
           const view = new ViewClass({ container, state });
-          self.views[view.getId()] = view;
+          self.subViews[view.id] = view;
           return view;
         });
       });
@@ -179,7 +60,7 @@ class MainView extends View {
     });
     this.goldenLayout.on('itemDestroyed', event => {
       if (event.instance) {
-        delete this.views[event.instance.getId()];
+        delete this.subViews[event.instance.getId()];
       }
     });
 
@@ -187,7 +68,7 @@ class MainView extends View {
       this.goldenLayout.init();
     } catch (error) {
       if (error.type === 'popoutBlocked') {
-        mure.warn(`\
+        this.showModal(window.MODALS.Alert, `\
 The last time you used this app, a view was in a popup that your \
 browser just blocked (you will need to re-open the view from the \
 menu).
@@ -204,34 +85,31 @@ sites in your browser settings.`);
       }
     }
   }
-  toggleSubView (ViewClass, location, show) {
-    let id = ViewClass.name + (location ? location.hash : '');
-    show = show === undefined ? !this.views[id] : show;
-
-    if (show) {
-      // Show the subview
-      let targetIndex = this.goldenLayout.root.contentItems.length - 1;
-      let target = targetIndex === -1 ? this.goldenLayout.root
-        : this.goldenLayout.root.contentItems[targetIndex];
-      let componentState = location ? { selectorList: location.selectorList } : {};
-      target.addChild({
-        type: 'component',
-        componentName: ViewClass.name,
-        componentState
-      });
-    } else {
-      this.views[id].container.close();
+  showSubView (ViewClass, classSelector) {
+    // TODO: smarter placement of the subview; for now we just stick it
+    // at the end of the layout
+    const targetIndex = this.goldenLayout.root.contentItems.length - 1;
+    const target = targetIndex === -1 ? this.goldenLayout.root
+      : this.goldenLayout.root.contentItems[targetIndex];
+    const componentState = {};
+    if (classSelector) {
+      componentState.classSelector = classSelector;
+    }
+    target.addChild({
+      type: 'component',
+      componentName: ViewClass.name,
+      componentState: componentState
+    });
+  }
+  closeSubView (subViewId, show) {
+    if (this.subViews[subViewId]) {
+      this.subViews[subViewId].container.close();
+      // the itemDestroyed event handles deleting subViewId from this.subViews
     }
   }
-  loadWorkspace (workspace) {
-    this.currentWorkspace = workspace;
-    this.goldenLayout.destroy();
-    this.initSubViews(this.d3el.select('#contents'));
-    this.saveSettings();
-  }
   resize () {
-    if (this.menuView) {
-      this.menuView.render();
+    if (this.mainMenu) {
+      this.mainMenu.render();
     }
     if (this.goldenLayout) {
       this.goldenLayout.updateSize();
@@ -240,38 +118,17 @@ sites in your browser settings.`);
   draw () {
     this.d3el.select(':scope > .emptyState')
       .style('display', 'none');
-    if (!this.userSelection) {
-      this.showOverlay({
-        message: 'Syncing user selection...',
-        spinner: true
-      });
-    } else if (!this.currentWorkspace) {
-      this.showOverlay({
-        message: 'Syncing view settings...',
-        spinner: true
-      });
-    } else {
-      this.menuView.render();
-      // goldenLayout doesn't really have a reliable way to check
-      // if it's empty at aribitrary points, so we inspect the DOM instead
-      const nChildren = this.d3el.select('#contents > .lm_root')
-        .node().childNodes.length;
-      this.d3el.select(':scope > .emptyState')
-        .style('display', nChildren === 0 ? null : 'none');
-      Object.values(this.views).forEach(subView => {
-        subView.render();
-      });
-      this.hideOverlay();
-    }
-  }
-  createTransitionList () {
-    let t = d3;
-    let result = [];
-    [1000, 1000].forEach(d => {
-      t = t.transition().duration(d);
-      result.push(t);
+    this.mainMenu.render();
+    // goldenLayout doesn't really have a reliable way to check
+    // if it's empty at aribitrary points, so we inspect the DOM instead
+    const nChildren = this.d3el.select('#contents > .lm_root')
+      .node().childNodes.length;
+    this.d3el.select(':scope > .emptyState')
+      .style('display', nChildren === 0 ? null : 'none');
+    Object.values(this.subViews).forEach(subView => {
+      subView.render();
     });
-    return result;
+    this.hideOverlay();
   }
   showOverlay ({
     message = '',
