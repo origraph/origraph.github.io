@@ -128,65 +128,40 @@ ${d.target.x},${d.target.y}`);
 }
 */
   deriveGraph () {
+    const edgeClasses = [];
+    const nodeLookup = {}; // maps a class selector to an index in graph.nodes
     let graph = {
       nodes: [],
-      nodeLookup: {},
-      links: [],
-      linkLookup: {}
+      links: []
     };
 
-    /* TODO: derive a graph from mure.classes */
+    // Create nodes + pseudo-nodes
+    Object.entries(mure.classes).forEach(([selector, classObj]) => {
+      nodeLookup[classObj.selector] = graph.nodes.length;
+      graph.nodes.push(classObj);
+      if (classObj.type === 'Edge') {
+        edgeClasses.push(classObj);
+      }
+    });
 
-    /*
-    Object.entries(networkModel.nodeClasses).forEach(([nodeClassName, pseudoItem]) => {
-      graph.nodeLookup['node' + nodeClassName] = graph.nodes.length;
-      graph.nodes.push({
-        id: 'node' + nodeClassName,
-        entity: pseudoItem
-      });
-    });
-    Object.entries(networkModel.linkClasses).forEach(([linkClassName, pseudoItem]) => {
-      graph.nodeLookup['link' + linkClassName] = graph.nodes.length;
-      graph.nodes.push({
-        id: 'link' + linkClassName,
-        entity: pseudoItem
-      });
-      graph.linkLookup['link' + linkClassName] = graph.linkLookup['link' + linkClassName] || {
-        sources: [],
-        targets: [],
-        undirecteds: []
-      };
-      Object.entries(pseudoItem.$nodes).forEach(([nodeClassName, directions]) => {
-        Object.entries(directions).forEach(([direction, count]) => {
-          if (direction === 'source') {
-            graph.linkLookup['link' + linkClassName].sources.push(graph.links.length);
-            graph.links.push({
-              source: 'node' + nodeClassName,
-              target: 'link' + linkClassName,
-              directed: true,
-              count
-            });
-          } else if (direction === 'target') {
-            graph.linkLookup['link' + linkClassName].targets.push(graph.links.length);
-            graph.links.push({
-              source: 'link' + linkClassName,
-              target: 'node' + nodeClassName,
-              directed: true,
-              count
-            });
-          } else { // if (direction === 'undirected') {
-            graph.linkLookup['link' + linkClassName].undirecteds.push(graph.links.length);
-            graph.links.push({
-              source: 'link' + linkClassName,
-              target: 'node' + nodeClassName,
-              directed: false,
-              count
-            });
-          }
+    // Get any links that exist
+    edgeClasses.forEach(edgeClass => {
+      if (edgeClass.sourceSelector !== null) {
+        graph.links.push({
+          source: nodeLookup[edgeClass.sourceSelector],
+          target: nodeLookup[edgeClass.selector],
+          directed: edgeClass.directed
         });
-      });
+      }
+      if (edgeClass.targetSelector !== null) {
+        graph.links.push({
+          source: nodeLookup[edgeClass.selector],
+          target: nodeLookup[edgeClass.targetSelector],
+          directed: edgeClass.directed
+        });
+      }
     });
-    */
+
     return graph;
   }
 }
