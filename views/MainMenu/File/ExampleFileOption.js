@@ -1,3 +1,4 @@
+/* globals d3, mure */
 import ModalMenuOption from '../Common/ModalMenuOption.js';
 
 const EXAMPLE_FILES = [
@@ -25,8 +26,19 @@ class ExampleFileOption extends ModalMenuOption {
 
     options.text(d => d)
       .attr('disabled', (d, i) => i === 0 ? '' : null);
-    dropdown.on('change', function () {
-      window.mainView.loadExampleFile(this.value);
+    dropdown.on('change', async function () {
+      let text;
+      try {
+        text = await d3.text(`docs/exampleDatasets/${this.value}`);
+      } catch (err) {
+        this.showModal(window.MODALS.Alert, err.message);
+      }
+      await mure.addStringAsStaticDataSource({
+        key: this.value,
+        extension: mure.mime.extension(mure.mime.lookup(this.value)),
+        text
+      });
+      window.mainView.render();
     });
   }
 }

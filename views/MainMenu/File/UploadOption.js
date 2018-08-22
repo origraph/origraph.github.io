@@ -54,13 +54,12 @@ class UploadOption extends ModalMenuOption {
     this.lastFiles = Array.from(this.uploadInput.node().files);
     this.render();
 
-    const newClasses = await Promise.all(this.lastFiles.map(async fileObj => {
-      const newClassObj = await mure.addFileAsStaticDataSource(fileObj);
+    await Promise.all(this.lastFiles.map(async fileObj => {
+      await mure.addFileAsStaticDataSource({ fileObj });
       this.loadedFiles[fileObj.name] = true;
       window.mainView.render();
-      return newClassObj;
     }));
-    // TODO: auto-select the newClasses?
+    // TODO: auto-select the new classes?
   }
 }
 export default UploadOption;

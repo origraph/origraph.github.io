@@ -30,6 +30,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     const bounds = this.getContentBounds(this.content);
     const graph = this.deriveGraph();
 
+    console.log(bounds, graph);
+
     // TODO: draw / update nodes, edges, and forces
 
     /*
