@@ -2,47 +2,127 @@
 import GoldenLayoutView from './GoldenLayoutView.js';
 import SvgViewMixin from './SvgViewMixin.js';
 
-const NODE_SIZE = 70;
+const NODE_SIZE = 50;
+const FLOATING_EDGE_LENGTH = 50;
+const MENU_SIZE = 20;
 
 class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
-  constructor ({ container, state }) {
+  constructor({
+    container,
+    state
+  }) {
     super({
       container,
       icon: NetworkModelView.icon,
       label: NetworkModelView.label
     });
   }
-  isEmpty () {
+  isEmpty() {
     return Object.keys(mure.classes).length === 0;
   }
-  setup () {
+  setup() {
     super.setup();
     this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink().id(d => d.id))
+      .force('link', d3.forceLink()) //.id(d => d.id))
       .force('charge', d3.forceManyBody().strength(-NODE_SIZE))
       .force('center', d3.forceCenter())
-      .force('collide', d3.forceCollide());
+      .force('collide', d3.forceCollide().radius(NODE_SIZE));
 
     this.linkLayer = this.content.append('g').classed('linkLayer', true);
     this.nodeLayer = this.content.append('g').classed('nodeLayer', true);
+
+    //set drag behavior
+    let dragstarted = (d) => {
+      console.log('started drag',d)
+    }
+
+    let dragended = (d) => {
+      console.log('ended drag')
+    }
+
+    const self = this;
+    let dragged = function(d){
+
+      console.log('dragging',d)
+
+
+      d3.select(this)
+      .attr('transform', node => {
+        node.x = d3.event.x; node.y = d3.event.y;
+        return `translate(${d3.event.x},${d3.event.y})`;
+      });
+
+      let associatedEdge = d3.selectAll('.edge').filter(dd=>dd.selector === d.selector);
+
+      console.log(associatedEdge.size())
+      associatedEdge
+        .select('path')
+        .attr('d', d => {
+          let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
+          let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
+
+          return self.edgePathGenerator(source, target)
+        })
+    }
+
+    this.drag = d3.drag()
+      .on('start', dragstarted)
+      .on('drag', dragged)
+      .on('end', dragended);
+
+
   }
-  draw () {
+  draw() {
     const bounds = this.getContentBounds(this.content);
     const graph = this.deriveGraph();
 
     console.log(bounds, graph);
 
-    // TODO: draw / update nodes, edges, and forces
-
-    /*
     let nodes = this.nodeLayer.selectAll('.node')
       .data(graph.nodes, d => d.className);
     nodes.exit().remove();
     let nodesEnter = nodes.enter().append('g')
       .classed('node', true);
-    nodes = nodes.merge(nodesEnter);
+
     nodesEnter.append('circle');
-    nodes.select('circle').attr('r', NODE_SIZE);
+    nodesEnter.append('text');
+    nodesEnter.append('image')
+
+    nodes = nodes.merge(nodesEnter);
+
+    nodes.call(this.drag);
+
+
+    nodes.select('image')
+      .attr('xlink:href', '../img/hamburger.svg')
+      .attr('height', MENU_SIZE)
+      .attr('width', MENU_SIZE)
+      .attr('x', d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
+      .attr('y', d => d.type === 'Node' ? -NODE_SIZE : 0)
+
+    nodes.select('circle').attr('r', d => d.type === 'Node' ? NODE_SIZE : NODE_SIZE / 8);
+
+    nodes.select('text').text(d => d.type === 'Node' ? d.className : '');
+    nodes.select('text').style('text-anchor', 'middle')
+
+
+    let edges = this.nodeLayer.selectAll('.edge')
+      .data(graph.nodes.filter(n => n.type === 'Edge'), d => d.className);
+    edges.exit().remove();
+    let edgeEnter = edges.enter().append('g')
+      .classed('edge', true);
+    edgeEnter.append('path').attr('id', 'test');
+    edgeEnter.append('text').append('textPath')
+
+    edges = edges.merge(edgeEnter);
+
+    // edges.call(this.drag);
+
+    // edges.select('textPath').text(d => d.className);
+    edges.select('textPath').attr('href', '#test');
+
+    edges.select('path')
+      .attr('stroke-width', '6px')
 
     let links = this.linkLayer.selectAll('.link')
       .data(graph.links, d => d.className);
@@ -54,7 +134,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     const hover = function (d) {
       window.mainView.showTooltip({
-        content: d.key,
+        content: 'testing',
         targetBounds: this.getBoundingClientRect()
       });
       d3.select(this).classed('hovered', true);
@@ -72,31 +152,64 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     links.on('mouseover', hover);
     nodes.on('mouseout', unhover);
     links.on('mouseout', unhover);
-    nodes.on('click', click);
+    nodes.on('click', () => window.mainView.showTooltip({
+      content: 'testing'
+    }));
     links.on('click', click);
 
     this.simulation.force('center')
       .x(bounds.width / 2)
       .y(bounds.height / 2);
     this.simulation.on('tick', () => {
-      nodes.attr('transform', d => {
-        const node = graph.nodes[graph.nodeLookup['node' + d.key]];
+      nodes.attr('transform', node => {
         return `translate(${node.x},${node.y})`;
       });
-      links.select('path').attr('d', d => {
-        let links = graph.linkLookup['link' + d.key];
-        return this.computeHyperlinkPath({
-          link: graph.nodes[graph.nodeLookup['link' + d.key]],
-          sourceLinks: links.sources.map(i => graph.links[i]),
-          targetLinks: links.targets.map(i => graph.links[i]),
-          undirecteds: links.undirecteds.map(i => graph.links[i])
-        });
+
+
+      edges.select('textPath').attr('side', d => {
+        let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
+        let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
+
+        return source.x > target.x ? 'left' : 'right'
       });
+
+
+
+      // edges.select('text').attr('x',d=>{
+      //   let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
+      //   let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
+      //   return ( source.x + target.x )/2;
+      // })
+
+      // edges.select('text').attr('y',d=>{
+      //   let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
+      //   let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
+      //   return ( source.y + target.y )/2;
+      // })
+
+      edges
+        .select('path')
+        .attr('d', d => {
+          let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
+          let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
+
+          return this.edgePathGenerator(source, target)
+        })
+      // links.select('path').attr('d', d => {
+      //   let links = d; //graph.linkLookup['link' + d.key];
+      //   console.log(d);
+      //   return this.computeHyperlinkPath({
+      //     link: graph.nodes[graph.nodeLookup['link' + d.key]],
+      //     sourceLinks: links.sources.map(i => graph.links[i]),
+      //     targetLinks: links.targets.map(i => graph.links[i]),
+      //     undirecteds: links.undirecteds.map(i => graph.links[i])
+      //   });
+      // });
     });
     this.simulation.nodes(graph.nodes);
     this.simulation.force('link')
       .links(graph.links);
-      */
+
   }
   /*
   computeHyperlinkPath ({ link, sourceLinks, targetLinks, undirecteds }) {
@@ -129,7 +242,16 @@ Q${d.source.x + anchorOffset.x},${d.source.y + anchorOffset.y},
 ${d.target.x},${d.target.y}`);
 }
 */
-  deriveGraph () {
+
+  edgePathGenerator(source, target) {
+    //floating edges
+    if (source === target) {
+      return 'M' + (source.x - FLOATING_EDGE_LENGTH) + ' ' + source.y + 'L' + (target.x + FLOATING_EDGE_LENGTH) + ' ' + target.y + 'Z';
+    }
+    //edge has at least one "anchor"
+    return 'M' + source.x + ' ' + source.y + 'L' + target.x + ' ' + target.y + 'Z';
+  }
+  deriveGraph() {
     const edgeClasses = [];
     const nodeLookup = {}; // maps a class selector to an index in graph.nodes
     let graph = {
