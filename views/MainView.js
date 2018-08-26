@@ -130,18 +130,14 @@ class MainView extends View {
     // if there are no classes
     const classIds = Object.keys(mure.classes);
     const existingIds = {};
-    let nullExists = false;
+    let nullComponent;
     let tableParent;
     // Remove old components
     for (const component of components.TableView || []) {
       tableParent = component.parent;
       const classId = component.instance.classId;
       if (classId === null) {
-        if (classIds.length > 0) {
-          component.remove();
-        } else {
-          nullExists = true;
-        }
+        nullComponent = component;
       } else if (!mure.classes[component.instance.classId]) {
         component.remove();
       } else {
@@ -157,13 +153,6 @@ class MainView extends View {
       }
     }
     // Add any needed components
-    if (classIds.length === 0 && !nullExists) {
-      tableParent.addChild({
-        type: 'component',
-        componentName: 'TableView',
-        componentState: { classId: null }
-      });
-    }
     for (const classId of classIds) {
       if (!existingIds[classId]) {
         tableParent.addChild({
@@ -172,6 +161,17 @@ class MainView extends View {
           componentState: { classId }
         });
       }
+    }
+    if (classIds.length === 0 && !nullComponent) {
+      tableParent.addChild({
+        type: 'component',
+        componentName: 'TableView',
+        componentState: { classId: null }
+      });
+    } else if (classIds.length > 0 && nullComponent) {
+      // Wait until the end to remove the null table, so that other tables
+      // can be added next to it first
+      nullComponent.remove();
     }
   }
   initSubViews (contentsElement) {
