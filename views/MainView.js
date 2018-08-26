@@ -66,7 +66,7 @@ class MainView extends View {
         const sample = await stream.next();
         if (!sample.done) {
           allDone = false;
-          this.samples[classId].push(sample.value.rawItem);
+          this.samples[classId].push((await sample.value).rawItem);
         }
       }
       if (!allDone) {
