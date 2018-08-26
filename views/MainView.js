@@ -1,4 +1,4 @@
-/* globals GoldenLayout */
+/* globals GoldenLayout, mure */
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './MainMenu/MainMenu.js';
 
@@ -9,6 +9,11 @@ class MainView extends View {
     // Lookup for all active views, because GoldenLayout doesn't allow us to
     // access the classes it generates directly
     this.subViews = {};
+
+    mure.on('rootUpdate', () => { this.render(); });
+    mure.on('classUpdate', () => {
+      this.render();
+    });
 
     // Initialize the layout and subviews
     this.initSubViews(this.d3el.select('#contents'));
