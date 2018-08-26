@@ -23,46 +23,174 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   setup() {
     super.setup();
     this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink()) //.id(d => d.id))
+      .force('link', d3.forceLink()) //.distance(50)) //.id(d => d.id))
       .force('charge', d3.forceManyBody().strength(-NODE_SIZE))
       .force('center', d3.forceCenter())
       .force('collide', d3.forceCollide().radius(NODE_SIZE));
+
+    this.simulation.on('tick', () => {
+      console.log('tick')
+
+      //ensure the network model stays within the bounds of the visible area of this view.
+      const bounds = this.getContentBounds(this.content);
+
+      d3.selectAll('.node,.generic').attr('transform', node => {
+        node.x = Math.max(NODE_SIZE, Math.min(bounds.width - NODE_SIZE, node.x));
+        node.y = Math.max(NODE_SIZE, Math.min(bounds.height - NODE_SIZE, node.y));
+        return `translate(${node.x},${node.y})`;
+      });
+
+      d3.selectAll('.edge').select('path')
+        .attr('d', d => {
+          let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
+          let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
+
+          return self.edgePathGenerator(source, target)
+        })
+
+
+        d3.selectAll('.edge').select('.sourceHandle').attr('cx', d => {
+          let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
+          return source === d ? d.x - FLOATING_EDGE_LENGTH : 0;
+        })
+        .attr('cy', d => {
+          let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
+          return source === d ? d.y : 0;
+        })
+
+
+      d3.selectAll('.edge').select('.targetHandle').attr('cx', d => {
+          let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
+          return target === d ? d.x + FLOATING_EDGE_LENGTH : 0;
+        })
+        .attr('cy', d => {
+          let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
+          return target === d ? d.y : 0;
+        })
+      
+
+  
+
+
+      d3.selectAll('.edge').select('image').attr('transform', node => {
+        return `translate(${node.x},${node.y})`;
+      });
+
+    });
+
+    //create markers for edge endpoints
+    let markers = [{
+      id: 0,
+      name: 'circle',
+      path: 'M 0, 0  m -5, 0  a 5,5 0 1,0 10,0  a 5,5 0 1,0 -10,0',
+      viewbox: '-6 -6 12 12'
+    }, {
+      id: 1,
+      name: 'square',
+      path: 'M 0,0 m -5,-5 L 5,-5 L 5,5 L -5,5 Z',
+      viewbox: '-5 -5 10 10'
+    }, {
+      id: 2,
+      name: 'arrow',
+      path: 'M 0,0 m -5,-5 L 5,0 L -5,5 Z',
+      viewbox: '-5 -5 10 10'
+    }, {
+      id: 2,
+      name: 'stub',
+      path: 'M 0,0 m -1,-5 L 1,-5 L 1,5 L -1,5 Z',
+      viewbox: '-1 -5 2 10'
+    }]
+
+    let defs = this.content.append('svg:defs');
+    defs.selectAll('marker')
+      .data(markers)
+      .enter()
+      .append('svg:marker')
+      .attr('id', function (d) {
+        return 'marker_' + d.name
+      })
+      .attr('markerHeight', 5)
+      .attr('markerWidth', 5)
+      .attr('markerUnits', 'strokeWidth')
+      .attr('orient', 'auto')
+      .attr('refX', 0)
+      .attr('refY', 0)
+      .attr('viewBox', function (d) {
+        return d.viewbox
+      })
+      .append('svg:path')
+      .attr('d', function (d) {
+        return d.path
+      })
+
 
     this.linkLayer = this.content.append('g').classed('linkLayer', true);
     this.nodeLayer = this.content.append('g').classed('nodeLayer', true);
 
     //set drag behavior
     let dragstarted = (d) => {
-      console.log('started drag',d)
+      d.fx = d.fy = null;
     }
 
     let dragended = (d) => {
-      console.log('ended drag')
+      d.fx = d.x;
+      d.fy = d.y;
     }
 
     const self = this;
-    let dragged = function(d){
+    let dragged = function (d) {
 
-      console.log('dragging',d)
+      let mouse = d3.mouse(self.content.node());
 
+      let dragObject = d3.select(this).attr('class');  
 
-      d3.select(this)
-      .attr('transform', node => {
-        node.x = d3.event.x; node.y = d3.event.y;
-        return `translate(${d3.event.x},${d3.event.y})`;
-      });
+      if (dragObject === 'targetHandle') {
 
-      let associatedEdge = d3.selectAll('.edge').filter(dd=>dd.selector === d.selector);
-
-      console.log(associatedEdge.size())
-      associatedEdge
-        .select('path')
-        .attr('d', d => {
-          let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
-          let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
-
-          return self.edgePathGenerator(source, target)
+        d3.select(this)
+        .attr('cx', node => {
+           let sourceHandle = d3.select(this.parentNode).select('.sourceHandle');
+            // node.x = (mouse[0] + sourceHandle.attr('cx'))/2;
+          return mouse[0]
         })
+        .attr('cy', node => {
+          let sourceHandle = d3.select(this.parentNode).select('.sourceHandle');
+          //  node.y = (mouse[1] + sourceHandle.attr('cy'))/2;
+         return mouse[1]
+       });
+
+        d3.select(this.parentNode).select('path').attr('d',()=>{
+          let sourceHandle = d3.select(this.parentNode).select('.sourceHandle');
+          return 'M' + sourceHandle.attr('cx') + ' ' + sourceHandle.attr('cy') + ' L ' + mouse[0] + ' ' + mouse[1];
+        })
+  
+
+      } else if (dragObject === 'sourceHandle') {
+
+        d3.select(this)
+        .attr('cx', node => {
+           let targetHandle = d3.select(this.parentNode).select('.targetHandle');
+            // node.x = (mouse[0] + targetHandle.attr('cx'))/2;
+          return mouse[0]
+        })
+        .attr('cy', node => {
+          let targetHandle = d3.select(this.parentNode).select('.targetHandle');
+          // node.y = (mouse[1] + targetHandle.attr('cy'))/2;
+         return mouse[1]
+       });
+
+       d3.select(this.parentNode).select('path').attr('d',()=>{
+        let targetHandle = d3.select(this.parentNode).select('.targetHandle');
+        return 'M' + mouse[0] + ' ' + mouse[1] + ' L ' + targetHandle.attr('cx') + ' ' + targetHandle.attr('cy');
+      })
+
+      } else {
+        d3.select(this)
+        .attr('transform', node => {
+            node.x = d3.event.x;
+            node.y = d3.event.y;
+          return `translate(${d3.event.x},${d3.event.y})`;
+        });
+      } 
     }
 
     this.drag = d3.drag()
@@ -72,65 +200,94 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
 
   }
+
+
   draw() {
+
     const bounds = this.getContentBounds(this.content);
     const graph = this.deriveGraph();
 
     console.log(bounds, graph);
 
-    let nodes = this.nodeLayer.selectAll('.node')
+    this.simulation.force('center')
+      .x(bounds.width / 2)
+      .y(bounds.height / 2);
+
+
+    this.simulation.nodes(graph.nodes);
+    this.simulation.force('link')
+      .links(graph.links);
+
+    // //Fix the position of all nodes
+    this.simulation.on('end',()=>{
+      console.log('done')
+      // graph.nodes.map(n=>{n.fx = n.x; n.fy = n.y;})
+    })
+
+    let nodes = this.nodeLayer.selectAll('.object')
       .data(graph.nodes, d => d.className);
     nodes.exit().remove();
     let nodesEnter = nodes.enter().append('g')
-      .classed('node', true);
+      .classed('object', true);
 
-    nodesEnter.append('circle');
-    nodesEnter.append('text');
-    nodesEnter.append('image')
+    nodesEnter.append('path'); //diamond, circle, or line
+    nodesEnter.append('text'); //class Name
+    nodesEnter.append('image') //contextMenu icon
+
+    //for edges, append two endpoints to the edge line
+    nodesEnter.filter(d => d.type === 'Edge').append('circle')
+      .attr('class', 'sourceHandle')
+      .attr('r', NODE_SIZE / 5)
+
+    nodesEnter.filter(d => d.type === 'Edge').append('circle')
+      .attr('class', 'targetHandle')
+      .attr('r', NODE_SIZE / 5)
 
     nodes = nodes.merge(nodesEnter);
 
-    nodes.call(this.drag);
+    nodes.filter(d => d.type !== 'Edge').call(this.drag);
 
+    nodes.selectAll('circle').call(this.drag);
+    nodes.attr('class', d => d.type.toLowerCase())
+    nodes.classed('object', true)
 
+    //Set up icon for Context Menu
     nodes.select('image')
       .attr('xlink:href', '../img/hamburger.svg')
       .attr('height', MENU_SIZE)
       .attr('width', MENU_SIZE)
-      .attr('x', d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
-      .attr('y', d => d.type === 'Node' ? -NODE_SIZE : 0)
+      .attr('x', 0 - MENU_SIZE / 2) //d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
+      .attr('y', d => d.type === 'Node' ? -NODE_SIZE - 5 : 0)
 
-    nodes.select('circle').attr('r', d => d.type === 'Node' ? NODE_SIZE : NODE_SIZE / 8);
+    //Draw actual node/edges
+    nodes.select('path').attr('d', d => {
+      let xr = d.type === 'Node' || d.type === 'Generic' ? Math.round(NODE_SIZE * 2 / 3) : Math.round(NODE_SIZE * 2 / 3 / 8);
+      let yr = d.type === 'Node' || d.type === 'Generic' ? NODE_SIZE : Math.round(NODE_SIZE / 8);
 
-    nodes.select('text').text(d => d.type === 'Node' ? d.className : '');
+
+      let diamondPath = 'M0 ' + -yr + ' l ' + xr + ' ' + yr + ' l' + -xr + ' ' + (yr) + ' ' + 'l' + -xr + ' ' + -yr + 'Z';
+      let circlePath = 'M0,0' + 'm' + -xr + ',0' + 'a' + xr + ',' + xr + ' 0 1,0 ' + (2 * xr) + ',0' + 'a' + xr + ',' + xr + ' 0 1,0 ' + -(2 * xr) + ',0';
+
+      switch (d.type) {
+        case "Node":
+          return circlePath
+        case "Edge":
+          let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
+          let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
+          return this.edgePathGenerator(source, target)
+        case "Generic":
+          return diamondPath
+      }
+    })
+
+     // nodes.attr('marker-end', d=>d.type === 'Edge' ? 'url(#marker_circle)' : '')
+    // nodes.attr('marker-start', d=>d.type === 'Edge' ? 'url(#marker_circle)' : '')
+
+
+
+    nodes.select('text').text(d => d.classId) //type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
     nodes.select('text').style('text-anchor', 'middle')
 
-
-    let edges = this.nodeLayer.selectAll('.edge')
-      .data(graph.nodes.filter(n => n.type === 'Edge'), d => d.className);
-    edges.exit().remove();
-    let edgeEnter = edges.enter().append('g')
-      .classed('edge', true);
-    edgeEnter.append('path').attr('id', 'test');
-    edgeEnter.append('text').append('textPath')
-
-    edges = edges.merge(edgeEnter);
-
-    // edges.call(this.drag);
-
-    // edges.select('textPath').text(d => d.className);
-    edges.select('textPath').attr('href', '#test');
-
-    edges.select('path')
-      .attr('stroke-width', '6px')
-
-    let links = this.linkLayer.selectAll('.link')
-      .data(graph.links, d => d.className);
-    links.exit().remove();
-    let linksEnter = links.enter().append('g')
-      .classed('link', true);
-    links = links.merge(linksEnter);
-    linksEnter.append('path');
 
     const hover = function (d) {
       window.mainView.showTooltip({
@@ -148,108 +305,51 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         className: d.key
       }));
     };
-    nodes.on('mouseover', hover);
-    links.on('mouseover', hover);
-    nodes.on('mouseout', unhover);
-    links.on('mouseout', unhover);
-    nodes.on('click', () => window.mainView.showTooltip({
-      content: 'testing'
-    }));
-    links.on('click', click);
+    // nodes.on('mouseover', hover);
+    // links.on('mouseover', hover);
+    // nodes.on('mouseout', unhover);
+    // links.on('mouseout', unhover);
+    nodes.on('click', function (d) {
+      window.mainView.showTooltip({
+        content: '<div class="vertical-menu">' +
+          '<a href="#" action=convert2Node>Interpret as Node</a>' +
+          '<a href="#" action =convert2Edge>Interpret as Edge</a>' +
+          '<a href="#" action =delete>Delete</a>' +
+          '</div>',
+        targetBounds: this.getBoundingClientRect()
+      })
 
-    this.simulation.force('center')
-      .x(bounds.width / 2)
-      .y(bounds.height / 2);
-    this.simulation.on('tick', () => {
-      nodes.attr('transform', node => {
-        return `translate(${node.x},${node.y})`;
-      });
+      d3.selectAll('.vertical-menu a').on('click', function () {
+
+        switch (d3.select(this).attr('action')) {
+          case "convert2Node":
+            mure.classes[d.classId].interpretAsNodes()
+            break;
+          case "convert2Edge":
+            mure.classes[d.classId].interpretAsEdges()
+            break;
+          case "delete":
+            mure.classes[d.classId].delete();
+            break;
+        }
+        window.mainView.hideTooltip();
+      })
 
 
-      edges.select('textPath').attr('side', d => {
-        let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
-        let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
-
-        return source.x > target.x ? 'left' : 'right'
-      });
-
-
-
-      // edges.select('text').attr('x',d=>{
-      //   let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
-      //   let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
-      //   return ( source.x + target.x )/2;
-      // })
-
-      // edges.select('text').attr('y',d=>{
-      //   let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
-      //   let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
-      //   return ( source.y + target.y )/2;
-      // })
-
-      edges
-        .select('path')
-        .attr('d', d => {
-          let source = mure.classes[d.sourceSelector] ? mure.classes[d.sourceSelector] : d;
-          let target = mure.classes[d.targetSelector] ? mure.classes[d.targetSelector] : d;
-
-          return this.edgePathGenerator(source, target)
-        })
-      // links.select('path').attr('d', d => {
-      //   let links = d; //graph.linkLookup['link' + d.key];
-      //   console.log(d);
-      //   return this.computeHyperlinkPath({
-      //     link: graph.nodes[graph.nodeLookup['link' + d.key]],
-      //     sourceLinks: links.sources.map(i => graph.links[i]),
-      //     targetLinks: links.targets.map(i => graph.links[i]),
-      //     undirecteds: links.undirecteds.map(i => graph.links[i])
-      //   });
-      // });
     });
-    this.simulation.nodes(graph.nodes);
-    this.simulation.force('link')
-      .links(graph.links);
 
+    // links.on('click', click);
+    this.simulation.alpha(.5).restart();
   }
-  /*
-  computeHyperlinkPath ({ link, sourceLinks, targetLinks, undirecteds }) {
-    let sourceX = 0;
-    let sourceY = 0;
-    let targetX = 0;
-    let targetY = 0;
-    sourceLinks.forEach(d => {
-      sourceX += d.target.x - d.source.x;
-      sourceY += d.target.y - d.source.y;
-    });
-    const thetaIn = Math.atan2(sourceY, sourceX);
-    targetLinks.forEach(d => {
-      targetX += d.target.x - d.source.x;
-      targetY += d.target.y - d.source.y;
-    });
-    const thetaOut = Math.atan2(targetY, targetX);
-    const theta = (thetaIn + thetaOut) / 2;
-    const anchorOffset = {
-      x: NODE_SIZE * Math.cos(theta),
-      y: NODE_SIZE * Math.sin(theta)
-    };
-    let sourceSegments = sourceLinks.map(d => `\
-M${d.source.x},${d.source.y}\
-Q${d.target.x - anchorOffset.x},${d.target.y - anchorOffset.y},
-${d.target.x},${d.target.y}`);
-    return sourceSegments + targetLinks.map(d => `\
-M${d.source.x},${d.source.y}\
-Q${d.source.x + anchorOffset.x},${d.source.y + anchorOffset.y},
-${d.target.x},${d.target.y}`);
-}
-*/
+
 
   edgePathGenerator(source, target) {
     //floating edges
     if (source === target) {
-      return 'M' + (source.x - FLOATING_EDGE_LENGTH) + ' ' + source.y + 'L' + (target.x + FLOATING_EDGE_LENGTH) + ' ' + target.y + 'Z';
+      return 'M' + (source.x - FLOATING_EDGE_LENGTH) + ' ' + source.y + ' L ' + (target.x + FLOATING_EDGE_LENGTH) + ' ' + target.y;
     }
     //edge has at least one "anchor"
-    return 'M' + source.x + ' ' + source.y + 'L' + target.x + ' ' + target.y + 'Z';
+    return 'M' + source.x + ' ' + source.y + ' L ' + target.x + ' ' + target.y;
   }
   deriveGraph() {
     const edgeClasses = [];
@@ -261,7 +361,7 @@ ${d.target.x},${d.target.y}`);
 
     // Create nodes + pseudo-nodes
     Object.entries(mure.classes).forEach(([selector, classObj]) => {
-      nodeLookup[classObj.selector] = graph.nodes.length;
+      nodeLookup[classObj.classId] = graph.nodes.length;
       graph.nodes.push(classObj);
       if (classObj.type === 'Edge') {
         edgeClasses.push(classObj);
@@ -270,17 +370,17 @@ ${d.target.x},${d.target.y}`);
 
     // Get any links that exist
     edgeClasses.forEach(edgeClass => {
-      if (edgeClass.sourceSelector !== null) {
+      if (edgeClass.sourceClassId !== null) {
         graph.links.push({
-          source: nodeLookup[edgeClass.sourceSelector],
-          target: nodeLookup[edgeClass.selector],
+          source: nodeLookup[edgeClass.sourceClassId],
+          target: nodeLookup[edgeClass.classId],
           directed: edgeClass.directed
         });
       }
-      if (edgeClass.targetSelector !== null) {
+      if (edgeClass.targetClassId !== null) {
         graph.links.push({
-          source: nodeLookup[edgeClass.selector],
-          target: nodeLookup[edgeClass.targetSelector],
+          source: nodeLookup[edgeClass.classId],
+          target: nodeLookup[edgeClass.targetClassId],
           directed: edgeClass.directed
         });
       }
