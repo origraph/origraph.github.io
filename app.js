@@ -1,4 +1,4 @@
-/* globals d3 */
+/* globals d3, mure */
 import MainView from './views/MainView.js';
 import * as MODALS from './views/Modals/Modals.js';
 import * as SUBVIEW_CLASSES from './views/SubViews/SubViews.js';
@@ -36,6 +36,51 @@ window.DEFAULT_LAYOUT = {
       }]
     }
   ]
+};
+
+window.autoLoad = async () => {
+  // Load files
+  const files = ['people.csv', 'movies.csv', 'movieEdges.csv'];
+  const classes = await Promise.all(files.map(async filename => {
+    const text = await d3.text(`docs/exampleDatasets/${filename}`);
+    return mure.addStringAsStaticDataSource({
+      key: filename,
+      extension: mure.mime.extension(mure.mime.lookup(filename)),
+      text
+    });
+  }));
+
+  const [ peopleId, moviesId, movieEdgesId ] = classes.map(classObj => classObj.classId);
+
+  await mure.classes[peopleId].interpretAsNodes();
+  await mure.classes[moviesId].interpretAsNodes();
+  await mure.classes[movieEdgesId].interpretAsEdges();
+
+  mure.classes[peopleId].setNamedFunction('id', function * (wrappedItem) {
+    yield wrappedItem.rawItem.id;
+  });
+  mure.classes[moviesId].setNamedFunction('id', function * (wrappedItem) {
+    yield wrappedItem.rawItem.id;
+  });
+  mure.classes[movieEdgesId].setNamedFunction('sourceId', function * (wrappedItem) {
+    yield wrappedItem.rawItem.sourceId;
+  });
+  mure.classes[movieEdgesId].setNamedFunction('targetId', function * (wrappedItem) {
+    yield wrappedItem.rawItem.targetId;
+  });
+
+  await mure.classes[peopleId].connectToEdgeClass({
+    edgeClass: mure.classes[movieEdgesId],
+    direction: 'source',
+    nodeHashName: 'id',
+    edgeHashName: 'sourceId'
+  });
+  await mure.classes[movieEdgesId].connectToNodeClass({
+    nodeClass: mure.classes[moviesId],
+    direction: 'target',
+    nodeHashName: 'id',
+    edgeHashName: 'targetId'
+  });
 };
 
 window.onload = () => {
