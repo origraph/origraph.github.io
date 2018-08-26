@@ -10,13 +10,19 @@ class MainView extends View {
     // access the classes it generates directly
     this.subViews = {};
 
-    // Initialize the layout and subviews
-    this.initSubViews(this.d3el.select('#contents'));
+    this.samples = {};
+    this.sampling = false;
+
     mure.on('rootUpdate', () => { this.render(); });
     mure.on('classUpdate', () => {
+      this.updateSamples();
       this.updateLayout();
       this.render();
     });
+
+    // Initialize the layout and subviews
+    this.initSubViews(this.d3el.select('#contents'));
+    this.updateSamples();
     this.render();
   }
   setup () {
@@ -43,6 +49,33 @@ class MainView extends View {
       const config = this.goldenLayout.toConfig();
       window.localStorage.setItem('layout', JSON.stringify(config));
     }
+  }
+  updateSamples () {
+    window.clearTimeout(this.sampleTimer);
+    this.sampling = true;
+    this.samples = {};
+    const streams = {};
+    for (const [ classId, classObj ] of Object.entries(mure.classes)) {
+      streams[classId] = classObj.getStream().sample({ limit: Infinity });
+      this.samples[classId] = [];
+    }
+
+    const addSamples = async () => {
+      let allDone = true;
+      for (const [ classId, stream ] of Object.entries(streams)) {
+        const sample = await stream.next();
+        if (!sample.done) {
+          allDone = false;
+          this.samples[classId].push(sample.value.rawItem);
+        }
+      }
+      if (!allDone) {
+        this.sampleTimer = window.setTimeout(addSamples, 5);
+      } else {
+        this.sampling = false;
+      }
+    };
+    this.sampleTimer = window.setTimeout(addSamples, 5);
   }
   updateLayout () {
     const getDefaultContainer = () => {
