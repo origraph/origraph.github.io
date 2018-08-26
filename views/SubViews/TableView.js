@@ -1,23 +1,24 @@
 /* globals d3, mure, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
-import ClassedViewMixin from './ClassedViewMixin.js';
 
 function itemProxy (uniqueSelector) {
   return { uniqueSelector };
 }
 
-class TableView extends ClassedViewMixin(GoldenLayoutView) {
-  constructor ({ container, state }) {
+class TableView extends GoldenLayoutView {
+  constructor ({ container, state = {} }) {
     super({
       container,
       icon: TableView.icon,
-      label: TableView.label,
-      state
+      label: TableView.label
     });
+    this.classId = state.classId || null;
+  }
+  get id () {
+    return (this.classId && this.classId + 'TableView') || 'EmptyTableView';
   }
   isEmpty () {
-    // TODO
-    return true;
+    return this.classId === null;
   }
   setup () {
     super.setup();
