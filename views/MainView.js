@@ -34,15 +34,37 @@ class MainView extends View {
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
   }
   draw () {
+    const self = this;
     this.mainMenu.render();
     this.d3el.select(':scope > .emptyState')
       .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
     this.d3el.select('#samplingSpinner')
-      .style('display', this.sampling ? null : 'none');
+      .style('display', this.sampling ? null : 'none')
+      .on('mouseover', function () {
+        self.sampleSpinnerBounds = this.getBoundingClientRect();
+        self.updateSampleTooltip();
+      }).on('mouseout', () => {
+        this.sampleSpinnerBounds = null;
+        this.updateSampleTooltip();
+      });
     Object.values(this.subViews).forEach(subView => {
       subView.render();
     });
     this.hideOverlay();
+  }
+  updateSampleTooltip () {
+    if (this.sampleSpinnerBounds) {
+      let content = 'Loaded:' +
+        Object.entries(this.samples).map(([classId, sampleList]) => {
+          return `<br/>${mure.classes[classId].className}: ${sampleList.length} samples`;
+        });
+      this.showTooltip({
+        content,
+        targetBounds: this.sampleSpinnerBounds
+      });
+    } else {
+      this.hideTooltip();
+    }
   }
   saveLayoutState () {
     // debounce this call if goldenlayout isn't ready;
@@ -70,7 +92,6 @@ class MainView extends View {
     }
 
     let n = 0;
-
     const addSamples = async () => {
       let allDone = true;
       for (const [ classId, stream ] of Object.entries(streams)) {
@@ -83,10 +104,10 @@ class MainView extends View {
       if (!allDone) {
         this.sampleTimer = window.setTimeout(addSamples, 5);
         n++;
-        if (n >= 10) {
-          // trigger a render for every 10 data points
+        if (n >= 25) {
+          // trigger a tooltip update for every 25 data points
           n = 0;
-          this.render();
+          this.updateSampleTooltip();
         }
       } else {
         this.sampling = false;
