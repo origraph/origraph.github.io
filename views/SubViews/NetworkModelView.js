@@ -140,7 +140,16 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       d.fy = d.y;
 
       let mouse = d3.mouse(self.content.node());
-      console.log(mouse)
+
+      //helper function to help parse out the 'transform' attribute of groups
+      let parse = (a) => {
+        var b = {};
+        for (var i in a = a.match(/(\w+\((\-?\d+\.?\d*e?\-?\d*,?)+\))+/g)) {
+          var c = a[i].match(/[\w\.\-]+/g);
+          b[c.shift()] = c;
+        }
+        return b;
+      }
 
       //see if user released over an existing node
       let targetNode;
@@ -151,37 +160,36 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         }
       })
 
-      if (targetNode) {
+      if (targetNode && targetNode !== d) {
         let sourceAttr = await (window.mainView.getAttributes(d.classId))
         let targetAttr = await (window.mainView.getAttributes(targetNode.classId))
 
-        let content = '<div class="vertical-menu"> <a href="#" class=active attr=' + d.classId + '>' + d.classId + '</a>'
+        let content = '<div class="vertical-menu"> <a href="#" class=active>' + d.classId + '</a>'
 
-        sourceAttr.map(a => content = content + '<a href="#" attr=' + a + '>' + a + '</a>')
+        sourceAttr.map(a => content = content + '<a href="#" attr=' + d.classId + '>' + a + '</a>')
         content = content + '</div>'
 
-        content = content +  '<div class="vertical-menu"> <a href="#" class=active attr=' + targetNode.classId + '>' + targetNode.classId + '</a>'
+        content = content +  '<div class="vertical-menu"> <a href="#" class=active>' + targetNode.classId + '</a>'
 
-        targetAttr.map(a => content = content + '<a href="#" attr=' + a + '>' + a + '</a>')
+        targetAttr.map(a => content = content + '<a href="#" attr=' + targetNode.classId + '>' + a + '</a>')
         content = content + '</div>'
+
+        content = content +  '<div class="menu-submit"> <a href="#" class=active>Connect</a></div>'
 
         window.mainView.showTooltip({
           content,
           targetBounds: this.getBoundingClientRect()
-
         })
+
+        //set listeners for each menu
+        d3.select('#tooltip').selectAll('a').on('click',function(d){
+          console.log('clicked on ', d3.select(this).classed('selected',true)) //attr('attr'), d3.select(this).text())
+        }) 
       }
 
     }
 
-    let parse = (a) => {
-      var b = {};
-      for (var i in a = a.match(/(\w+\((\-?\d+\.?\d*e?\-?\d*,?)+\))+/g)) {
-        var c = a[i].match(/[\w\.\-]+/g);
-        b[c.shift()] = c;
-      }
-      return b;
-    }
+ 
 
 
     let dragged = function (d) {
@@ -189,6 +197,13 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       let mouse = d3.mouse(d3.select(this.parentNode).node());
 
       let dragObject = d3.select(this).attr('class');
+
+      // if (dragObject === 'targetHandle' || dragObject === 'sourceHandle'){
+      //   d3.select(this.parentNode).select('image')
+      //   .attr('x', 0 - MENU_SIZE / 2) //d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
+      //   .attr('y', d => d.type === 'Node' ? -NODE_SIZE - 5 : 0)
+      // }
+     
 
       if (dragObject === 'targetHandle') {
 
@@ -293,13 +308,12 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     nodes.select('.sourceHandle')
       .attr('r', d => {
-        console.log(d.type)
-        return d.type === 'Edge' ? NODE_SIZE / 5 : 0
+        return d.type === 'Edge' ? NODE_SIZE /8 : 0
       })
 
     nodes.select('.targetHandle')
       .attr('r', d => {
-        return d.type === 'Edge' ? NODE_SIZE / 5 : 0
+        return d.type === 'Edge' ? NODE_SIZE /8 : 0
       })
 
     nodes.filter(d => d.type !== 'Edge').call(this.drag);
@@ -342,14 +356,14 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     // nodes.attr('marker-start', d=>d.type === 'Edge' ? 'url(#marker_circle)' : '')
 
 
-    // edges.select('textPath').text('edgeClass') //d => d.className);
     let edgeNodes = nodes.filter(n=>n.type === 'Edge');
     let nonEdgeNodes = nodes.filter(n=>n.type !== 'Edge');
 
+    edgeNodes.select('textPath').text(d=>d.className) //d => d.className);
     edgeNodes.select('textPath').attr('href',d=>'#'+d.classId);
     edgeNodes.select('textPath').attr('startOffset', '10');
 
-    nonEdgeNodes.select('text').text(d => d.selector) //type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
+    nonEdgeNodes.select('text').text(d => d.className) //type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
     nonEdgeNodes.select('text').style('text-anchor', 'middle')
 
 

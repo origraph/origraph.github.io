@@ -23,6 +23,15 @@
       cursor: pointer;
     }
   }
+
+  .edge{
+    circle, path {
+      opacity: 1;
+      fill: @textColor;
+      stroke: none;
+    }
+
+  }
   .edge {
     path {
       opacity: 0.5;
@@ -49,7 +58,14 @@
   vertical-align: top;
 }
 
-.vertical-menu a {
+.menu-submit {
+  width: 400px; /* Set a width if you like */
+  display:block;
+  // font-family: 'Raleway', sans-serif;
+  // vertical-align: top;
+}
+
+.vertical-menu a, .menu-submit a {
   background-color: #eee; /* Grey background color */
   color: black; /* Black text color */
   display: block; /* Make the links appear below each other */
@@ -58,12 +74,21 @@
   margin: 9px 5px 5px 5px;;
 }
 
-.vertical-menu a:hover {
+.menu-submit a{
+  text-align: center;
+}
+
+.vertical-menu a:hover, .menu-submit a:hover {
   background-color: #ccc; /* Dark grey background on mouse-over */
 }
 
 .vertical-menu a.active {
   background-color:@DarkTeal;
+  color: white;
+}
+
+.vertical-menu a.selected {
+  background-color:@DarkestGrey;
   color: white;
 }
 
