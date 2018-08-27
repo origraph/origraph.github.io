@@ -5,6 +5,7 @@ import SvgViewMixin from './SvgViewMixin.js';
 const NODE_SIZE = 50;
 const FLOATING_EDGE_LENGTH = 50;
 const MENU_SIZE = 20;
+let TICK_COUNT = 0;
 
 class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   constructor({
@@ -22,6 +23,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   }
   setup() {
     super.setup();
+
+    this.content.on('click',()=>window.mainView.hideTooltip())
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink()) //.distance(50)) //.id(d => d.id))
       .force('charge', d3.forceManyBody().strength(-NODE_SIZE))
@@ -29,12 +32,17 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       .force('collide', d3.forceCollide().radius(NODE_SIZE));
 
     this.simulation.on('tick', () => {
+
+      TICK_COUNT = TICK_COUNT +1;
+      if (TICK_COUNT >5){
+        this.simulation.stop();
+      }
       console.log('tick')
 
       //ensure the network model stays within the bounds of the visible area of this view.
       const bounds = this.getContentBounds(this.content);
 
-      d3.selectAll('.node,.generic').attr('transform', node => {
+      d3.selectAll('.object').attr('transform', node => {
         node.x = Math.max(NODE_SIZE, Math.min(bounds.width - NODE_SIZE, node.x));
         node.y = Math.max(NODE_SIZE, Math.min(bounds.height - NODE_SIZE, node.y));
         return `translate(${node.x},${node.y})`;
@@ -51,30 +59,24 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
         d3.selectAll('.edge').select('.sourceHandle').attr('cx', d => {
           let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-          return source === d ? d.x - FLOATING_EDGE_LENGTH : 0;
+          return source === d ? - FLOATING_EDGE_LENGTH : 0;
         })
-        .attr('cy', d => {
-          let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-          return source === d ? d.y : 0;
-        })
+        .attr('cy',0)
 
 
       d3.selectAll('.edge').select('.targetHandle').attr('cx', d => {
           let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-          return target === d ? d.x + FLOATING_EDGE_LENGTH : 0;
+          return target === d ? + FLOATING_EDGE_LENGTH : 0;
         })
-        .attr('cy', d => {
-          let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-          return target === d ? d.y : 0;
-        })
+        .attr('cy', 0)
       
 
   
 
 
-      d3.selectAll('.edge').select('image').attr('transform', node => {
-        return `translate(${node.x},${node.y})`;
-      });
+      // d3.selectAll('.edge').select('image').attr('transform', node => {
+      //   return `translate(${node.x},${node.y})`;
+      // });
 
     });
 
@@ -140,7 +142,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     const self = this;
     let dragged = function (d) {
 
-      let mouse = d3.mouse(self.content.node());
+      let mouse = d3.mouse(d3.select(this.parentNode).node());
 
       let dragObject = d3.select(this).attr('class');  
 
@@ -225,8 +227,9 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     })
 
     let nodes = this.nodeLayer.selectAll('.object')
-      .data(graph.nodes, d => d.className);
+      .data(graph.nodes, d => d.classId);
     nodes.exit().remove();
+
     let nodesEnter = nodes.enter().append('g')
       .classed('object', true);
 
@@ -235,15 +238,24 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nodesEnter.append('image') //contextMenu icon
 
     //for edges, append two endpoints to the edge line
-    nodesEnter.filter(d => d.type === 'Edge').append('circle')
+    nodesEnter.append('circle')
       .attr('class', 'sourceHandle')
-      .attr('r', NODE_SIZE / 5)
 
-    nodesEnter.filter(d => d.type === 'Edge').append('circle')
+    nodesEnter.append('circle')
       .attr('class', 'targetHandle')
-      .attr('r', NODE_SIZE / 5)
 
     nodes = nodes.merge(nodesEnter);
+
+    nodes.select('.sourceHandle')
+    .attr('r', d=>{
+      console.log(d.type)
+      return d.type === 'Edge' ? NODE_SIZE / 5 : 0
+    })
+
+    nodes.select('.targetHandle')
+    .attr('r', d=>{
+      return d.type === 'Edge' ? NODE_SIZE / 5 : 0
+    })
 
     nodes.filter(d => d.type !== 'Edge').call(this.drag);
 
@@ -261,6 +273,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     //Draw actual node/edges
     nodes.select('path').attr('d', d => {
+      console.log(d.type)
       let xr = d.type === 'Node' || d.type === 'Generic' ? Math.round(NODE_SIZE * 2 / 3) : Math.round(NODE_SIZE * 2 / 3 / 8);
       let yr = d.type === 'Node' || d.type === 'Generic' ? NODE_SIZE : Math.round(NODE_SIZE / 8);
 
@@ -285,7 +298,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
 
 
-    nodes.select('text').text(d => d.classId) //type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
+    nodes.select('text').text(d => d.selector) //type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
     nodes.select('text').style('text-anchor', 'middle')
 
 
@@ -310,6 +323,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     // nodes.on('mouseout', unhover);
     // links.on('mouseout', unhover);
     nodes.on('click', function (d) {
+      d3.event.stopPropagation();
       window.mainView.showTooltip({
         content: '<div class="vertical-menu">' +
           '<a href="#" action=convert2Node>Interpret as Node</a>' +
@@ -339,6 +353,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     });
 
     // links.on('click', click);
+    TICK_COUNT = 0;
     this.simulation.alpha(.5).restart();
   }
 
@@ -346,7 +361,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   edgePathGenerator(source, target) {
     //floating edges
     if (source === target) {
-      return 'M' + (source.x - FLOATING_EDGE_LENGTH) + ' ' + source.y + ' L ' + (target.x + FLOATING_EDGE_LENGTH) + ' ' + target.y;
+      return 'M' + (- FLOATING_EDGE_LENGTH) + ' 0 L ' + FLOATING_EDGE_LENGTH + ' 0';
     }
     //edge has at least one "anchor"
     return 'M' + source.x + ' ' + source.y + ' L ' + target.x + ' ' + target.y;
