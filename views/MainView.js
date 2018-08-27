@@ -27,8 +27,6 @@ class MainView extends View {
   }
   setup () {
     this.hideTooltip();
-    this.d3el.select(':scope > .emptyState')
-      .style('display', 'none');
     this.showOverlay({
       message: 'Loading assets...',
       spinner: true
@@ -205,6 +203,9 @@ class MainView extends View {
     this.goldenLayout.on('stateChanged', event => {
       this.saveLayoutState();
     });
+    this.goldenLayout.on('windowOpened', () => {
+      this.render();
+    });
     this.goldenLayout.on('itemDestroyed', event => {
       if (event.instance) {
         console.warn(`TODO: delete class`);
@@ -241,12 +242,8 @@ sites in your browser settings.`);
   }
   draw () {
     this.mainMenu.render();
-    // goldenLayout doesn't really have a reliable way to check
-    // if it's empty at aribitrary points, so we inspect the DOM instead
-    const nChildren = this.d3el.select('#contents > .lm_root')
-      .node().childNodes.length;
     this.d3el.select(':scope > .emptyState')
-      .style('display', nChildren === 0 ? null : 'none');
+      .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
     Object.values(this.subViews).forEach(subView => {
       subView.render();
     });
