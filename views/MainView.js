@@ -77,6 +77,18 @@ class MainView extends View {
     };
     this.sampleTimer = window.setTimeout(addSamples, 5);
   }
+  async getAttributes (classId) {
+    return new Promise((resolve, reject) => {
+      const getAttrs = () => {
+        if (!this.samples[classId] || this.samples[classId].length === 0) {
+          window.setTimeout(getAttrs, 100);
+        } else {
+          resolve(Object.keys(this.samples[classId][0]));
+        }
+      };
+      getAttrs();
+    });
+  }
   updateLayout () {
     const getDefaultContainer = () => {
       if (this.goldenLayout.root.contentItems.length === 0) {
