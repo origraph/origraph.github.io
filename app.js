@@ -15,23 +15,26 @@ window.DEFAULT_LAYOUT = {
         content: [{
           type: 'component',
           componentName: 'NetworkModelView',
-          componentState: {}
+          componentState: {},
+          isClosable: false
         }]
       }, {
         type: 'row',
         content: [{
           type: 'stack',
-          // TODO: by default, we want to stack tables here (what to do when
-          // there isn't any data loaded yet?)
           content: [{
             type: 'component',
             componentName: 'TableView',
-            componentState: {}
+            componentState: {
+              // An empty TableView
+              classId: null
+            }
           }]
         }, {
           type: 'component',
           componentName: 'InstanceView',
-          componentState: {}
+          componentState: {},
+          isClosable: false
         }]
       }]
     }

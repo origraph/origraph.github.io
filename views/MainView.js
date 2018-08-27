@@ -10,13 +10,19 @@ class MainView extends View {
     // access the classes it generates directly
     this.subViews = {};
 
+    this.samples = {};
+    this.sampling = false;
+
     mure.on('rootUpdate', () => { this.render(); });
     mure.on('classUpdate', () => {
+      this.updateSamples();
+      this.updateLayout();
       this.render();
     });
 
     // Initialize the layout and subviews
     this.initSubViews(this.d3el.select('#contents'));
+    this.updateSamples();
     this.render();
   }
   setup () {
@@ -44,6 +50,142 @@ class MainView extends View {
       window.localStorage.setItem('layout', JSON.stringify(config));
     }
   }
+  updateSamples () {
+    window.clearTimeout(this.sampleTimer);
+    this.sampling = true;
+    this.samples = {};
+    const streams = {};
+    for (const [ classId, classObj ] of Object.entries(mure.classes)) {
+      streams[classId] = classObj.getStream().sample({ limit: Infinity });
+      this.samples[classId] = [];
+    }
+
+    const addSamples = async () => {
+      let allDone = true;
+      for (const [ classId, stream ] of Object.entries(streams)) {
+        const sample = await stream.next();
+        if (!sample.done) {
+          allDone = false;
+          this.samples[classId].push((await sample.value).rawItem);
+        }
+      }
+      if (!allDone) {
+        this.sampleTimer = window.setTimeout(addSamples, 5);
+      } else {
+        this.sampling = false;
+      }
+    };
+    this.sampleTimer = window.setTimeout(addSamples, 5);
+  }
+  async getAttributes (classId) {
+    return new Promise((resolve, reject) => {
+      const getAttrs = () => {
+        if (!this.samples[classId] || this.samples[classId].length === 0) {
+          window.setTimeout(getAttrs, 100);
+        } else {
+          resolve(Object.keys(this.samples[classId][0]));
+        }
+      };
+      getAttrs();
+    });
+  }
+  updateLayout () {
+    const getDefaultContainer = () => {
+      if (this.goldenLayout.root.contentItems.length === 0) {
+        this.goldenLayout.root.addChild({
+          type: 'column',
+          content: []
+        });
+      }
+      return this.goldenLayout.root.contentItems[0];
+    };
+
+    const components = {};
+    for (const component of this.goldenLayout.root.getItemsByType('component')) {
+      components[component.componentName] = components[component.componentName] || [];
+      components[component.componentName].push(component);
+    }
+    for (const openPopout of this.goldenLayout.openPopouts) {
+      for (const component of openPopout.getGlInstance().root.getItemsByType('component')) {
+        components[component.componentName] = components[component.componentName] || [];
+        components[component.componentName].push(component);
+      }
+    }
+    // Make sure there's exactly one NetworkModelView
+    if (!components.NetworkModelView) {
+      getDefaultContainer().addChild({
+        type: 'component',
+        componentName: 'NetworkModelView',
+        componentState: {},
+        isClosable: false
+      });
+    } else {
+      while (components.NetworkModelView.length > 1) {
+        components.NetworkModelView[0].remove();
+      }
+    }
+    // Make sure there's exactly one InstanceView
+    if (!components.InstanceView) {
+      getDefaultContainer().addChild({
+        type: 'component',
+        componentName: 'InstanceView',
+        componentState: {},
+        isClosable: false
+      });
+    } else {
+      while (components.InstanceView.length > 1) {
+        components.InstanceView[0].remove();
+      }
+    }
+
+    // Make sure there's a TableView for each of the classes, or an empty one
+    // if there are no classes
+    const classIds = Object.keys(mure.classes);
+    const existingIds = {};
+    let nullComponent;
+    let tableParent;
+    // Remove old components
+    for (const component of components.TableView || []) {
+      tableParent = component.parent;
+      const classId = component.instance.classId;
+      if (classId === null) {
+        nullComponent = component;
+      } else if (!mure.classes[component.instance.classId]) {
+        component.remove();
+      } else {
+        existingIds[classId] = true;
+      }
+    }
+    // Figure out where to put any new components
+    if (!tableParent) {
+      tableParent = this.goldenLayout.root.getItemsByType('stack')[0];
+      if (!tableParent) {
+        getDefaultContainer().addChild({ type: 'stack' });
+        tableParent = this.goldenLayout.root.getItemsByType('stack')[0];
+      }
+    }
+    // Add any needed components
+    for (const classId of classIds) {
+      if (!existingIds[classId]) {
+        tableParent.addChild({
+          type: 'component',
+          componentName: 'TableView',
+          componentState: { classId }
+        });
+      }
+    }
+    if (classIds.length === 0 && !nullComponent) {
+      tableParent.addChild({
+        type: 'component',
+        componentName: 'TableView',
+        componentState: { classId: null }
+      });
+    } else if (classIds.length > 0 && nullComponent) {
+      // Wait until the end to remove the null table, so that other tables
+      // can be added next to it first
+      nullComponent.remove();
+    }
+  }
   initSubViews (contentsElement) {
     const self = this;
     let config = window.localStorage.getItem('layout');
@@ -65,7 +207,8 @@ class MainView extends View {
     });
     this.goldenLayout.on('itemDestroyed', event => {
       if (event.instance) {
-        delete this.subViews[event.instance.getId()];
+        console.warn(`TODO: delete class`);
+        delete this.subViews[event.instance.id];
       }
     });
 
@@ -73,44 +216,20 @@ class MainView extends View {
       this.goldenLayout.init();
     } catch (error) {
       if (error.type === 'popoutBlocked') {
-        this.showModal(window.MODALS.Alert, `\
+        window.alert(`\
 The last time you used this app, a view was in a popup that your \
-browser just blocked (you will need to re-open the view from the \
-menu).
+browser just blocked (we've reverted to the default layout instead).
 
 You can prevent this in the future by adding this site to the allowed \
 sites in your browser settings.`);
-        // TODO: this hack successfully allows the rest of the main page to
-        // initialize, but there's a minor bug if the user opens the blocked
-        // popup in that it can't be popped back into the layout
-        this.goldenLayout._subWindowsCreated = true;
-        this.goldenLayout.init();
+        window.localStorage.removeItem('layout');
+        this.initSubViews(contentsElement);
+        return;
       } else {
         throw error;
       }
     }
-  }
-  showSubView (ViewClass, classSelector) {
-    // TODO: smarter placement of the subview; for now we just stick it
-    // at the end of the layout
-    const targetIndex = this.goldenLayout.root.contentItems.length - 1;
-    const target = targetIndex === -1 ? this.goldenLayout.root
-      : this.goldenLayout.root.contentItems[targetIndex];
-    const componentState = {};
-    if (classSelector) {
-      componentState.classSelector = classSelector;
-    }
-    target.addChild({
-      type: 'component',
-      componentName: ViewClass.name,
-      componentState: componentState
-    });
-  }
-  closeSubView (subViewId, show) {
-    if (this.subViews[subViewId]) {
-      this.subViews[subViewId].container.close();
-      // the itemDestroyed event handles deleting subViewId from this.subViews
-    }
+    this.updateLayout();
   }
   resize () {
     if (this.mainMenu) {
@@ -121,8 +240,6 @@ sites in your browser settings.`);
     }
   }
   draw () {
-    this.d3el.select(':scope > .emptyState')
-      .style('display', 'none');
     this.mainMenu.render();
     // goldenLayout doesn't really have a reliable way to check
     // if it's empty at aribitrary points, so we inspect the DOM instead
