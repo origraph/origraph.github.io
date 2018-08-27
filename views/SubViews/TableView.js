@@ -48,6 +48,32 @@ class TableView extends GoldenLayoutView {
     };
   }
   draw () {
+    const classObj = this.classId === null ? null : mure.classes[this.classId];
+    const classLabel = classObj === null ? 'No active classes' : classObj.className;
+    const titleElement = this.tabElement.select(':scope > .lm_title');
+    const renameTitle = () => {
+      const newName = titleElement.text();
+      if (classObj !== null && newName) {
+        classObj.setClassName(newName);
+      } else {
+        window.mainView.render();
+      }
+    };
+    titleElement.attr('contenteditable', 'true')
+      .text(classLabel)
+      .style('cursor', 'text')
+      .style('font-style', classObj !== null && classObj.hasCustomName ? null : 'italic')
+      .on('click', function () {
+        // Hack to get contenteditable to actually work
+        this.focus();
+      }).on('blur', renameTitle)
+      .on('keyup', function () {
+        if (d3.event.keyCode === 13) { // return key
+          this.blur();
+        } else if (d3.event.keyCode === 27) { // esc key
+          this.blur();
+        }
+      });
     // TODO: fill in this.renderer with samples from this.classObj
 
     /*
