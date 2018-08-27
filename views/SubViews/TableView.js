@@ -47,7 +47,7 @@ class TableView extends GoldenLayoutView {
       }
     };
   }
-  draw () {
+  drawTitle () {
     const classObj = this.classId === null ? null : mure.classes[this.classId];
     const classLabel = classObj === null ? 'No active classes' : classObj.className;
     const titleElement = this.tabElement.select(':scope > .lm_title');
@@ -74,50 +74,36 @@ class TableView extends GoldenLayoutView {
           this.blur();
         }
       });
-    // TODO: fill in this.renderer with samples from this.classObj
+  }
+  draw () {
+    this.drawTitle();
 
-    /*
-    const [items, histograms, selectedItems] = await Promise.all([
-      this.location.items(),
-      this.location.histograms(),
-      window.mainView.userSelection.items()
-    ]);
-
-    // Regular columns
-    let colHeaders = Object.keys(histograms.attributes);
-    let columns = colHeaders.map(attr => this.getTextCellSpec(
-      d => items[d].value[attr],
-      d => selectedItems[d]
-    ));
-
-    // Meta columns
-    colHeaders = ['key', 'Type', 'Classes'].concat(colHeaders);
-    columns = [
-      this.getTextCellSpec(
-        d => items[d].label,
-        d => selectedItems[d],
-        true
-      ),
-      this.getTextCellSpec(
-        d => items[d].type,
-        d => selectedItems[d],
-        true
-      ),
-      this.getTextCellSpec(
-        d => items[d].getClasses ? items[d].getClasses() : '',
-        d => selectedItems[d],
-        true
-      )
-    ].concat(columns);
-
-    const spec = {
-      data: Object.keys(items),
-      colHeaders,
-      columns
-    };
-    this.renderer.updateSettings(spec);
-    this.renderer.render();
-    */
+    if (this.classId === null) {
+      // TODO: show some kind of empty state content
+    } else {
+      (async () => {
+        const colHeaders = await window.mainView.getAttributes(this.classId);
+        const columns = colHeaders.map(attr => this.getTextCellSpec(
+          d => {
+            if (d[attr] === undefined) {
+              return '';
+            } else if (typeof d[attr] === 'object') {
+              return d[attr] instanceof Array ? '[]' : '{}';
+            } else {
+              return d[attr];
+            }
+          },
+          d => false
+        ));
+        const spec = {
+          data: window.mainView.samples[this.classId],
+          colHeaders,
+          columns
+        };
+        this.renderer.updateSettings(spec);
+        this.renderer.render();
+      })();
+    }
   }
 }
 TableView.icon = 'img/table.svg';
