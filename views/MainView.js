@@ -33,6 +33,17 @@ class MainView extends View {
     });
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
   }
+  draw () {
+    this.mainMenu.render();
+    this.d3el.select(':scope > .emptyState')
+      .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
+    this.d3el.select('#samplingSpinner')
+      .style('display', this.sampling ? null : 'none');
+    Object.values(this.subViews).forEach(subView => {
+      subView.render();
+    });
+    this.hideOverlay();
+  }
   saveLayoutState () {
     // debounce this call if goldenlayout isn't ready;
     // see https://github.com/golden-layout/golden-layout/issues/253#issuecomment-361144944
@@ -58,6 +69,8 @@ class MainView extends View {
       this.samples[classId] = [];
     }
 
+    let n = 0;
+
     const addSamples = async () => {
       let allDone = true;
       for (const [ classId, stream ] of Object.entries(streams)) {
@@ -69,8 +82,15 @@ class MainView extends View {
       }
       if (!allDone) {
         this.sampleTimer = window.setTimeout(addSamples, 5);
+        n++;
+        if (n >= 10) {
+          // trigger a render for every 10 data points
+          n = 0;
+          this.render();
+        }
       } else {
         this.sampling = false;
+        this.render();
       }
     };
     this.sampleTimer = window.setTimeout(addSamples, 5);
@@ -239,15 +259,6 @@ sites in your browser settings.`);
     if (this.goldenLayout) {
       this.goldenLayout.updateSize();
     }
-  }
-  draw () {
-    this.mainMenu.render();
-    this.d3el.select(':scope > .emptyState')
-      .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
-    Object.values(this.subViews).forEach(subView => {
-      subView.render();
-    });
-    this.hideOverlay();
   }
   showOverlay ({
     message = '',
