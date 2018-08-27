@@ -27,13 +27,44 @@ class MainView extends View {
   }
   setup () {
     this.hideTooltip();
-    this.d3el.select(':scope > .emptyState')
-      .style('display', 'none');
     this.showOverlay({
       message: 'Loading assets...',
       spinner: true
     });
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
+  }
+  draw () {
+    const self = this;
+    this.mainMenu.render();
+    this.d3el.select(':scope > .emptyState')
+      .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
+    this.d3el.select('#samplingSpinner')
+      .style('display', this.sampling ? null : 'none')
+      .on('mouseover', function () {
+        self.sampleSpinnerBounds = this.getBoundingClientRect();
+        self.updateSampleTooltip();
+      }).on('mouseout', () => {
+        this.sampleSpinnerBounds = null;
+        this.updateSampleTooltip();
+      });
+    Object.values(this.subViews).forEach(subView => {
+      subView.render();
+    });
+    this.hideOverlay();
+  }
+  updateSampleTooltip () {
+    if (this.sampleSpinnerBounds) {
+      let content = 'Loaded:' +
+        Object.entries(this.samples).map(([classId, sampleList]) => {
+          return `<br/>${mure.classes[classId].className}: ${sampleList.length} samples`;
+        });
+      this.showTooltip({
+        content,
+        targetBounds: this.sampleSpinnerBounds
+      });
+    } else {
+      this.hideTooltip();
+    }
   }
   saveLayoutState () {
     // debounce this call if goldenlayout isn't ready;
@@ -60,6 +91,7 @@ class MainView extends View {
       this.samples[classId] = [];
     }
 
+    let n = 0;
     const addSamples = async () => {
       let allDone = true;
       for (const [ classId, stream ] of Object.entries(streams)) {
@@ -71,8 +103,15 @@ class MainView extends View {
       }
       if (!allDone) {
         this.sampleTimer = window.setTimeout(addSamples, 5);
+        n++;
+        if (n >= 25) {
+          // trigger a tooltip update for every 25 data points
+          n = 0;
+          this.updateSampleTooltip();
+        }
       } else {
         this.sampling = false;
+        this.render();
       }
     };
     this.sampleTimer = window.setTimeout(addSamples, 5);
@@ -205,6 +244,9 @@ class MainView extends View {
     this.goldenLayout.on('stateChanged', event => {
       this.saveLayoutState();
     });
+    this.goldenLayout.on('windowOpened', () => {
+      this.render();
+    });
     this.goldenLayout.on('itemDestroyed', event => {
       if (event.instance) {
         console.warn(`TODO: delete class`);
@@ -238,19 +280,6 @@ sites in your browser settings.`);
     if (this.goldenLayout) {
       this.goldenLayout.updateSize();
     }
-  }
-  draw () {
-    this.mainMenu.render();
-    // goldenLayout doesn't really have a reliable way to check
-    // if it's empty at aribitrary points, so we inspect the DOM instead
-    const nChildren = this.d3el.select('#contents > .lm_root')
-      .node().childNodes.length;
-    this.d3el.select(':scope > .emptyState')
-      .style('display', nChildren === 0 ? null : 'none');
-    Object.values(this.subViews).forEach(subView => {
-      subView.render();
-    });
-    this.hideOverlay();
   }
   showOverlay ({
     message = '',

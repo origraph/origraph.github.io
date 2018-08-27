@@ -14,6 +14,7 @@ class GoldenLayoutView extends View {
     this.container.on('tab', tab => {
       tab.element.addClass(this.constructor.name);
       tab.element.prepend(`<div class="lm_tab_icon" style="background-image:url('${icon}')"></div>`);
+      this.tabElement = d3.select(tab.element[0]);
     });
     this.container.on('open', () => {
       this.render(d3.select(this.container.getElement()[0]));
