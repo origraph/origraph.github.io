@@ -60,16 +60,16 @@ window.autoLoad = async () => {
   await mure.classes[moviesId].interpretAsNodes();
   await mure.classes[movieEdgesId].interpretAsEdges();
 
-  mure.classes[peopleId].setNamedFunction('id', function * (wrappedItem) {
+  mure.classes[peopleId].addHashFunction('id', function * (wrappedItem) {
     yield wrappedItem.rawItem.id;
   });
-  mure.classes[moviesId].setNamedFunction('id', function * (wrappedItem) {
+  mure.classes[moviesId].addHashFunction('id', function * (wrappedItem) {
     yield wrappedItem.rawItem.id;
   });
-  mure.classes[movieEdgesId].setNamedFunction('sourceId', function * (wrappedItem) {
+  mure.classes[movieEdgesId].addHashFunction('sourceId', function * (wrappedItem) {
     yield wrappedItem.rawItem.sourceId;
   });
-  mure.classes[movieEdgesId].setNamedFunction('targetId', function * (wrappedItem) {
+  mure.classes[movieEdgesId].addHashFunction('targetId', function * (wrappedItem) {
     yield wrappedItem.rawItem.targetId;
   });
 
