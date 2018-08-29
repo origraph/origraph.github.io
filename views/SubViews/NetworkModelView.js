@@ -69,18 +69,30 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         })
 
 
-      d3.selectAll('.edge').select('.sourceHandle').attr('cx', d => {
+      d3.selectAll('.edge').select('.sourceHandle')
+        .attr('x1', d => {
+          let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
+          return source === d ? -FLOATING_EDGE_LENGTH-10 : 0;
+        })
+        .attr('y1', 0)
+        .attr('x2', d => {
           let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
           return source === d ? -FLOATING_EDGE_LENGTH : 0;
         })
-        .attr('cy', 0)
+        .attr('y2', 0)
 
 
-      d3.selectAll('.edge').select('.targetHandle').attr('cx', d => {
+      d3.selectAll('.edge').select('.targetHandle')
+        .attr('x1', d => {
           let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
           return target === d ? +FLOATING_EDGE_LENGTH : 0;
         })
-        .attr('cy', 0)
+        .attr('y1', 0)
+        .attr('x2', d => {
+          let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
+          return target === d ? +FLOATING_EDGE_LENGTH+10 : 0;
+        })
+        .attr('y2', 0)
 
 
       // d3.selectAll('.edge').select('image').attr('transform', node => {
@@ -205,7 +217,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         d3.select('.menu-submit').on('click',async ()=>{
           let selectedAttr = d3.select('#tooltip').selectAll('.selected');
 
-          
+
           for (const element of selectedAttr.nodes()) {
             let id = d3.select(element).attr('classId');
             let attr = d3.select(element).text();
@@ -239,15 +251,20 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
       let dragObject = d3.select(this).attr('class');
 
+      console.log(dragObject)
+
       if (dragObject === 'targetHandle' || dragObject === 'sourceHandle') {
 
         d3.select(this)
-        .attr('cx', mouse[0])
-        .attr('cy', mouse[1]);
+        .attr('x1', mouse[0])
+        .attr('y1', mouse[1])
+        .attr('x2', mouse[0]-5)
+        .attr('y2', mouse[1]-5);
+
 
         d3.select(this.parentNode).select('.nodeObject').attr('d', () => {
           let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
-          let coords = dragObject === 'targetHandle' ? [[handle.attr('cx'),handle.attr('cy')],mouse] : [mouse,[handle.attr('cx'),handle.attr('cy')]]
+          let coords = dragObject === 'targetHandle' ? [[handle.attr('x1'),handle.attr('y1')],mouse] : [mouse,[handle.attr('x1'),handle.attr('y1')]]
           return self.lineGenerator(coords);
         })
 
@@ -333,10 +350,10 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     // nodesEnter.append('image') //contextMenu icon
 
     //for edges, append two endpoints to the edge line
-    nodesEnter.filter(n => n.type === 'Edge').append('circle')
+    nodesEnter.filter(n => n.type === 'Edge').append('line')
       .attr('class', 'sourceHandle')
 
-    nodesEnter.filter(n => n.type === 'Edge').append('circle')
+    nodesEnter.filter(n => n.type === 'Edge').append('line')
       .attr('class', 'targetHandle')
 
     nodes = nodes.merge(nodesEnter);
@@ -351,8 +368,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       nodes.select('.anchorMouseCatcher')
       .attr('opacity', 0)
 
-    nodes.selectAll('.sourceHandle,.targetHandle')
-      .attr('r',NODE_SIZE/8)
+    // nodes.selectAll('.sourceHandle,.targetHandle')
+    //   .attr('r',NODE_SIZE/8)
 
     d3.selectAll('.anchor')
       .attr('d', this.lineGenerator(
@@ -373,10 +390,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nodes  //.filter(d => d.type !== 'Edge')
     .call(this.drag);
 
-    edgeNodes.attr('marker-end', 'url(#marker_circle)')
+    edgeNodes.select('.targetHandle').attr('marker-end', 'url(#marker_circle)')
+    edgeNodes.select('.sourceHandle').attr('marker-start', 'url(#marker_circle)')
 
 
-    nodes.selectAll('circle').call(this.drag);
+    nodes.selectAll('.sourceHandle,.targetHandle').call(this.drag);
     nodes.attr('class', d => d.type.toLowerCase())
     nodes.classed('object', true)
 
