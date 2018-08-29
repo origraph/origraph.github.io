@@ -2,30 +2,47 @@
 
 .NetworkModelView {
   text{
-    pointer-events: none
+    pointer-events: none;
+    font-size: 20px;
   }
+
+  .anchor,{
+    stroke:#717070;
+    stroke-width: 7px;
+    fill:none;
+  }
+
+  .anchorMouseCatcher{
+    stroke:white;
+    stroke-width: 20px;
+  }
+
+  marker#marker_arrow{
+    fill:#717070;
+  }
+
 
   .node,.edge,.generic {
     
     image {
       filter: @textColorImageFilter;
     }
-    circle, path {
-      opacity: 0.5;
-      fill: @textColor;
+    circle, .nodeObject {
+      // opacity: 0.5;
+      fill: @Grey; //@textColor;
       stroke: none;
     }
-    &.selected circle {
+    &.selected .nodeObject {
       fill: @selectionColor;
     }
-    &.hovered circle {
-      opacity: 1.0;
+    &.hovered .nodeObject {
+      // opacity: .7;
       cursor: pointer;
     }
   }
 
   .edge{
-    circle, path {
+    circle, .nodeObject {
       opacity: 1;
       fill: @textColor;
       stroke: none;
@@ -33,16 +50,16 @@
 
   }
   .edge {
-    path {
+    .nodeObject {
       opacity: 0.5;
       fill: none;
       stroke: @textColor;
       stroke-width: 5px;
     }
-    &.selected path {
+    &.selected .nodeObject {
       stroke: @selectionColor;
     }
-    &.hovered path {
+    &.hovered .nodeObject {
       opacity: 1.0;
       cursor: pointer;
     }
