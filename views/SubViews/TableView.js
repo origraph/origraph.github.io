@@ -50,7 +50,8 @@ class TableView extends GoldenLayoutView {
   drawTitle () {
     const classObj = this.classId === null ? null : mure.classes[this.classId];
     const classLabel = classObj === null ? 'No active classes' : classObj.className;
-    const titleElement = this.tabElement.select(':scope > .lm_title');
+    const titleElement = this.tabElement.select(':scope > .lm_title')
+      .text(classLabel);
     const renameTitle = () => {
       const newName = titleElement.text();
       if (classObj !== null && newName) {
@@ -60,7 +61,6 @@ class TableView extends GoldenLayoutView {
       }
     };
     titleElement.attr('contenteditable', 'true')
-      .text(classLabel)
       .style('cursor', 'text')
       .style('font-style', classObj !== null && classObj.hasCustomName ? null : 'italic')
       .on('click', function () {

@@ -209,7 +209,8 @@ class MainView extends View {
         tableParent.addChild({
           type: 'component',
           componentName: 'TableView',
-          componentState: { classId }
+          componentState: { classId },
+          isClosable: false
         });
       }
     }

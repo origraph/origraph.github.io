@@ -28,7 +28,8 @@ window.DEFAULT_LAYOUT = {
             componentState: {
               // An empty TableView
               classId: null
-            }
+            },
+            isClosable: false
           }]
         }, {
           type: 'component',
