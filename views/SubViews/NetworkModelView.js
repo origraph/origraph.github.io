@@ -181,17 +181,17 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         let sourceAttr = await (window.mainView.getAttributes(d.classId))
         let targetAttr = await (window.mainView.getAttributes(targetNode.classId))
 
-        let content = '<div class="vertical-menu"> <a href="#" class=active>' + d.className + '</a>'
+        let content = '<div class="vertical-menu source"> <a href="#" class="active">' + d.className + '</a>'
 
-        sourceAttr.map(a => content = content + '<a href="#" attr=' + d.classId + '>' + a + '</a>')
+        sourceAttr.map(a => content = content + '<a href="#" classId=' + d.classId + '>' + a + '</a>')
         content = content + '</div>'
 
-        content = content + '<div class="vertical-menu"> <a href="#" class=active>' + targetNode.className + '</a>'
+        content = content + '<div class="vertical-menu target"> <a href="#" class="active">' + targetNode.className + '</a>'
 
-        targetAttr.map(a => content = content + '<a href="#" attr=' + targetNode.classId + '>' + a + '</a>')
+        targetAttr.map(a => content = content + '<a href="#" classId=' + targetNode.classId + '>' + a + '</a>')
         content = content + '</div>'
 
-        content = content + '<div class="menu-submit"> <a href="#" class=active>Connect</a></div>'
+        content = content + '<div class="menu-submit"> <a href="#" >Connect</a></div>'
 
         window.mainView.showTooltip({
           content,
@@ -199,10 +199,50 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         })
 
         //set listeners for each menu
-        d3.select('#tooltip').selectAll('a').on('click', function (d) {
+        d3.selectAll('.vertical-menu').selectAll('a').on('click', function (d) {
           d3.select(this).classed('selected', !d3.select(this).classed('selected'))
           // console.log('clicked on ', d3.select(this).classed('selected', true)) //attr('attr'), d3.select(this).text())
         })
+
+        d3.select('.menu-submit').on('click',async ()=>{
+          let selectedAttr = d3.select('#tooltip').selectAll('.selected');
+
+          for (const element of selectedAttr.nodes()) {
+            let id = d3.select(element).attr('classId');
+            let attr = d3.select(element).text();
+           
+            await mure.classes[id].setNamedFunction(attr, function * (wrappedItem) {
+              yield wrappedItem.rawItem[attr];
+            });
+          }
+
+          let edgeId = d3.select('#tooltip').select('.source').select('.selected').attr('classId');
+          let nodeId = d3.select('#tooltip').select('.target').select('.selected').attr('classId');
+
+          let edgeHash = d3.select('#tooltip').select('.source').select('.selected').text();
+          let nodeHash = d3.select('#tooltip').select('.target').select('.selected').text();
+
+          // console.log(edgeId,nodeId,edgeHash,nodeHash)
+
+          await mure.classes[edgeId].connectToNodeClass({
+            nodeClass: mure.classes[nodeId],
+            direction: 'target',
+            nodeHashName: nodeHash,
+            edgeHashName: edgeHash
+          });
+
+          // await mure.classes[movieEdgesId].connectToNodeClass({
+          //   nodeClass: mure.classes[moviesId],
+          //   direction: 'target',
+          //   nodeHashName: 'id',
+          //   edgeHashName: 'targetId'
+          // });
+          
+        })
+       
+
+        //set listener for connect
+
       }
 
     }
@@ -321,9 +361,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       .attr('opacity', 0)
       .attr('marker-end', 'url(#marker_arrow)')
 
-
     nodes.selectAll('.sourceHandle,.targetHandle')
-      .attr('r',10)
+      .attr('r',NODE_SIZE/8)
 
     d3.selectAll('.anchor')
       .attr('d', this.lineGenerator(
