@@ -159,7 +159,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
       //reset edge stub to it's original position
       if (dragObject.includes('anchor')) {
-        d3.select(this)
+        d3.select(this.parentNode).select('.anchor')
           .attr('d', self.lineGenerator(
             [
               [0, 0],
@@ -172,9 +172,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       d.fx = d.x;
       d.fy = d.y;
 
-      console.log(self.targetDrag, d)
-
-      if (self.targetDrag && self.targetDrag !== d) {
+      if (self.targetDrag && (self.targetDrag !== d) || dragObject.includes('anchor') ) {
 
         let targetNode = self.targetDrag
 
@@ -207,6 +205,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         d3.select('.menu-submit').on('click',async ()=>{
           let selectedAttr = d3.select('#tooltip').selectAll('.selected');
 
+          
           for (const element of selectedAttr.nodes()) {
             let id = d3.select(element).attr('classId');
             let attr = d3.select(element).text();
@@ -222,27 +221,14 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
           let edgeHash = d3.select('#tooltip').select('.source').select('.selected').text();
           let nodeHash = d3.select('#tooltip').select('.target').select('.selected').text();
 
-          // console.log(edgeId,nodeId,edgeHash,nodeHash)
-
           await mure.classes[edgeId].connectToNodeClass({
             nodeClass: mure.classes[nodeId],
             direction: 'target',
             nodeHashName: nodeHash,
             edgeHashName: edgeHash
-          });
-
-          // await mure.classes[movieEdgesId].connectToNodeClass({
-          //   nodeClass: mure.classes[moviesId],
-          //   direction: 'target',
-          //   nodeHashName: 'id',
-          //   edgeHashName: 'targetId'
-          // });
-          
+          });         
         })
        
-
-        //set listener for connect
-
       }
 
     }
@@ -270,7 +256,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         //check to see if user is dragging over the source node:
         if (self.sourceMousedOver) {
           //create preview of self edge;
-          d3.select(this)
+          d3.select(this.parentNode).select('.anchor')
             .attr('d', self.lineGenerator(
               [
                 [NODE_SIZE * .9, -NODE_SIZE / 2],
@@ -281,7 +267,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
             ))
         } else {
           //have the edge be a straight line to the mouse pointer
-          d3.select(this)
+          d3.select(this.parentNode).select('.anchor')
             .attr('d', self.lineGenerator(
               [
                 [0, 0], mouse
@@ -307,10 +293,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
   draw() {
 
+    console.log('calling draw')
     const bounds = this.getContentBounds(this.content);
     const graph = this.deriveGraph();
 
-    console.log(bounds, graph);
+    // console.log(bounds, graph);
 
     this.simulation.force('center')
       .x(bounds.width / 2)
@@ -359,7 +346,10 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     nodes.select('.anchor')
       .attr('opacity', 0)
-      .attr('marker-end', 'url(#marker_arrow)')
+      .attr('marker-end', 'url(#marker_circle)')
+
+      nodes.select('.anchorMouseCatcher')
+      .attr('opacity', 0)
 
     nodes.selectAll('.sourceHandle,.targetHandle')
       .attr('r',NODE_SIZE/8)
@@ -390,7 +380,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nodes.attr('class', d => d.type.toLowerCase())
     nodes.classed('object', true)
 
-    d3.selectAll('.anchor').call(this.drag)
+    d3.selectAll('.anchor,.anchorMouseCatcher').call(this.drag)
 
     //Draw actual node/edges
     nodes.select('.nodeObject').attr('d', d => {
@@ -456,13 +446,13 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nodes.on('mouseenter', hover);
 
     nodes.select('.nodeObject').on('mouseover', (d) => {
-      console.log('entering ', d.className)
+      // console.log('entering ', d.className)
       this.targetDrag = d;
       return this.sourceMousedOver = this.sourceDrag && d.classId === this.sourceDrag.classId;
     })
 
     nodes.select('.nodeObject').on('mouseout', (d) => {
-      console.log('leaving ', d.className)
+      // console.log('leaving ', d.className)
       this.targetDrag = d.className;
       this.sourceMousedOver = false
     })
