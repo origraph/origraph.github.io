@@ -222,7 +222,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
             let id = d3.select(element).attr('classId');
             let attr = d3.select(element).text();
            
-            await mure.classes[id].setNamedFunction(attr, function * (wrappedItem) {
+            await mure.classes[id].addHashFunction(attr, function * (wrappedItem) {
               yield wrappedItem.rawItem[attr];
             });
           }
