@@ -4,6 +4,7 @@
   text{
     pointer-events: none;
     font-size: 20px;
+    text-decoration: underline overline;
   }
 
   .anchor,{
@@ -35,7 +36,7 @@
     &.selected .nodeObject {
       fill: @selectionColor;
     }
-    &.hovered .nodeObject {
+    &.hovered .nodeObject, &.hovered .anchor, .hovered .targetHandle, .hovered .sourceHandle {
       // opacity: .7;
       cursor: pointer;
     }
@@ -60,7 +61,7 @@
       stroke: @selectionColor;
     }
     &.hovered .nodeObject {
-      opacity: 1.0;
+      // opacity: 1.0;
       cursor: pointer;
     }
   }

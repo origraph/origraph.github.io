@@ -84,6 +84,10 @@ window.autoLoad = async () => {
     nodeHashName: 'id',
     edgeHashName: 'targetId'
   });
+
+ //TODO add connect syntax to connect nodes to nodes.
+
+
 };
 
 window.onload = () => {

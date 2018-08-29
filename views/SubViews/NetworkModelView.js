@@ -8,11 +8,6 @@ const EDGE_STUB_LENGTH = 25;
 // const MENU_SIZE = 20; // was used for the menu which may not need an icon anymore and is simply invoked on click. 
 let TICK_COUNT = 0;
 
-//flag to monitor if user is dragging (supress mouseover callbacks)
-let dragging = false;
-//flag to monitor mouseover to render self/edges
-let mousedOver = false; 
-
 class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   constructor({
     container,
@@ -39,6 +34,15 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     this.lineGenerator = d3.line()
       .curve(d3.curveBasis);
+
+    //flag to monitor if user is dragging (supress mouseover callbacks)
+    this.dragging = false;
+    //flag to monitor mouseover to render self/edges
+    this.sourceMousedOver = false;
+    this.sourceDrag;
+
+    //flag to monitor mouseover to connect edges
+    this.targetDrag = 'default';
 
     this.simulation.on('tick', () => {
 
@@ -137,7 +141,9 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     //set drag behavior
     let dragstarted = (d) => {
       //Keep track of dragging to inhibit mouseover events
-      dragging = true;
+      this.dragging = true;
+      this.sourceDrag = d;
+
       if (typeof d !== 'string') {
         d.fx = d.fy = null;
       }
@@ -145,46 +151,32 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     const self = this;
 
-     //helper function to help parse out the 'transform' attribute of groups
-     let parse = (a) => {
-      var b = {};
-      for (var i in a = a.match(/(\w+\((\-?\d+\.?\d*e?\-?\d*,?)+\))+/g)) {
-        var c = a[i].match(/[\w\.\-]+/g);
-        b[c.shift()] = c;
-      }
-      return b;
-    }
-
     let dragended = async function (d) {
       //Keep track of dragging to inhibit mouseover events
-      dragging = false;
+      self.dragging = false;
 
       let dragObject = d3.select(this).attr('class');
 
       //reset edge stub to it's original position
       if (dragObject.includes('anchor')) {
         d3.select(this)
-        .attr('d',self.lineGenerator(
-          [[0,0],[NODE_SIZE + EDGE_STUB_LENGTH,0]]
-        ))
+          .attr('d', self.lineGenerator(
+            [
+              [0, 0],
+              [NODE_SIZE + EDGE_STUB_LENGTH, 0]
+            ]
+          ))
       }
 
       //Dragged a node
       d.fx = d.x;
       d.fy = d.y;
 
-      let mouse = d3.mouse(self.content.node());
+      console.log(self.targetDrag, d)
 
-      //see if user released over an existing node
-      let targetNode;
-      d3.selectAll('.node').each(function (n) {
-        let translate = parse(d3.select(this).attr('transform')).translate;
-        if (translate && 20 > Math.abs(translate[0] + NODE_SIZE - mouse[0]) && 20 > Math.abs(translate[1] + NODE_SIZE - mouse[1])) {
-          targetNode = n;
-        }
-      })
+      if (self.targetDrag && self.targetDrag !== d) {
 
-      if (targetNode && targetNode !== d) {
+        let targetNode = self.targetDrag
 
         let sourceAttr = await (window.mainView.getAttributes(d.classId))
         let targetAttr = await (window.mainView.getAttributes(targetNode.classId))
@@ -208,7 +200,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
         //set listeners for each menu
         d3.select('#tooltip').selectAll('a').on('click', function (d) {
-          console.log('clicked on ', d3.select(this).classed('selected', true)) //attr('attr'), d3.select(this).text())
+          d3.select(this).classed('selected', !d3.select(this).classed('selected'))
+          // console.log('clicked on ', d3.select(this).classed('selected', true)) //attr('attr'), d3.select(this).text())
         })
       }
 
@@ -220,69 +213,40 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
       let dragObject = d3.select(this).attr('class');
 
-      if (dragObject === 'targetHandle') {
+      if (dragObject === 'targetHandle' || dragObject === 'sourceHandle') {
 
         d3.select(this)
-          .attr('cx',mouse[0])
-          .attr('cy', mouse[1]);
+        .attr('cx', mouse[0])
+        .attr('cy', mouse[1]);
 
-        d3.select(this.parentNode).select('path').attr('d', () => {
-          let sourceHandle = d3.select(this.parentNode).select('.sourceHandle');
-          let x1 = Number(sourceHandle.attr('cx'));
-          let y1 = Number(sourceHandle.attr('cy'));
-          let x2 = mouse[0];
-          let y2 = mouse[1];
-          let midX = (x1 + x2) / 2;
-          let midY = (y1 + y2) / 2;
-          let coords = [
-            [x1, y1],
-            [midX - 20, midY - 20],
-            [x2, y2]
-          ];
+        d3.select(this.parentNode).select('.nodeObject').attr('d', () => {
+          let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
+          let coords = dragObject === 'targetHandle' ? [[handle.attr('cx'),handle.attr('cy')],mouse] : [mouse,[handle.attr('cx'),handle.attr('cy')]]
           return self.lineGenerator(coords);
-        })
-
-
-      } else if (dragObject === 'sourceHandle') {
-
-        d3.select(this)
-          .attr('cx', node => {
-            let targetHandle = d3.select(this.parentNode).select('.targetHandle');
-            // node.x = (mouse[0] + targetHandle.attr('cx'))/2;
-            return mouse[0]
-          })
-          .attr('cy', node => {
-            let targetHandle = d3.select(this.parentNode).select('.targetHandle');
-            // node.y = (mouse[1] + targetHandle.attr('cy'))/2;
-            return mouse[1]
-          });
-
-        d3.select(this.parentNode).select('path').attr('d', () => {
-          let targetHandle = d3.select(this.parentNode).select('.targetHandle');
-          return 'M' + mouse[0] + ' ' + mouse[1] + ' L ' + targetHandle.attr('cx') + ' ' + targetHandle.attr('cy');
         })
 
       } else if (dragObject.includes('anchor')) {
 
         //check to see if user is dragging over the source node:
-
-        console.log(mousedOver)
-        if (mousedOver){
+        if (self.sourceMousedOver) {
           //create preview of self edge;
           d3.select(this)
-          .attr('d',self.lineGenerator(
-            [[NODE_SIZE*.9, -NODE_SIZE/2],
-            [NODE_SIZE*1.5,-NODE_SIZE/3],
-            [NODE_SIZE*1.5,NODE_SIZE/3],
-            [NODE_SIZE,NODE_SIZE/2]]
-
-          ))
+            .attr('d', self.lineGenerator(
+              [
+                [NODE_SIZE * .9, -NODE_SIZE / 2],
+                [NODE_SIZE * 1.5, -NODE_SIZE / 3],
+                [NODE_SIZE * 1.5, NODE_SIZE / 3],
+                [NODE_SIZE, NODE_SIZE / 2]
+              ]
+            ))
         } else {
           //have the edge be a straight line to the mouse pointer
           d3.select(this)
-          .attr('d',self.lineGenerator(
-            [[0,0],mouse]
-          ))
+            .attr('d', self.lineGenerator(
+              [
+                [0, 0], mouse
+              ]
+            ))
         }
 
       } else {
@@ -299,8 +263,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       .on('start', dragstarted)
       .on('drag', dragged)
       .on('end', dragended);
-
-
   }
 
   draw() {
@@ -339,7 +301,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       .attr('class', 'anchor')
       .style('stroke-dasharray', '3px 2px');
 
-    nodesEnter.append('path').attr('class','nodeObject').attr('id', d => d.classId); //diamond, circle, or line
+    nodesEnter.append('path').attr('class', 'nodeObject').attr('id', d => d.classId); //diamond, circle, or line
     nodesEnter.append('text').append('textPath'); //class Name
     // nodesEnter.append('image') //contextMenu icon
 
@@ -356,40 +318,40 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     let nonEdgeNodes = nodes.filter(n => n.type !== 'Edge');
 
     nodes.select('.anchor')
-      .attr('opacity', .01)
+      .attr('opacity', 0)
       .attr('marker-end', 'url(#marker_arrow)')
 
 
     nodes.selectAll('.sourceHandle,.targetHandle')
-      .attr('r', d => {
-        return d.type === 'Edge' ? NODE_SIZE / 8 : 5
-      })
+      .attr('r',10)
 
     d3.selectAll('.anchor')
-    .attr('d',this.lineGenerator(
-      [[0,0],[NODE_SIZE + EDGE_STUB_LENGTH,0]]
-    ))
+      .attr('d', this.lineGenerator(
+        [
+          [0, 0],
+          [NODE_SIZE + EDGE_STUB_LENGTH, 0]
+        ]
+      ))
 
     d3.selectAll('.anchorMouseCatcher')
-    .attr('d',this.lineGenerator(
-      [[0,0],[NODE_SIZE + EDGE_STUB_LENGTH,0]]
-    ))
+      .attr('d', this.lineGenerator(
+        [
+          [0, 0],
+          [NODE_SIZE + EDGE_STUB_LENGTH, 0]
+        ]
+      ))
 
-    nodes.filter(d => d.type !== 'Edge').call(this.drag);
+    nodes  //.filter(d => d.type !== 'Edge')
+    .call(this.drag);
+
+    edgeNodes.attr('marker-end', 'url(#marker_circle)')
+
 
     nodes.selectAll('circle').call(this.drag);
     nodes.attr('class', d => d.type.toLowerCase())
     nodes.classed('object', true)
 
     d3.selectAll('.anchor').call(this.drag)
-
-    //Set up icon for Context Menu
-    // nodes.select('image')
-    //   .attr('xlink:href', '../img/hamburger.svg')
-    //   .attr('height', MENU_SIZE)
-    //   .attr('width', MENU_SIZE)
-    //   .attr('x', 0 - MENU_SIZE / 2) //d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
-    //   .attr('y', d => d.type === 'Node' ? NODE_SIZE/2 - MENU_SIZE/2 : 0)
 
     //Draw actual node/edges
     nodes.select('.nodeObject').attr('d', d => {
@@ -412,9 +374,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       }
     })
 
-    // nodes.attr('marker-end', d=>d.type === 'Edge' ? 'url(#marker_circle)' : '')
-    // nodes.attr('marker-start', d=>d.type === 'Edge' ? 'url(#marker_circle)' : '')
-
     edgeNodes.select('textPath').text(d => d.className) //d => d.className);
     edgeNodes.select('textPath').attr('href', d => '#' + d.classId);
     edgeNodes.select('textPath').attr('startOffset', '10');
@@ -423,14 +382,15 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nonEdgeNodes.select('text').style('text-anchor', 'middle')
 
 
+    self = this;
     const hover = function (d) {
-      if (dragging) {
+      if (self.dragging) {
         return;
       }
-      d3.selectAll('.anchor')
-        .attr('opacity',0);
+      d3.selectAll('.anchor,.anchorMouseCatcher')
+        .attr('opacity', 0);
 
-      d3.select(this).selectAll('.anchor')
+      d3.select(this).selectAll('.anchor,.anchorMouseCatcher')
         .attr('opacity', 1);
 
       // window.mainView.showTooltip({
@@ -440,12 +400,12 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       d3.select(this).classed('hovered', true);
     };
     const unhover = function () {
-      if (dragging) {
+      if (self.dragging) {
         return;
       }
 
-      d3.select(this).selectAll('.anchor')
-        .attr('opacity', .01);
+      d3.select(this).selectAll('.anchor,.anchorMouseCatcher')
+        .attr('opacity', 0);
       // window.mainView.hideTooltip();
       d3.select(this).classed('hovered', false);
     };
@@ -455,8 +415,18 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       }));
     };
     nodes.on('mouseenter', hover);
-    nodes.select('.nodeObject').on('mouseenter',()=>mousedOver = true)
-    nodes.select('.nodeObject').on('mouseleave',()=>mousedOver = false)
+
+    nodes.select('.nodeObject').on('mouseover', (d) => {
+      console.log('entering ', d.className)
+      this.targetDrag = d;
+      return this.sourceMousedOver = this.sourceDrag && d.classId === this.sourceDrag.classId;
+    })
+
+    nodes.select('.nodeObject').on('mouseout', (d) => {
+      console.log('leaving ', d.className)
+      this.targetDrag = d.className;
+      this.sourceMousedOver = false
+    })
 
     nodes.on('mouseleave', unhover);
     nodes.on('click', async function (d) {
