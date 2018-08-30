@@ -27,7 +27,10 @@ class TableView extends GoldenLayoutView {
       data: [],
       dataSchema: itemProxy,
       colHeaders: [],
-      columns: []
+      columns: [],
+      manualColumnResize: true,
+      columnSorting: true,
+      sortIndicator: true
     });
   }
   getTextCellSpec (valueAccessor, isSelected, special = false) {
