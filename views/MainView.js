@@ -53,9 +53,9 @@ class MainView extends View {
   }
   updateSampleTooltip () {
     if (this.sampleSpinnerBounds) {
-      const currentTables = mure.getCurrentClassTables();
+      const currentTables = mure.getClassData();
       let content = 'Loaded:' +
-        Object.entries(currentTables).map(([classId, { finished, data, attributes }]) => {
+        Object.entries(currentTables).map(([classId, { complete, data }]) => {
           return `<br/>${mure.classes[classId].className}: ${Object.keys(data).length} samples`;
         });
       this.showTooltip({
@@ -92,7 +92,7 @@ class MainView extends View {
     let n = 0;
     const addSamples = async () => {
       let allDone = true;
-      for (const [ iterator ] of Object.values(iterators)) {
+      for (const iterator of Object.values(iterators)) {
         const sample = await iterator.next();
         if (!sample.done) {
           allDone = false;
@@ -114,7 +114,7 @@ class MainView extends View {
     this.sampleTimer = window.setTimeout(addSamples, 5);
   }
   getAttributes (classId) {
-    return mure.classes[classId].attributes;
+    return mure.classes[classId].table.attributes;
   }
   updateLayout () {
     const getDefaultContainer = () => {

@@ -30,25 +30,9 @@ class TableView extends GoldenLayoutView {
       columns: [],
       manualColumnResize: true,
       columnSorting: true,
-      sortIndicator: true
+      sortIndicator: true,
+      readOnly: true
     });
-  }
-  getTextCellSpec (valueAccessor, isSelected, special = false) {
-    return {
-      data: (uniqueSelector, value) => {
-        if (value) {
-          mure.alert('Editing cell values is not yet supported');
-        } else {
-          return valueAccessor(uniqueSelector);
-        }
-      },
-      renderer: function (instance, td, row, col, prop, value, cellProperties) {
-        Handsontable.renderers.TextRenderer.apply(this, arguments);
-        const uniqueSelector = instance.getSourceDataAtRow(row);
-        d3.select(td).classed('selected', isSelected(uniqueSelector))
-          .classed('special', special);
-      }
-    };
   }
   drawTitle () {
     const classObj = this.classId === null ? null : mure.classes[this.classId];
@@ -78,34 +62,60 @@ class TableView extends GoldenLayoutView {
         }
       });
   }
+  getCellRenderFunction ({ idColumn = false, isSelected = () => false } = {}) {
+    return function (instance, td, row, col, prop, value, cellProperties) {
+      Handsontable.renderers.TextRenderer.apply(this, arguments);
+      const dataItem = instance.getSourceDataAtRow(row);
+      d3.select(td).classed('selected', isSelected(dataItem))
+        .classed('idColumn', idColumn)
+        .classed('htDimmed', false); // remove handsontable's dimmed styling for read-only cells
+    };
+  }
   draw () {
     this.drawTitle();
 
     if (this.classId === null) {
       // TODO: show some kind of empty state content
     } else {
-      (async () => {
-        const colHeaders = await window.mainView.getAttributes(this.classId);
-        const columns = colHeaders.map(attr => this.getTextCellSpec(
-          d => {
-            if (d[attr] === undefined) {
-              return '';
-            } else if (typeof d[attr] === 'object') {
-              return d[attr] instanceof Array ? '[]' : '{}';
-            } else {
-              return d[attr];
-            }
-          },
-          d => false
-        ));
-        const spec = {
-          data: window.mainView.samples[this.classId],
-          colHeaders,
-          columns
-        };
-        this.renderer.updateSettings(spec);
-        this.renderer.render();
-      })();
+      const classObj = mure.classes[this.classId];
+      const data = Object.values(classObj.table.currentData.data);
+      const colHeaders = classObj.table.attributes;
+      colHeaders.unshift('ID');
+      const columns = colHeaders.map((attr, columnIndex) => {
+        if (columnIndex === 0) {
+          return {
+            data: (dataItem, newIndex) => {
+              // TODO: handle newIndex if readOnly is false
+              return dataItem.index;
+            },
+            renderer: this.getCellRenderFunction({
+              idColumn: true
+            })
+          };
+        } else {
+          return {
+            data: (dataItem, newValue) => {
+              // TODO: handle newValue if readOnly is false
+              const value = dataItem.row[attr];
+              if (value === undefined) {
+                return '';
+              } else if (typeof value === 'object') {
+                return '{}';
+              } else {
+                return value;
+              }
+            },
+            renderer: this.getCellRenderFunction()
+          };
+        }
+      });
+      const spec = {
+        data,
+        colHeaders,
+        columns
+      };
+      this.renderer.updateSettings(spec);
+      this.renderer.render();
     }
   }
 }
