@@ -53,7 +53,8 @@ Color meanings:
 @darkBackgroundColor: @LightGrey;
 @darkestBackgroundColor: @Grey;
 
-@selectionColor: @DarkYellow;
+@selectionColor: @DarkTeal;
+@selectionColorImageFilter: replace(@selectionColor, '#(.*)', 'url(#recolorImageTo$1)');
 
 /*
 Gradients:

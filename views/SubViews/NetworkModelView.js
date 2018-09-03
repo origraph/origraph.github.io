@@ -2,10 +2,10 @@
 import GoldenLayoutView from './GoldenLayoutView.js';
 import SvgViewMixin from './SvgViewMixin.js';
 
-const NODE_SIZE = 50;
-const FLOATING_EDGE_LENGTH = 50;
+const NODE_SIZE = 35;
+const FLOATING_EDGE_LENGTH = 100;
 const EDGE_STUB_LENGTH = 25;
-// const MENU_SIZE = 20; // was used for the menu which may not need an icon anymore and is simply invoked on click. 
+const MENU_SIZE = 25;
 let TICK_COUNT = 0;
 
 class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
@@ -44,6 +44,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     //flag to monitor mouseover to connect edges
     this.targetDrag = 'default';
 
+    let self = this;
     this.simulation.on('tick', () => {
 
       TICK_COUNT = TICK_COUNT + 1;
@@ -60,39 +61,46 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         return `translate(${node.x},${node.y})`;
       });
 
-      d3.selectAll('.edge').select('path')
-        .attr('d', d => {
+      d3.selectAll('.edge').select('.nodeObject')
+        .attr('d', function (d) {
           let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
           let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
 
-          return self.edgePathGenerator(source, target)
+          return self.edgePathGenerator(source, target, d3.select(this.parentNode),d)
         })
 
 
       d3.selectAll('.edge').select('.sourceHandle')
-        .attr('x1', d => {
+        .attr('cx', function (d) {
           let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-          return source === d ? -FLOATING_EDGE_LENGTH-10 : 0;
+          let out = self.normalize(source,d3.select(this.parentNode))
+          return source === d ? -FLOATING_EDGE_LENGTH - 10 : out[0];
         })
-        .attr('y1', 0)
-        .attr('x2', d => {
+        .attr('cy', function(d) {
           let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-          return source === d ? -FLOATING_EDGE_LENGTH : 0;
+          let out = self.normalize(source,d3.select(this.parentNode))
+          return source === d ? 0 : out[1];
         })
-        .attr('y2', 0)
 
 
       d3.selectAll('.edge').select('.targetHandle')
-        .attr('x1', d => {
+        .attr('cx', function(d) {
           let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-          return target === d ? +FLOATING_EDGE_LENGTH : 0;
+          let out = self.normalize(target,d3.select(this.parentNode))
+          return target === d ? +FLOATING_EDGE_LENGTH : out[0];
         })
-        .attr('y1', 0)
-        .attr('x2', d => {
+        .attr('cy', function(d) {
           let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-          return target === d ? +FLOATING_EDGE_LENGTH+10 : 0;
+          let out = self.normalize(target,d3.select(this.parentNode))
+          return target === d ? 0 : out[1];
         })
-        .attr('y2', 0)
+
+        // .attr('cy', 0)
+        // .attr('x2', d => {
+        //   let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
+        //   return target === d ? +FLOATING_EDGE_LENGTH + 10 : 0;
+        // })
+        // .attr('y2', 0)
 
 
       // d3.selectAll('.edge').select('image').attr('transform', node => {
@@ -161,8 +169,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       }
     }
 
-    const self = this;
-
     let dragended = async function (d) {
       //Keep track of dragging to inhibit mouseover events
       self.dragging = false;
@@ -184,63 +190,111 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       d.fx = d.x;
       d.fy = d.y;
 
-      if (self.targetDrag && (self.targetDrag !== d) || dragObject.includes('anchor') ) {
+      if (self.targetDrag && (self.targetDrag !== d) || dragObject.includes('anchor')) {
 
+        let sourceNode = d;
         let targetNode = self.targetDrag
 
-        let sourceAttr = await (window.mainView.getAttributes(d.classId))
-        let targetAttr = await (window.mainView.getAttributes(targetNode.classId))
+        let sourceAttr = window.mainView.getAttributes(sourceNode.classId)
+        let targetAttr = window.mainView.getAttributes(targetNode.classId)
 
-        let content = '<div class="vertical-menu source"> <a href="#" class="active">' + d.className + '</a>'
-
-        sourceAttr.map(a => content = content + '<a href="#" classId=' + d.classId + '>' + a + '</a>')
-        content = content + '</div>'
-
-        content = content + '<div class="vertical-menu target"> <a href="#" class="active">' + targetNode.className + '</a>'
-
-        targetAttr.map(a => content = content + '<a href="#" classId=' + targetNode.classId + '>' + a + '</a>')
-        content = content + '</div>'
-
-        content = content + '<div class="menu-submit"> <a href="#" >Connect</a></div>'
-
+        //Create empty tooltip
         window.mainView.showTooltip({
-          content,
+          content: ' ',
           targetBounds: this.getBoundingClientRect()
         })
 
+        let menu = d3.select('#tooltip')
+          .selectAll('.vertical-menu')
+          .data([{
+            'role': 'source',
+            'node': sourceNode
+          }, {
+            'role': 'target',
+            'node': targetNode
+          }]);
+
+        let menuEnter = menu.enter().append('div');
+
+        menu.exit().remove();
+
+        menu = menuEnter.merge(menu);
+
+        menu.attr('class', d => d.role);
+        menu.classed('vertical-menu', true)
+
+        let headers = menu.selectAll('.active').data(d => [d.node.className]);
+
+        headers.enter().append('a')
+          .attr('href', '#')
+          .attr('class', 'active')
+          .html(d => d);
+
+        let menuItems = menu.selectAll('.menuItem').data(d =>d.role === 'source' ? sourceAttr : targetAttr);
+
+        menuItems.enter().append('a')
+          .attr('href', '#')
+          .attr('class', 'menuItem')
+          .text(d => d);
+
+        d3.select('#tooltip').append('div').attr('class','menu-submit').append('a').attr('href','#').text('Connect')
+
+
         //set listeners for each menu
-        d3.selectAll('.vertical-menu').selectAll('a').on('click', function (d) {
+        d3.selectAll('.vertical-menu').selectAll('.menuItem').on('click', function (d) {
           d3.select(this).classed('selected', !d3.select(this).classed('selected'))
-          // console.log('clicked on ', d3.select(this).classed('selected', true)) //attr('attr'), d3.select(this).text())
         })
 
-        d3.select('.menu-submit').on('click',async ()=>{
+        d3.select('.menu-submit').on('click', () => {
           let selectedAttr = d3.select('#tooltip').selectAll('.selected');
 
-
           for (const element of selectedAttr.nodes()) {
-            let id = d3.select(element).attr('classId');
+
+            let parent = d3.select(element.parentNode).datum();
+
+            let id = parent.node.classId;
             let attr = d3.select(element).text();
-           
-            await mure.classes[id].addHashFunction(attr, function * (wrappedItem) {
+
+            mure.classes[id].addHashFunction(attr, function* (wrappedItem) {
               yield wrappedItem.rawItem[attr];
             });
           }
 
-          let edgeId = d3.select('#tooltip').select('.source').select('.selected').attr('classId');
-          let nodeId = d3.select('#tooltip').select('.target').select('.selected').attr('classId');
+          let sourceNode = d3.select('#tooltip').select('.source').datum().node;
+          let targetNode = d3.select('#tooltip').select('.target').datum().node;
 
-          let edgeHash = d3.select('#tooltip').select('.source').select('.selected').text();
-          let nodeHash = d3.select('#tooltip').select('.target').select('.selected').text();
+          let sourceId = sourceNode.classId;
+          let targetId = targetNode.classId;
 
-          await mure.classes[edgeId].connectToNodeClass({
-            nodeClass: mure.classes[nodeId],
-            direction: 'target',
-            nodeHashName: nodeHash,
-            edgeHashName: edgeHash
-          });         
+          let sourceHash = d3.select('#tooltip').select('.source').select('.selected').text();
+          let targetHash = d3.select('#tooltip').select('.target').select('.selected').text();
+
+          console.log(sourceNode,targetNode)
+          if (dragObject === 'sourceHandle' || dragObject === 'targetHandle'){
+
+            dragObject === 'sourceHandle' ?  sourceNode.sourceClassId = targetNode.classId :  sourceNode.targetClassId = targetNode.classId
+
+            self.draw();
+
+            // console.log('Source is Edge')
+            // mure.classes[sourceId].connectToNodeClass({
+            //   nodeClass: mure.classes[targetId],
+            //   direction: 'target',
+            //   nodeHashName: targetHash,
+            //   edgeHashName: sourceHash
+            // });
+          } else if (sourceNode.type === 'Node' && targetNode.type === 'Node'){
+
+            // console.log(sourceId,targetId,sourceHash,targetHash)
+            // mure.classes[sourceId].connectToNodeClass({
+            //   otherNodeClass: mure.classes[targetId],
+            //   directed: true, // or false
+            //   thisHashName: sourceHash,
+            //   otherHashName: targetHash
+            // });
+          }
         })
-       
+
       }
 
     }
@@ -249,24 +303,79 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
       let mouse = d3.mouse(d3.select(this.parentNode).node());
 
-      let dragObject = d3.select(this).attr('class');
+      mouse[0] = mouse[0] - 10;
+      mouse[1]= mouse[1] -10;
 
-      console.log(dragObject)
+      let dragObject = d3.select(this).attr('class');
 
       if (dragObject === 'targetHandle' || dragObject === 'sourceHandle') {
 
         d3.select(this)
-        .attr('x1', mouse[0])
-        .attr('y1', mouse[1])
-        .attr('x2', mouse[0]-5)
-        .attr('y2', mouse[1]-5);
-
+        .attr('cx', mouse[0])
+        .attr('cy', mouse[1])
 
         d3.select(this.parentNode).select('.nodeObject').attr('d', () => {
           let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
-          let coords = dragObject === 'targetHandle' ? [[handle.attr('x1'),handle.attr('y1')],mouse] : [mouse,[handle.attr('x1'),handle.attr('y1')]]
+          let coords = dragObject === 'targetHandle' ? [
+            [handle.attr('cx'), handle.attr('cy')], mouse
+          ] : [mouse, [handle.attr('cx'), handle.attr('cy')]]
           return self.lineGenerator(coords);
         })
+
+        //position text
+        d3.select(this.parentNode).selectAll('.textGroup')
+        .attr('transform',function() {
+          let parent = d3.select(this.parentNode).select('.nodeObject').node().getBoundingClientRect();
+          let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
+          let currentObj = d3.select(this.parentNode).select('.'+dragObject);
+          let translate;
+          if (Number(handle.attr('cy')) < Number(d3.select(this.parentNode).select('.'+dragObject).attr('cy'))){
+            if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))){
+              translate = 'translate('+ (parent.width/2 + Number(handle.attr('cx') ))  +','+ (parent.height / 2) + ')';
+            } else {
+              translate = 'translate('+ (Number(currentObj.attr('cx')) + parent.width/2 )  +','+ (parent.height / 2) + ')';
+            }
+          } else {
+            if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))){
+              translate = 'translate('+ (parent.width/2 + Number(handle.attr('cx')))  +','+ (-parent.height / 2) + ')';
+            } else {
+              translate = 'translate('+ (Number(currentObj.attr('cx')) + parent.width/2)  +','+ (-parent.height / 2) + ')';
+            }
+
+          }
+          return translate;
+        })
+
+        d3.select(this.parentNode).selectAll('.icons')
+        .attr('transform',function() {
+          let parent = d3.select(this.parentNode).select('.nodeObject').node().getBoundingClientRect();
+          let text = d3.select(this.parentNode).select('.textGroup');
+          let textBoundingRect = text.node().getBoundingClientRect();
+          let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
+          let currentObj = d3.select(this.parentNode).select('.'+dragObject);
+          let offset =  MENU_SIZE * 2;
+          let out;
+
+          let textTransform = self.parse(text.attr('transform'));
+          let translate = textTransform.translate ? textTransform.translate[0] : 0;
+
+          if (Number(handle.attr('cy')) < Number(d3.select(this.parentNode).select('.'+dragObject).attr('cy'))){
+            if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))){
+              out = 'translate('+ (Number(translate) + textBoundingRect.width/2 - offset)  +','+ (parent.height / 2 - MENU_SIZE*2) + ')';
+            } else {
+              out = 'translate('+ (Number(translate)  + textBoundingRect.width/2 - offset)  +','+ (parent.height / 2 - MENU_SIZE*2) + ')';
+            }
+          } else {
+            if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))){
+              out = 'translate('+ (Number(translate)  + textBoundingRect.width/2 - offset)  +','+ (-parent.height / 2 - MENU_SIZE*2) + ')';
+            } else {
+              out = 'translate('+ (Number(translate)  + textBoundingRect.width/2 - offset)  +','+ (-parent.height / 2 - MENU_SIZE*2) + ')';
+            }
+
+          }
+          return out;
+        })
+
 
       } else if (dragObject.includes('anchor')) {
 
@@ -274,22 +383,22 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         if (self.sourceMousedOver) {
           //create preview of self edge;
           d3.select(this.parentNode).select('.anchor')
-            .attr('d', self.lineGenerator(
+            .attr('d', d => d.type === 'Node' ? self.lineGenerator(
               [
                 [NODE_SIZE * .9, -NODE_SIZE / 2],
                 [NODE_SIZE * 1.5, -NODE_SIZE / 3],
                 [NODE_SIZE * 1.5, NODE_SIZE / 3],
                 [NODE_SIZE, NODE_SIZE / 2]
               ]
-            ))
+            ) : '')
         } else {
           //have the edge be a straight line to the mouse pointer
           d3.select(this.parentNode).select('.anchor')
-            .attr('d', self.lineGenerator(
+            .attr('d', d => d.type === 'Node' ? self.lineGenerator(
               [
                 [0, 0], mouse
               ]
-            ))
+            ) : '')
         }
 
       } else {
@@ -308,13 +417,59 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       .on('end', dragended);
   }
 
+  closestPoint(pathNode, point) {
+    var pathLength = pathNode.getTotalLength(),
+        precision = 8,
+        best,
+        bestLength,
+        bestDistance = Infinity;
+
+    // linear scan for coarse approximation
+    for (var scan, scanLength = 0, scanDistance; scanLength <= pathLength; scanLength += precision) {
+      if ((scanDistance = distance2(scan = pathNode.getPointAtLength(scanLength))) < bestDistance) {
+        best = scan, bestLength = scanLength, bestDistance = scanDistance;
+      }
+    }
+
+    // binary search for precise estimate
+    precision /= 2;
+    while (precision > 0.5) {
+      var before,
+          after,
+          beforeLength,
+          afterLength,
+          beforeDistance,
+          afterDistance;
+      if ((beforeLength = bestLength - precision) >= 0 && (beforeDistance = distance2(before = pathNode.getPointAtLength(beforeLength))) < bestDistance) {
+        best = before, bestLength = beforeLength, bestDistance = beforeDistance;
+      } else if ((afterLength = bestLength + precision) <= pathLength && (afterDistance = distance2(after = pathNode.getPointAtLength(afterLength))) < bestDistance) {
+        best = after, bestLength = afterLength, bestDistance = afterDistance;
+      } else {
+        precision /= 2;
+      }
+    }
+
+    best = [best.x, best.y];
+    best.distance = Math.sqrt(bestDistance);
+    return best;
+
+    function distance2(p) {
+      var dx = p.x - point[0],
+          dy = p.y - point[1];
+      return dx * dx + dy * dy;
+    }
+  }
+
+
   draw() {
 
     console.log('calling draw')
+    const self = this;
     const bounds = this.getContentBounds(this.content);
     const graph = this.deriveGraph();
 
     // console.log(bounds, graph);
+    console.log(graph)
 
     this.simulation.force('center')
       .x(bounds.width / 2)
@@ -338,72 +493,100 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     let nodesEnter = nodes.enter().append('g')
       .classed('object', true);
 
-    nodesEnter.filter(n => n.type !== 'Edge').append('path')
+    nodesEnter.append('path')
       .attr('class', 'anchorMouseCatcher')
 
-    nodesEnter.filter(n => n.type !== 'Edge').append('path')
+    nodesEnter.append('path')
       .attr('class', 'anchor')
       .style('stroke-dasharray', '3px 2px');
 
     nodesEnter.append('path').attr('class', 'nodeObject').attr('id', d => d.classId); //diamond, circle, or line
-    nodesEnter.append('text').append('textPath'); //class Name
-    // nodesEnter.append('image') //contextMenu icon
+    let textGroup = nodesEnter.append('g').attr('class','textGroup');
+    textGroup.append('rect').classed('textBackground',true)
+    textGroup.append('text').append('textPath'); //class Name
+    let g = nodesEnter.append('g').attr('class','icons');
+
+    g.append('image').attr('class','nodeIcon')
+    g.append('image').attr('class','edgeIcon')
+    g.append('image').attr('class','deleteIcon')
 
     //for edges, append two endpoints to the edge line
-    nodesEnter.filter(n => n.type === 'Edge').append('line')
+    nodesEnter.append('circle')
       .attr('class', 'sourceHandle')
 
-    nodesEnter.filter(n => n.type === 'Edge').append('line')
+    nodesEnter.append('circle')
       .attr('class', 'targetHandle')
 
     nodes = nodes.merge(nodesEnter);
 
-    let edgeNodes = nodes.filter(n => n.type === 'Edge');
-    let nonEdgeNodes = nodes.filter(n => n.type !== 'Edge');
+    // let edgeNodes = nodes.filter(n => n.type === 'Edge');
+    // let nonEdgeNodes = nodes.filter(n => n.type !== 'Edge');
 
     nodes.select('.anchor')
       .attr('opacity', 0)
-      .attr('marker-end', 'url(#marker_circle)')
+      .attr('marker-end', d => d.type === 'Node' ? 'url(#marker_circle)' : '')
 
-      nodes.select('.anchorMouseCatcher')
+    nodes.select('.anchorMouseCatcher')
       .attr('opacity', 0)
 
-    // nodes.selectAll('.sourceHandle,.targetHandle')
-    //   .attr('r',NODE_SIZE/8)
-
-    d3.selectAll('.anchor')
-      .attr('d', this.lineGenerator(
-        [
-          [0, 0],
-          [NODE_SIZE + EDGE_STUB_LENGTH, 0]
-        ]
-      ))
-
-    d3.selectAll('.anchorMouseCatcher')
-      .attr('d', this.lineGenerator(
-        [
-          [0, 0],
-          [NODE_SIZE + EDGE_STUB_LENGTH, 0]
-        ]
-      ))
-
-    nodes  //.filter(d => d.type !== 'Edge')
-    .call(this.drag);
-
-    edgeNodes.select('.targetHandle').attr('marker-end', 'url(#marker_circle)')
-    edgeNodes.select('.sourceHandle').attr('marker-start', 'url(#marker_circle)')
 
 
+     nodes.select('.edgeIcon')
+      .attr('xlink:href', (d)=>d.type === 'Edge' ? '' : '../img/edge2.svg')
+      .attr('x', d => d.type === 'Generic' ? MENU_SIZE+5 : 0)
+
+      nodes.select('.nodeIcon')
+      .attr('xlink:href', (d)=>d.type === 'Node' ? '' :'../img/node2.svg' )
+      .attr('x', 0) //d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
+
+
+      nodes.select('.deleteIcon')
+      .attr('xlink:href', '../img/delete2.svg')
+      .attr('x', d => d.type === 'Generic' ? 2*MENU_SIZE+10 : MENU_SIZE+5)
+
+
+      nodes.selectAll('.nodeIcon,.deleteIcon')
+      .attr('height', MENU_SIZE)
+      .attr('width', MENU_SIZE)
+      .attr('y', d => d.type === 'Node' ? NODE_SIZE/2 - MENU_SIZE/2 : 0)
+
+      nodes.selectAll('.edgeIcon')
+      .attr('height', (d)=>d.type === 'Edge' ? 0 : MENU_SIZE)
+
+      nodes.select('.icons').attr('transform',function (d){
+        let iconSize = d3.select(this).node().getBoundingClientRect();
+        return d.type === 'Edge' ?  '' : 'translate('+ -(iconSize.width/2) + ','+  (d.type === 'Edge' ? NODE_SIZE/2 : -NODE_SIZE/2) +')'
+      })
+
+
+    d3.selectAll('.anchor,.anchorMouseCatcher')
+      .attr('d', d =>  d.type === 'Node' ? this.lineGenerator(
+          [
+            [0, 0],
+            [NODE_SIZE + EDGE_STUB_LENGTH, 0]
+          ]
+        ) : '')
+
+    nodes
+      .call(this.drag);
+
+    // nodes.select('.targetHandle').attr('marker-end', d => d.type === 'Edge' ? 'url(#marker_circle)' : '')
+    // nodes.select('.sourceHandle').attr('marker-start', d => d.type === 'Edge' ? 'url(#marker_circle)' : '')
+
+
+    nodes.selectAll('.sourceHandle,.targetHandle')
+    .attr('r',d=>d.type === 'Edge' ? NODE_SIZE/4  : 0)
     nodes.selectAll('.sourceHandle,.targetHandle').call(this.drag);
     nodes.attr('class', d => d.type.toLowerCase())
     nodes.classed('object', true)
 
+
     d3.selectAll('.anchor,.anchorMouseCatcher').call(this.drag)
 
     //Draw actual node/edges
-    nodes.select('.nodeObject').attr('d', d => {
-      let xr = d.type === 'Node' || d.type === 'Generic' ? Math.round(NODE_SIZE * 2 / 3) : Math.round(NODE_SIZE * 2 / 3 / 8);
-      let yr = d.type === 'Node' || d.type === 'Generic' ? NODE_SIZE : Math.round(NODE_SIZE / 8);
+    nodes.select('.nodeObject').attr('d', function (d) {
+      let xr = d.type === 'Node' || d.type === 'Generic' ? Math.round(NODE_SIZE) : Math.round(NODE_SIZE/ 8);
+      let yr = d.type === 'Node' || d.type === 'Generic' ? NODE_SIZE*1.3 : Math.round(NODE_SIZE / 8);
 
 
       let diamondPath = 'M0 ' + -yr + ' l ' + xr + ' ' + yr + ' l' + -xr + ' ' + (yr) + ' ' + 'l' + -xr + ' ' + -yr + 'Z';
@@ -413,23 +596,72 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         case "Node":
           return circlePath
         case "Edge":
+
           let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
           let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-          return this.edgePathGenerator(source, target)
+          let edge = self.edgePathGenerator(source, target, d3.select(this.parentNode),d)
+          return edge
         case "Generic":
           return diamondPath
       }
     })
 
-    edgeNodes.select('textPath').text(d => d.className) //d => d.className);
-    edgeNodes.select('textPath').attr('href', d => '#' + d.classId);
-    edgeNodes.select('textPath').attr('startOffset', '10');
+    // edgeNodes.select('textPath').text(d => d.className)
+    // edgeNodes.select('textPath').attr('href', d => '#' + d.classId);
+    // edgeNodes.select('textPath').attr('startOffset', '10');
 
-    nonEdgeNodes.select('text').text(d => d.className) //type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
-    nonEdgeNodes.select('text').style('text-anchor', 'middle')
+    nodes.select('text').text(d => d.className) //type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
+    nodes.select('text').style('text-anchor', 'middle')
+
+    nodes.select('.textBackground')
+    .attr('width',function (d){
+      return d.type === 'Edge' ? d3.select(this.parentNode).select('text').node().getBoundingClientRect().width : 0;
+    })
+    .attr('height',function (d){
+      return d.type === 'Edge' ? d3.select(this.parentNode).select('text').node().getBoundingClientRect().height : 0;
+    })
+    .attr('x',function (){
+      return -d3.select(this.parentNode).select('text').node().getBoundingClientRect().width/2;
+    })
+    .attr('y',function (){
+      return -d3.select(this.parentNode).select('text').node().getBoundingClientRect().height*0.75;
+    })
+
+    // nodes.select('text').attr('x',function(d) {
+    //   switch (d.type) {
+    //     case 'Edge':
+    //       let parent = d3.select(this.parentNode).node().getBoundingClientRect();
+    //       return - parent.width / 2 // -NODE_SIZE/2
+    //     default:
+    //       return 0
+    //   }
+    // })
 
 
-    self = this;
+    nodes.select('.textGroup').attr('transform',function(d) {
+      let y;
+      switch (d.type) {
+        case 'Edge':
+          let parent = d3.select(this.parentNode).node().getBoundingClientRect();
+          y =  - parent.height / 2 // -NODE_SIZE/2
+        default:
+          y =  NODE_SIZE + 20
+      }
+      return 'translate(0,' + y + ')';
+    })
+
+    // nodes.select('text').attr('y',function(d) {
+    //   switch (d.type) {
+    //     case 'Edge':
+    //       let parent = d3.select(this.parentNode).node().getBoundingClientRect();
+    //       return - parent.height / 2 // -NODE_SIZE/2
+    //     default:
+    //       return NODE_SIZE + 20
+    //   }
+    // })
+
+
+    // self = this;
     const hover = function (d) {
       if (self.dragging) {
         return;
@@ -440,10 +672,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       d3.select(this).selectAll('.anchor,.anchorMouseCatcher')
         .attr('opacity', 1);
 
-      // window.mainView.showTooltip({
-      //   content: 'testing',
-      //   targetBounds: this.getBoundingClientRect()
-      // });
       d3.select(this).classed('hovered', true);
     };
     const unhover = function () {
@@ -464,13 +692,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nodes.on('mouseenter', hover);
 
     nodes.select('.nodeObject').on('mouseover', (d) => {
-      // console.log('entering ', d.className)
       this.targetDrag = d;
       return this.sourceMousedOver = this.sourceDrag && d.classId === this.sourceDrag.classId;
     })
 
     nodes.select('.nodeObject').on('mouseout', (d) => {
-      // console.log('leaving ', d.className)
       this.targetDrag = d.className;
       this.sourceMousedOver = false
     })
@@ -514,21 +740,83 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
 
 
-  edgePathGenerator(source, target) {
-
-
+  edgePathGenerator(source, target, parentNode, edgeNode) {
     //floating edges
     if (source === target) {
-      // return 'M' + (-FLOATING_EDGE_LENGTH) + ' 0 L ' + FLOATING_EDGE_LENGTH + ' 0';
       return this.lineGenerator([
         [-FLOATING_EDGE_LENGTH, 0],
-        //[0, -FLOATING_EDGE_LENGTH / 4],
         [FLOATING_EDGE_LENGTH, 0]
       ])
     }
+
+    //get parent offset;
+    let translate = this.parse(parentNode.attr('transform')).translate;
+
+
+
+    if (source.type === 'Edge')
+    {
+      var m = [source.x,source.y],
+      p = this.closestPoint(d3.select('#'+target.classId).node(), m);
+
+      p = [target.x,target.y];
+      return this.lineGenerator([
+        [-FLOATING_EDGE_LENGTH, edgeNode.y-translate[1]],
+        [FLOATING_EDGE_LENGTH, edgeNode.y-translate[1]],
+        [p[0]-translate[0],p[1]-translate[1]]
+      ])
+    }
+
+    if (target.type === 'Edge'){
+      var m = [target.x,target.y],
+      p = this.closestPoint(d3.select('#'+source.classId).node(), m);
+
+      p = [source.x,source.y]
+      return this.lineGenerator([
+        [p[0]-translate[0],p[1]-translate[1]],
+        [-FLOATING_EDGE_LENGTH, edgeNode.y-translate[1]],
+        [FLOATING_EDGE_LENGTH, edgeNode.y-translate[1]],
+      ])
+    }
+
+    var sourceM = [source.x,source.y]
+    var targetM = [target.x,target.y]
+    let sourceP = this.closestPoint(d3.select('#'+target.classId).node(), sourceM);
+    let targetP = this.closestPoint(d3.select('#'+source.classId).node(), targetM);
+
+    sourceP = [source.x,source.y];
+    targetP = [target.x,target.y];
+
+    return this.lineGenerator([
+      [sourceP[0]-translate[0],sourceP[1]-translate[1]],
+      // [-FLOATING_EDGE_LENGTH, edgeNode.y-translate[1]],
+      // [FLOATING_EDGE_LENGTH, edgeNode.y-translate[1]],
+      [targetP[0]-translate[0],targetP[1]-translate[1]]
+    ])
+
+
+
+
     //edge has at least one "anchor"
-    // return 'M' + source.x + ' ' + source.y + ' L ' + target.x + ' ' + target.y;
+    // return 'M' + (source.x - translate[0]) + ' ' + (source.y - translate[1]) + ' L ' + (target.x - translate[0]) + ' ' + (target.y - translate[1]);
   }
+
+  //accounts for group transform and returns absolute position of nodes in translated group.
+  normalize(node,parentNode){
+    let translate = this.parse(parentNode.attr('transform')).translate;
+    return [node.x -translate[0], node.y-translate[1]];
+  }
+
+  //function to parse out transforms into x and y offsets
+  parse(a) {
+    var b = {};
+    for (var i in a = a.match(/(\w+\((\-?\d+\.?\d*e?\-?\d*,?)+\))+/g)) {
+      var c = a[i].match(/[\w\.\-]+/g);
+      b[c.shift()] = c;
+    }
+    return b;
+  }
+
   deriveGraph() {
     const edgeClasses = [];
     const nodeLookup = {}; // maps a class selector to an index in graph.nodes

@@ -10,7 +10,6 @@ class MainView extends View {
     // access the classes it generates directly
     this.subViews = {};
 
-    this.samples = {};
     this.sampling = false;
 
     mure.on('rootUpdate', () => { this.render(); });
@@ -54,9 +53,10 @@ class MainView extends View {
   }
   updateSampleTooltip () {
     if (this.sampleSpinnerBounds) {
+      const currentTables = mure.getCurrentClassTables();
       let content = 'Loaded:' +
-        Object.entries(this.samples).map(([classId, sampleList]) => {
-          return `<br/>${mure.classes[classId].className}: ${sampleList.length} samples`;
+        Object.entries(currentTables).map(([classId, { finished, data, attributes }]) => {
+          return `<br/>${mure.classes[classId].className}: ${Object.keys(data).length} samples`;
         });
       this.showTooltip({
         content,
@@ -84,21 +84,18 @@ class MainView extends View {
   updateSamples () {
     window.clearTimeout(this.sampleTimer);
     this.sampling = true;
-    this.samples = {};
-    const streams = {};
+    const iterators = {};
     for (const [ classId, classObj ] of Object.entries(mure.classes)) {
-      streams[classId] = classObj.getStream().sample({ limit: Infinity });
-      this.samples[classId] = [];
+      iterators[classId] = classObj.table.iterate({ limit: Infinity });
     }
 
     let n = 0;
     const addSamples = async () => {
       let allDone = true;
-      for (const [ classId, stream ] of Object.entries(streams)) {
-        const sample = await stream.next();
+      for (const [ iterator ] of Object.values(iterators)) {
+        const sample = await iterator.next();
         if (!sample.done) {
           allDone = false;
-          this.samples[classId].push((await sample.value).rawItem);
         }
       }
       if (!allDone) {
@@ -116,17 +113,8 @@ class MainView extends View {
     };
     this.sampleTimer = window.setTimeout(addSamples, 5);
   }
-  async getAttributes (classId) {
-    return new Promise((resolve, reject) => {
-      const getAttrs = () => {
-        if (!this.samples[classId] || this.samples[classId].length === 0) {
-          window.setTimeout(getAttrs, 100);
-        } else {
-          resolve(Object.keys(this.samples[classId][0]));
-        }
-      };
-      getAttrs();
-    });
+  getAttributes (classId) {
+    return mure.classes[classId].attributes;
   }
   updateLayout () {
     const getDefaultContainer = () => {

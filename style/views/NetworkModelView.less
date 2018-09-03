@@ -3,8 +3,7 @@
 .NetworkModelView {
   text{
     pointer-events: none;
-    font-size: 20px;
-    text-decoration: underline overline;
+    font-size: 30px;
   }
 
   .anchor,{
@@ -13,24 +12,29 @@
     fill:none;
   }
 
+  .textBackground{
+    fill:white
+  }
+
   .anchorMouseCatcher{
-    stroke:lightcoral;
+    stroke:white;
     stroke-width: 20px;
   }
 
   marker#marker_arrow,  marker#marker_circle,  marker#marker_stub, marker#marker_square{
     fill:#717070;
+    // opacity: 0.5;
   }
 
 
   .node,.edge,.generic {
     
-    image {
-      filter: @textColorImageFilter;
-    }
+    // image {
+    //   filter: @textColorImageFilter;
+    // }
     circle, .nodeObject {
       // opacity: 0.5;
-      fill: @Grey; //@textColor;
+      fill: @LightGrey; //@textColor;
       stroke: none;
     }
     &.selected .nodeObject {
@@ -43,6 +47,10 @@
   }
 
   .edge{
+
+    text{
+      text-decoration: overline;
+    }
     circle, .nodeObject {
       opacity: 1;
       fill: @textColor;
@@ -51,11 +59,19 @@
 
   }
   .edge {
-    .nodeObject, .sourceHandle, .targetHandle{
+    .nodeObject{
       opacity: 0.5;
       fill: none;
-      stroke: @textColor;
-      stroke-width: 5px;
+      stroke: @DarkTeal;
+      stroke-width: 9px;
+    }
+
+    .sourceHandle, .targetHandle{
+      opacity: .8;
+      fill:@textColor;
+      stroke: white;
+      stroke-width: 3px;
+
     }
     &.selected .nodeObject {
       stroke: @selectionColor;
@@ -99,6 +115,11 @@
 .vertical-menu a:hover, .menu-submit a:hover {
   background-color: #ccc; /* Dark grey background on mouse-over */
 }
+
+image:hover{
+  filter: @selectionColorImageFilter
+} 
+
 
 .vertical-menu a.active {
   background-color:@DarkTeal;
