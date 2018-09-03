@@ -610,7 +610,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     });
 
     nodes.select('.nodeObject').on('mouseout', (d) => {
-      this.targetDrag = d.className;
+      this.targetDrag = undefined;
       this.sourceMousedOver = false;
     });
 
