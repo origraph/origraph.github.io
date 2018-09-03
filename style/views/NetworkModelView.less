@@ -1,33 +1,114 @@
 @import '../colors.less';
 
 .NetworkModelView {
-  .node {
-    circle {
-      opacity: 0.5;
-      fill: @textColor;
+  text{
+    pointer-events: none;
+    font-size: 20px;
+    text-decoration: underline overline;
+  }
+
+  .anchor,{
+    stroke:#717070;
+    stroke-width: 7px;
+    fill:none;
+  }
+
+  .anchorMouseCatcher{
+    stroke:lightcoral;
+    stroke-width: 20px;
+  }
+
+  marker#marker_arrow,  marker#marker_circle,  marker#marker_stub, marker#marker_square{
+    fill:#717070;
+  }
+
+
+  .node,.edge,.generic {
+    
+    image {
+      filter: @textColorImageFilter;
+    }
+    circle, .nodeObject {
+      // opacity: 0.5;
+      fill: @Grey; //@textColor;
       stroke: none;
     }
-    &.selected circle {
+    &.selected .nodeObject {
       fill: @selectionColor;
     }
-    &.hovered circle {
-      opacity: 1.0;
+    &.hovered .nodeObject, &.hovered .anchor, .hovered .targetHandle, .hovered .sourceHandle {
+      // opacity: .7;
       cursor: pointer;
     }
   }
+
+  .edge{
+    circle, .nodeObject {
+      opacity: 1;
+      fill: @textColor;
+      stroke: none;
+    }
+
+  }
   .edge {
-    path {
+    .nodeObject, .sourceHandle, .targetHandle{
       opacity: 0.5;
       fill: none;
       stroke: @textColor;
       stroke-width: 5px;
     }
-    &.selected path {
+    &.selected .nodeObject {
       stroke: @selectionColor;
     }
-    &.hovered path {
-      opacity: 1.0;
+    &.hovered .nodeObject {
+      // opacity: 1.0;
       cursor: pointer;
     }
   }
+
+  
 }
+
+.vertical-menu {
+  width: 200px; /* Set a width if you like */
+  display:inline-block;
+  // font-family: 'Raleway', sans-serif;
+  vertical-align: top;
+}
+
+.menu-submit {
+  width: 400px; /* Set a width if you like */
+  display:block;
+  // font-family: 'Raleway', sans-serif;
+  // vertical-align: top;
+}
+
+.vertical-menu a, .menu-submit a {
+  background-color: #eee; /* Grey background color */
+  color: black; /* Black text color */
+  display: block; /* Make the links appear below each other */
+  padding: 12px; /* Add some padding */
+  text-decoration: none; /* Remove underline from links */
+  margin: 9px 5px 5px 5px;;
+}
+
+.menu-submit a{
+  text-align: center;
+}
+
+.vertical-menu a:hover, .menu-submit a:hover {
+  background-color: #ccc; /* Dark grey background on mouse-over */
+}
+
+.vertical-menu a.active {
+  background-color:@DarkTeal;
+  color: white;
+}
+
+.vertical-menu a.selected {
+  background-color:@DarkestGrey;
+  color: white;
+}
+
+
+
