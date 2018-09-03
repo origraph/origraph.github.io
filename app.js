@@ -47,7 +47,7 @@ window.autoLoad = async () => {
   const files = ['people.csv', 'movies.csv', 'movieEdges.csv'];
   const classes = await Promise.all(files.map(async filename => {
     const text = await d3.text(`docs/exampleDatasets/${filename}`);
-    return mure.addStringAsStaticDataSource({
+    return mure.addStringAsStaticTable({
       key: filename,
       extension: mure.mime.extension(mure.mime.lookup(filename)),
       text
@@ -60,35 +60,18 @@ window.autoLoad = async () => {
   await mure.classes[moviesId].interpretAsNodes();
   await mure.classes[movieEdgesId].interpretAsEdges();
 
-  mure.classes[peopleId].addHashFunction('id', function * (wrappedItem) {
-    yield wrappedItem.rawItem.id;
-  });
-  mure.classes[moviesId].addHashFunction('id', function * (wrappedItem) {
-    yield wrappedItem.rawItem.id;
-  });
-  mure.classes[movieEdgesId].addHashFunction('sourceId', function * (wrappedItem) {
-    yield wrappedItem.rawItem.sourceId;
-  });
-  mure.classes[movieEdgesId].addHashFunction('targetId', function * (wrappedItem) {
-    yield wrappedItem.rawItem.targetId;
-  });
-
   await mure.classes[peopleId].connectToEdgeClass({
     edgeClass: mure.classes[movieEdgesId],
     direction: 'source',
-    nodeHashName: 'id',
-    edgeHashName: 'sourceId'
+    nodeAttribute: 'id',
+    edgeAttribute: 'sourceId'
   });
   await mure.classes[movieEdgesId].connectToNodeClass({
     nodeClass: mure.classes[moviesId],
     direction: 'target',
-    nodeHashName: 'id',
-    edgeHashName: 'targetId'
+    nodeAttribute: 'id',
+    edgeAttribute: 'targetId'
   });
-
- //TODO add connect syntax to connect nodes to nodes.
-
-
 };
 
 window.onload = () => {

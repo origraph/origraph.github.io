@@ -55,7 +55,7 @@ class UploadOption extends ModalMenuOption {
     this.render();
 
     await Promise.all(this.lastFiles.map(async fileObj => {
-      await mure.addFileAsStaticDataSource({ fileObj });
+      await mure.addFileAsStaticTable({ fileObj });
       this.loadedFiles[fileObj.name] = true;
       window.mainView.render();
     }));

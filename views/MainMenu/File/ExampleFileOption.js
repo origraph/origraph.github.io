@@ -33,9 +33,10 @@ class ExampleFileOption extends ModalMenuOption {
       } catch (err) {
         window.alert(err.message);
       }
-      await mure.addStringAsStaticDataSource({
+      await mure.addStringAsStaticTable({
         key: this.value,
         extension: mure.mime.extension(mure.mime.lookup(this.value)),
+        name: this.value,
         text
       });
       window.mainView.render();
