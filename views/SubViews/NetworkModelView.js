@@ -391,8 +391,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     const bounds = this.getContentBounds(this.content);
     const graph = this.deriveGraph();
 
-    // console.log(bounds, graph);
-    console.log(graph);
+    console.log(bounds, graph);
+    // console.log(graph);
 
     this.simulation.force('center')
       .x(bounds.width / 2)
