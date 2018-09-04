@@ -31,7 +31,7 @@ class ExampleFileOption extends ModalMenuOption {
       try {
         text = await d3.text(`docs/exampleDatasets/${this.value}`);
       } catch (err) {
-        window.alert(err.message);
+        window.mainView.alert(err.message);
       }
       await mure.addStringAsStaticTable({
         key: this.value,

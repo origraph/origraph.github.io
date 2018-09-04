@@ -618,28 +618,19 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nodes.on('click', async function (d) {
       d3.event.stopPropagation();
 
-      window.mainView.showTooltip({
-        content: '<div class="vertical-menu">' +
-          '<a href="#" action=convert2Node>Interpret as Node</a>' +
-          '<a href="#" action =convert2Edge>Interpret as Edge</a>' +
-          '<a href="#" action =delete>Delete</a>' +
-          '</div>',
-        targetBounds: this.getBoundingClientRect()
-      });
-
-      d3.selectAll('.vertical-menu a').on('click', function () {
-        switch (d3.select(this).attr('action')) {
-          case 'convert2Node':
+      window.mainView.showContextMenu({
+        menuEntries: {
+          'Interpret as Node': () => {
             mure.classes[d.classId].interpretAsNodes();
-            break;
-          case 'convert2Edge':
+          },
+          'Interpret as Edge': () => {
             mure.classes[d.classId].interpretAsEdges();
-            break;
-          case 'delete':
+          },
+          'Delete': () => {
             mure.classes[d.classId].delete();
-            break;
-        }
-        window.mainView.hideTooltip();
+          }
+        },
+        targetBounds: this.getBoundingClientRect()
       });
     });
 

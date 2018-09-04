@@ -59,44 +59,35 @@
     top: -1px;
     font-family: 'Josefin Sans', sans-serif;
     font-size: @titleBarFontSize;
-    letter-spacing: 2px;
-    text-transform: uppercase;
     background: @darkBackgroundColor;
     border: 1px solid @shadowColor;
+    padding: @titleBarPadding;
+    display: flex;
+    align-items: center;
 
-    // Icon before the title
-    .lm_tab_icon {
-      position: absolute;
-      left: 0px;
-      top: 0px;
+    .lm_title {
+      padding: @titleBarFontPadding;
+    }
+
+    // Icons in the title bar
+    .lm_tab_icon, .lm_close_tab {
       width: @titleBarSize;
       height: @titleBarSize;
       filter: @textColorImageFilter;
       background-size: @titleBarButtonSize;
-      background-position: right center;
+      background-position: center center;
       background-repeat: no-repeat;
       opacity: 0.5;
-    }
-
-    .lm_title {
-      vertical-align: top;
-      padding: @titleBarFontPadding;
     }
 
     // Close Tab Icon
     .lm_close_tab {
-      width: @titleBarSize;
-      height: @titleBarSize;
+      position: relative; // needed to override goldenLayout's default settings
       background-image: data-uri('../img/ex.svg');
-      background-size: @titleBarButtonSize;
-      background-position: left center;
-      background-repeat: no-repeat;
-      filter: @textColorImageFilter;
-      opacity: 0.5;
-
+    }
+    .lm_close_tab, .hoverable {
       &:hover {
         opacity: 1;
-        filter: @textColorImageFilter;
       }
     }
 

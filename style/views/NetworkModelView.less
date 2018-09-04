@@ -28,7 +28,7 @@
 
 
   .node,.edge,.generic {
-    
+
     // image {
     //   filter: @textColorImageFilter;
     // }
@@ -82,54 +82,7 @@
     }
   }
 
-  
+  image:hover{
+    filter: @selectionColorImageFilter
+  }
 }
-
-.vertical-menu {
-  width: 200px; /* Set a width if you like */
-  display:inline-block;
-  // font-family: 'Raleway', sans-serif;
-  vertical-align: top;
-}
-
-.menu-submit {
-  width: 400px; /* Set a width if you like */
-  display:block;
-  // font-family: 'Raleway', sans-serif;
-  // vertical-align: top;
-}
-
-.vertical-menu a, .menu-submit a {
-  background-color: #eee; /* Grey background color */
-  color: black; /* Black text color */
-  display: block; /* Make the links appear below each other */
-  padding: 12px; /* Add some padding */
-  text-decoration: none; /* Remove underline from links */
-  margin: 9px 5px 5px 5px;;
-}
-
-.menu-submit a{
-  text-align: center;
-}
-
-.vertical-menu a:hover, .menu-submit a:hover {
-  background-color: #ccc; /* Dark grey background on mouse-over */
-}
-
-image:hover{
-  filter: @selectionColorImageFilter
-} 
-
-
-.vertical-menu a.active {
-  background-color:@DarkTeal;
-  color: white;
-}
-
-.vertical-menu a.selected {
-  background-color:@DarkestGrey;
-  color: white;
-}
-
-
-

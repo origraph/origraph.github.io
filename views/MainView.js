@@ -1,4 +1,4 @@
-/* globals GoldenLayout, mure */
+/* globals GoldenLayout, mure, d3 */
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './MainMenu/MainMenu.js';
 
@@ -249,7 +249,7 @@ class MainView extends View {
       this.goldenLayout.init();
     } catch (error) {
       if (error.type === 'popoutBlocked') {
-        window.alert(`\
+        this.alert(`\
 The last time you used this app, a view was in a popup that your \
 browser just blocked (we've reverted to the default layout instead).
 
@@ -309,12 +309,20 @@ sites in your browser settings.`);
    * targetBounds, x = 0 would center the tooltip horizontally, and x = 1 would
    * left-align the tooltip to the right edge of targetBounds
    */
-  showTooltip ({ content = '', targetBounds = null, anchor = null } = {}) {
+  showTooltip ({
+    content = '',
+    targetBounds = null,
+    anchor = null
+  } = {}) {
     let tooltip = this.d3el.select('#tooltip')
       .style('left', null)
       .style('top', null)
-      .style('display', content ? null : 'none')
-      .html(content);
+      .style('display', content ? null : 'none');
+    if (typeof content === 'function') {
+      content(tooltip);
+    } else {
+      tooltip.html(content);
+    }
     if (content) {
       let tooltipBounds = tooltip.node().getBoundingClientRect();
 
@@ -384,6 +392,40 @@ sites in your browser settings.`);
   }
   hideTooltip () {
     this.showTooltip();
+  }
+  showContextMenu ({
+    menuEntries = {},
+    targetBounds = null,
+    anchor = null
+  } = {}) {
+    this.showTooltip({
+      targetBounds,
+      anchor,
+      content: (tooltip) => {
+        tooltip.html('');
+        const verticalMenu = tooltip.append('div')
+          .classed('vertical-menu', true);
+        let menuItems = verticalMenu.selectAll('a')
+          .data(d3.entries(menuEntries));
+        menuItems.exit().remove();
+        const menuItemsEnter = menuItems.enter().append('a');
+        menuItems = menuItems.merge(menuItemsEnter);
+
+        menuItems.text(d => d.key);
+        menuItems.on('click', d => {
+          d.value();
+          this.hideOverlay();
+        });
+      }
+    });
+  }
+  async alert (message) {
+    return new Promise((resolve, reject) => {
+      this.showOverlay({
+        message,
+        ok: () => { this.hideOverlay(); resolve(); }
+      });
+    });
   }
 }
 

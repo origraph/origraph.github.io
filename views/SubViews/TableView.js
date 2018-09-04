@@ -33,6 +33,12 @@ class TableView extends GoldenLayoutView {
       sortIndicator: true,
       readOnly: true
     });
+    if (!this.isEmpty()) {
+      this.tabElement.append('div')
+        .classed('lm_tab_icon', true)
+        .classed('hoverable', true)
+        .style('background-image', 'url(img/hamburger.svg)');
+    }
   }
   drawTitle () {
     const classObj = this.classId === null ? null : mure.classes[this.classId];
