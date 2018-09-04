@@ -32,7 +32,20 @@ class TableView extends GoldenLayoutView {
       columnSorting: true,
       sortIndicator: true,
       readOnly: true,
-      preventOverflow: 'horizontal'
+      preventOverflow: 'horizontal',
+      disableVisualSelection: true
+    });
+    this.renderer.addHook('afterRender', () => {
+      // Patch event listeners on after the fact
+      const self = this;
+      this.content.selectAll('.ht_clone_top .colHeader .sortIndicator')
+        .on('click', function () {
+          const columnSorting = self.renderer.getPlugin('ColumnSorting');
+          const columnIndex = parseInt(this.dataset.columnIndex);
+          columnSorting.sort(columnIndex, columnSorting.getNextOrderState(columnIndex));
+        });
+      this.content.selectAll('.ht_clone_top .colHeader .menu')
+        .on('click', () => { console.log('menu'); });
     });
     const self = this;
     if (!this.isEmpty()) {
@@ -92,9 +105,9 @@ class TableView extends GoldenLayoutView {
     } else {
       const classObj = mure.classes[this.classId];
       const data = Object.values(classObj.table.currentData.data);
-      const colHeaders = classObj.table.attributes;
-      colHeaders.unshift('ID');
-      const columns = colHeaders.map((attr, columnIndex) => {
+      const attributes = classObj.table.attributes;
+      attributes.unshift('ID');
+      const columns = attributes.map((attr, columnIndex) => {
         if (columnIndex === 0) {
           return {
             data: (dataItem, newIndex) => {
@@ -122,6 +135,11 @@ class TableView extends GoldenLayoutView {
           };
         }
       });
+      const colHeaders = (columnIndex) => {
+        return `<div data-column-index="${columnIndex}" class="sortIndicator icon"></div>
+          <div class="text">${attributes[columnIndex]}</div>
+          <div data-column-index="${columnIndex}" class="menu icon"></div>`;
+      };
       const spec = {
         data,
         colHeaders,
