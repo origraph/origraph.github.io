@@ -12,7 +12,9 @@ class MainView extends View {
 
     this.sampling = false;
 
-    mure.on('rootUpdate', () => { this.render(); });
+    mure.on('tableUpdate', () => {
+      this.render();
+    });
     mure.on('classUpdate', () => {
       this.updateSamples();
       this.updateLayout();
