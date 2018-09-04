@@ -25,7 +25,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   setup () {
     super.setup();
 
-    this.content.on('click', () => window.mainView.hideTooltip());
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink()) // .distance(50)) //.id(d => d.id))
       .force('charge', d3.forceManyBody().strength(-NODE_SIZE))
@@ -618,28 +617,9 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     nodes.on('click', async function (d) {
       d3.event.stopPropagation();
 
-      window.mainView.showTooltip({
-        content: '<div class="vertical-menu">' +
-          '<a href="#" action=convert2Node>Interpret as Node</a>' +
-          '<a href="#" action =convert2Edge>Interpret as Edge</a>' +
-          '<a href="#" action =delete>Delete</a>' +
-          '</div>',
+      window.mainView.showClassContextMenu({
+        classId: d.classId,
         targetBounds: this.getBoundingClientRect()
-      });
-
-      d3.selectAll('.vertical-menu a').on('click', function () {
-        switch (d3.select(this).attr('action')) {
-          case 'convert2Node':
-            mure.classes[d.classId].interpretAsNodes();
-            break;
-          case 'convert2Edge':
-            mure.classes[d.classId].interpretAsEdges();
-            break;
-          case 'delete':
-            mure.classes[d.classId].delete();
-            break;
-        }
-        window.mainView.hideTooltip();
       });
     });
 

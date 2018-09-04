@@ -1,0 +1,41 @@
+@import './colors.less';
+@import './measurements.less';
+
+#tooltip {
+  .vertical-menu {
+    width: 200px;
+    display:inline-block;
+    vertical-align: top;
+
+    a.active {
+      background-color: @selectionColor;
+      color: @invertedTextColor;
+    }
+    a.selected {
+      background-color: @invertedBackgroundColor;
+      color: @invertedTextColor;
+    }
+  }
+
+  .menu-submit {
+    width: 400px;
+    display: block;
+    a {
+      text-align: center;
+    }
+  }
+
+  .vertical-menu a, .menu-submit a {
+    background-color: @lightBackgroundColor; /* Grey background color */
+    color: @textColor; /* Black text color */
+    display: block; /* Make the links appear below each other */
+    padding: 12px; /* Add some padding */
+    text-decoration: none; /* Remove underline from links */
+    margin: 9px 5px 5px 5px;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @darkestBackgroundColor; /* Dark grey background on mouse-over */
+    }
+  }
+}

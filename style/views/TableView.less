@@ -1,14 +1,80 @@
 @import '../colors.less';
+@import '../measurements.less';
 
 .TableView {
-  .special {
-    background-color: @separatorColor;
-    color: @lightTextColor;
+  .colHeader {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+
+    .text {
+      padding: @tableHeaderFontPadding;
+    }
+    .icon {
+      cursor: pointer;
+      width: @tableHeaderButtonSize;
+      height: @tableHeaderButtonSize;
+      filter: @textColorImageFilter;
+      padding: @tableHeaderButtonPadding;
+      background-size: @tableHeaderButtonSize;
+      background-position: center center;
+      background-repeat: no-repeat;
+      opacity: 0.5;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    .menu {
+      background-image: data-uri('../img/hamburger.svg');
+    }
+
+    .sortIndicator {
+      background-image: data-uri('../img/sort.svg');
+    }
   }
-  .selected {
-    background-color: @selectionColor;
+  .colHeader.ascending .sortIndicator {
+    background-image: data-uri('../img/sortAscending.svg');
   }
-  .special.selected {
-    background-color: @LightYellow;
+  .colHeader.descending .sortIndicator {
+    background-image: data-uri('../img/sortDescending.svg');
+  }
+
+  /* Stuff that is pertinent to / overrides handsontable: */
+  .scrollArea {
+    overflow: hidden;
+  }
+  .colHeader.columnSorting::after {
+    display: none;
+  }
+  .colHeader.columnSorting:hover {
+    cursor: default;
+    text-decoration: none;
+  }
+  .handsontable .htDimmed {
+    background-color: @lightBackgroundColor;
+    color: @textColor;
+  }
+  .handsontable .ht__active_highlight,
+  .handsontable .idColumn, .handsontable th {
+    background-color: @backgroundColor;
+    color: @textColor;
+  }
+  .ht_clone_top tr:first-child > th,
+  .ht_master tr:first-child > td {
+    border-top: 1px solid @darkBackgroundColor;
+  }
+  .ht_clone_top tr > th:first-child,
+  .ht_master tr > td:first-child {
+    border-left: 1px solid @darkBackgroundColor;
+  }
+  .ht_master tr > td {
+    border-bottom: 1px solid @darkBackgroundColor;
+  }
+  .ht_clone_top tr > th,
+  .ht_clone_top tr > th:last-child,
+  .ht_master tr > td {
+    border-right: 1px solid @darkBackgroundColor;
   }
 }

@@ -1,4 +1,4 @@
-/* globals GoldenLayout, mure */
+/* globals GoldenLayout, mure, d3 */
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './MainMenu/MainMenu.js';
 
@@ -12,7 +12,9 @@ class MainView extends View {
 
     this.sampling = false;
 
-    mure.on('rootUpdate', () => { this.render(); });
+    mure.on('tableUpdate', () => {
+      this.render();
+    });
     mure.on('classUpdate', () => {
       this.updateSamples();
       this.updateLayout();
@@ -206,7 +208,8 @@ class MainView extends View {
       tableParent.addChild({
         type: 'component',
         componentName: 'TableView',
-        componentState: { classId: null }
+        componentState: { classId: null },
+        isClosable: false
       });
     } else if (classIds.length > 0 && nullComponent) {
       // Wait until the end to remove the null table, so that other tables
@@ -247,7 +250,7 @@ class MainView extends View {
       this.goldenLayout.init();
     } catch (error) {
       if (error.type === 'popoutBlocked') {
-        window.alert(`\
+        this.alert(`\
 The last time you used this app, a view was in a popup that your \
 browser just blocked (we've reverted to the default layout instead).
 
@@ -307,13 +310,29 @@ sites in your browser settings.`);
    * targetBounds, x = 0 would center the tooltip horizontally, and x = 1 would
    * left-align the tooltip to the right edge of targetBounds
    */
-  showTooltip ({ content = '', targetBounds = null, anchor = null } = {}) {
+  showTooltip ({
+    content = '',
+    targetBounds = null,
+    anchor = null
+  } = {}) {
+    const showEvent = d3.event;
+    d3.select('body').on('click.tooltip', () => {
+      if (showEvent !== d3.event) {
+        this.hideTooltip();
+      }
+    });
+
     let tooltip = this.d3el.select('#tooltip')
       .style('left', null)
       .style('top', null)
-      .style('display', content ? null : 'none')
-      .html(content);
+      .style('display', content ? null : 'none');
+
     if (content) {
+      if (typeof content === 'function') {
+        content(tooltip);
+      } else {
+        tooltip.html(content);
+      }
       let tooltipBounds = tooltip.node().getBoundingClientRect();
 
       let left;
@@ -382,6 +401,80 @@ sites in your browser settings.`);
   }
   hideTooltip () {
     this.showTooltip();
+  }
+  showContextMenu ({
+    menuEntries = {},
+    targetBounds = null,
+    anchor = null
+  } = {}) {
+    this.showTooltip({
+      targetBounds,
+      anchor,
+      content: (tooltip) => {
+        tooltip.html('');
+        const verticalMenu = tooltip.append('div')
+          .classed('vertical-menu', true);
+        let menuItems = verticalMenu.selectAll('a')
+          .data(d3.entries(menuEntries));
+        menuItems.exit().remove();
+        const menuItemsEnter = menuItems.enter().append('a');
+        menuItems = menuItems.merge(menuItemsEnter);
+
+        menuItems.text(d => d.key);
+        menuItems.on('click', async d => {
+          const result = d.value();
+          if (result instanceof Promise) {
+            await result;
+          }
+          this.hideTooltip();
+        });
+      }
+    });
+  }
+  showClassContextMenu ({ classId, targetBounds = null } = {}) {
+    this.showContextMenu({
+      targetBounds,
+      menuEntries: {
+        'Rename': async () => {
+          const newName = await window.mainView
+            .prompt('Enter a new name for the class', mure.classes[classId].className);
+          if (newName) {
+            mure.classes[classId].setClassName(newName);
+          }
+        },
+        'Interpret as Node': () => {
+          mure.classes[classId].interpretAsNodes();
+        },
+        'Interpret as Edge': () => {
+          mure.classes[classId].interpretAsEdges();
+        },
+        'Delete': () => {
+          mure.classes[classId].delete();
+        }
+      }
+    });
+  }
+  async alert (message) {
+    return new Promise((resolve, reject) => {
+      this.showOverlay({
+        message,
+        ok: () => { this.hideOverlay(); resolve(); }
+      });
+    });
+  }
+  async prompt (message, defaultValue = '') {
+    return new Promise((resolve, reject) => {
+      this.showOverlay({
+        message,
+        ok: () => {
+          const value = d3.select('#overlay .prompt').property('value');
+          this.hideOverlay();
+          resolve(value);
+        },
+        cancel: () => { this.hideOverlay(); resolve(null); },
+        prompt: defaultValue
+      });
+    });
   }
 }
 
