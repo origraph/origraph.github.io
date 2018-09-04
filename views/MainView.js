@@ -35,19 +35,19 @@ class MainView extends View {
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
   }
   draw () {
-    const self = this;
+    // const self = this;
     this.mainMenu.render();
     this.d3el.select(':scope > .emptyState')
       .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
-    this.d3el.select('#samplingSpinner')
-      .style('display', this.sampling ? null : 'none')
-      .on('mouseover', function () {
-        self.sampleSpinnerBounds = this.getBoundingClientRect();
-        self.updateSampleTooltip();
-      }).on('mouseout', () => {
-        this.sampleSpinnerBounds = null;
-        this.updateSampleTooltip();
-      });
+    // this.d3el.select('#samplingSpinner')
+    //   .style('display', this.sampling ? null : 'none')
+    //   .on('mouseover', function () {
+    //     self.sampleSpinnerBounds = this.getBoundingClientRect();
+    //     self.updateSampleTooltip();
+    //   }).on('mouseout', () => {
+    //     this.sampleSpinnerBounds = null;
+    //     this.updateSampleTooltip();
+    //   });
     Object.values(this.subViews).forEach(subView => {
       subView.render();
     });
@@ -106,7 +106,7 @@ class MainView extends View {
         if (n >= 25) {
           // trigger a tooltip update for every 25 data points
           n = 0;
-          this.updateSampleTooltip();
+          // this.updateSampleTooltip();
         }
       } else {
         this.sampling = false;
@@ -319,6 +319,8 @@ sites in your browser settings.`);
     d3.select('body').on('click.tooltip', () => {
       if (showEvent !== d3.event) {
         this.hideTooltip();
+      } else {
+        d3.event.stopPropagation();
       }
     });
 
