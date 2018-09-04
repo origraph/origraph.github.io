@@ -208,7 +208,8 @@ class MainView extends View {
       tableParent.addChild({
         type: 'component',
         componentName: 'TableView',
-        componentState: { classId: null }
+        componentState: { classId: null },
+        isClosable: false
       });
     } else if (classIds.length > 0 && nullComponent) {
       // Wait until the end to remove the null table, so that other tables
@@ -314,16 +315,24 @@ sites in your browser settings.`);
     targetBounds = null,
     anchor = null
   } = {}) {
+    const showEvent = d3.event;
+    d3.select('body').on('click.tooltip', () => {
+      if (showEvent !== d3.event) {
+        this.hideTooltip();
+      }
+    });
+
     let tooltip = this.d3el.select('#tooltip')
       .style('left', null)
       .style('top', null)
       .style('display', content ? null : 'none');
-    if (typeof content === 'function') {
-      content(tooltip);
-    } else {
-      tooltip.html(content);
-    }
+
     if (content) {
+      if (typeof content === 'function') {
+        content(tooltip);
+      } else {
+        tooltip.html(content);
+      }
       let tooltipBounds = tooltip.node().getBoundingClientRect();
 
       let left;
@@ -412,10 +421,36 @@ sites in your browser settings.`);
         menuItems = menuItems.merge(menuItemsEnter);
 
         menuItems.text(d => d.key);
-        menuItems.on('click', d => {
-          d.value();
-          this.hideOverlay();
+        menuItems.on('click', async d => {
+          const result = d.value();
+          if (result instanceof Promise) {
+            await result;
+          }
+          this.hideTooltip();
         });
+      }
+    });
+  }
+  showClassContextMenu ({ classId, targetBounds = null } = {}) {
+    this.showContextMenu({
+      targetBounds,
+      menuEntries: {
+        'Rename': async () => {
+          const newName = await window.mainView
+            .prompt('Enter a new name for the class', mure.classes[classId].className);
+          if (newName) {
+            mure.classes[classId].setClassName(newName);
+          }
+        },
+        'Interpret as Node': () => {
+          mure.classes[classId].interpretAsNodes();
+        },
+        'Interpret as Edge': () => {
+          mure.classes[classId].interpretAsEdges();
+        },
+        'Delete': () => {
+          mure.classes[classId].delete();
+        }
       }
     });
   }
@@ -424,6 +459,20 @@ sites in your browser settings.`);
       this.showOverlay({
         message,
         ok: () => { this.hideOverlay(); resolve(); }
+      });
+    });
+  }
+  async prompt (message, defaultValue = '') {
+    return new Promise((resolve, reject) => {
+      this.showOverlay({
+        message,
+        ok: () => {
+          const value = d3.select('#overlay .prompt').property('value');
+          this.hideOverlay();
+          resolve(value);
+        },
+        cancel: () => { this.hideOverlay(); resolve(null); },
+        prompt: defaultValue
       });
     });
   }

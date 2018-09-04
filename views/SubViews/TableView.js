@@ -33,11 +33,18 @@ class TableView extends GoldenLayoutView {
       sortIndicator: true,
       readOnly: true
     });
+    const self = this;
     if (!this.isEmpty()) {
       this.tabElement.append('div')
         .classed('lm_tab_icon', true)
         .classed('hoverable', true)
-        .style('background-image', 'url(img/hamburger.svg)');
+        .style('background-image', 'url(img/hamburger.svg)')
+        .on('click', function () {
+          window.mainView.showClassContextMenu({
+            classId: self.classId,
+            targetBounds: this.getBoundingClientRect()
+          });
+        });
     }
   }
   drawTitle () {
