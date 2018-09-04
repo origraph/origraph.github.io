@@ -45,7 +45,22 @@ class TableView extends GoldenLayoutView {
           columnSorting.sort(columnIndex, columnSorting.getNextOrderState(columnIndex));
         });
       this.content.selectAll('.ht_clone_top .colHeader .menu')
-        .on('click', () => { console.log('menu'); });
+        .on('click', function () {
+          window.mainView.showContextMenu({
+            targetBounds: this.getBoundingClientRect(),
+            menuEntries: {
+              'Aggregate': () => {
+                window.mainView.alert('Sorry, not implemented yet...');
+              },
+              'Expand': () => {
+                window.mainView.alert('Sorry, not implemented yet...');
+              },
+              'Facet': () => {
+                window.mainView.alert('Sorry, not implemented yet...');
+              }
+            }
+          });
+        });
     });
     const self = this;
     if (!this.isEmpty()) {
