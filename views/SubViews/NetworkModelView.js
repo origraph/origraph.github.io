@@ -391,8 +391,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     const bounds = this.getContentBounds(this.content);
     const graph = this.deriveGraph();
 
-    // console.log(bounds, graph);
-    console.log(graph);
+    console.log(bounds, graph);
+    // console.log(graph);
 
     this.simulation.force('center')
       .x(bounds.width / 2)
@@ -658,7 +658,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     }
 
     // get parent offset;
-    let translate = this.parse(parentNode.attr('transform')).translate;
+    let translate = parentNode.attr('transform') ? this.parse(parentNode.attr('transform')).translate : [0, 0];
 
     if (source.type === 'Edge') {
       var m = [source.x, source.y];
@@ -686,13 +686,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       ]);
     }
 
-    var sourceM = [source.x, source.y];
-    var targetM = [target.x, target.y];
-    let sourceP = this.closestPoint(d3.select('#' + target.classId).node(), sourceM);
-    let targetP = this.closestPoint(d3.select('#' + source.classId).node(), targetM);
-
-    sourceP = [source.x, source.y];
-    targetP = [target.x, target.y];
+    let sourceP = [source.x, source.y];
+    let targetP = [target.x, target.y];
 
     return this.lineGenerator([
       [sourceP[0] - translate[0], sourceP[1] - translate[1]],

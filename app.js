@@ -48,7 +48,7 @@ window.autoLoad = async () => {
   const classes = await Promise.all(files.map(async filename => {
     const text = await d3.text(`docs/exampleDatasets/${filename}`);
     return mure.addStringAsStaticTable({
-      key: filename,
+      name: filename,
       extension: mure.mime.extension(mure.mime.lookup(filename)),
       text
     });
