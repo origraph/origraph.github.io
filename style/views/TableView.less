@@ -1,4 +1,41 @@
 @import '../colors.less';
 
 .TableView {
+  .scrollArea {
+    overflow: hidden;
+  }
+  /* Handsontable overrides */
+  .handsontable .htDimmed {
+    background-color: @backgroundColor;
+    color: @textColor;
+  }
+
+  .handsontable .idColumn, .handsontable th {
+    background-color: @darkBackgroundColor;
+    color: @textColor;
+  }
+
+  /* Cell border: top */
+  .ht_clone_top tr:first-child > th,
+  .ht_master tr:first-child > td {
+    border-top: 1px solid @shadowColor;
+  }
+
+  /* Cell borders: left */
+  .ht_clone_top tr > th:first-child,
+  .ht_master tr > td:first-child {
+    border-left: 1px solid @shadowColor;
+  }
+
+  /* Cell borders: bottom */
+  .ht_master tr > td {
+    border-bottom: 1px solid @shadowColor;
+  }
+
+  /* Cell borders: right */
+  .ht_clone_top tr > th,
+  .ht_clone_top tr > th:last-child,
+  .ht_master tr > td {
+    border-right: 1px solid @shadowColor;
+  }
 }

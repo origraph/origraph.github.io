@@ -31,7 +31,8 @@ class TableView extends GoldenLayoutView {
       manualColumnResize: true,
       columnSorting: true,
       sortIndicator: true,
-      readOnly: true
+      readOnly: true,
+      preventOverflow: 'horizontal'
     });
     const self = this;
     if (!this.isEmpty()) {
@@ -80,8 +81,7 @@ class TableView extends GoldenLayoutView {
       Handsontable.renderers.TextRenderer.apply(this, arguments);
       const dataItem = instance.getSourceDataAtRow(row);
       d3.select(td).classed('selected', isSelected(dataItem))
-        .classed('idColumn', idColumn)
-        .classed('htDimmed', false); // remove handsontable's dimmed styling for read-only cells
+        .classed('idColumn', idColumn);
     };
   }
   draw () {
