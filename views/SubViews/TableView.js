@@ -37,7 +37,7 @@ class TableView extends GoldenLayoutView {
     });
     this.renderer.addHook('afterRender', () => {
       // Patch event listeners on after the fact
-      const self = this;
+      const classObj = mure.classes[self.classId];
       this.content.selectAll('.ht_clone_top .colHeader .sortIndicator')
         .on('click', function () {
           const columnSorting = self.renderer.getPlugin('ColumnSorting');
@@ -46,17 +46,38 @@ class TableView extends GoldenLayoutView {
         });
       this.content.selectAll('.ht_clone_top .colHeader .menu')
         .on('click', function () {
+          const attribute = this.dataset.attribute;
           window.mainView.showContextMenu({
             targetBounds: this.getBoundingClientRect(),
             menuEntries: {
               'Aggregate': () => {
-                window.mainView.alert('Sorry, not implemented yet...');
+                classObj.aggregate(attribute);
               },
-              'Expand': () => {
-                window.mainView.alert('Sorry, not implemented yet...');
+              'Expand': async () => {
+                const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
+                if (delimiter !== null) {
+                  classObj.expand(attribute, delimiter);
+                }
               },
-              'Facet': () => {
-                window.mainView.alert('Sorry, not implemented yet...');
+              'Facet': async () => {
+                window.mainView.showOverlay({
+                  content: `<div class="newClassNames"></div>`,
+                  spinner: true
+                });
+                const newClasses = [];
+                for await (const newClass of classObj.openFacet(attribute)) {
+                  newClasses.push(newClass);
+                  window.mainView.showOverlay({
+                    content: overlay => {
+                      let names = overlay.select('.newClassNames').selectAll('h3')
+                        .data(newClasses);
+                      const namesEnter = names.enter().append('h3');
+                      names = names.merge(namesEnter);
+                      names.text(classObj => classObj.className);
+                    }
+                  });
+                }
+                window.mainView.hideOverlay();
               }
             }
           });
@@ -153,7 +174,7 @@ class TableView extends GoldenLayoutView {
       const colHeaders = (columnIndex) => {
         return `<div data-column-index="${columnIndex}" class="sortIndicator icon"></div>
           <div class="text">${attributes[columnIndex]}</div>
-          <div data-column-index="${columnIndex}" class="menu icon"></div>`;
+          <div data-attribute="${attributes[columnIndex]}" class="menu icon"></div>`;
       };
       const spec = {
         data,
