@@ -274,30 +274,57 @@ sites in your browser settings.`);
     }
   }
   showOverlay ({
-    message = '',
+    content = '',
     spinner = false,
     ok = null,
     cancel = null,
     prompt = null
   } = {}) {
-    let overlay = this.d3el.select('#overlay')
-      .style('display', message || spinner ? null : 'none');
-    overlay.select('.message')
-      .text(message);
-    overlay.select('.spinner')
-      .style('display', spinner ? null : 'none');
-    overlay.select('.prompt')
-      .style('display', prompt === null ? 'none' : null)
-      .property('value', prompt || '');
-    overlay.select('.ok.button')
-      .style('display', ok === null ? 'none' : null)
-      .on('click', ok || (() => {}));
-    overlay.select('.cancel.button')
-      .style('display', cancel === null ? 'none' : null)
-      .on('click', cancel || (() => {}));
+    const overlay = this.d3el.select('#overlay');
+    const overlayContent = overlay.select('.center');
+    if (content === null) {
+      overlay.style('display', 'none');
+      return;
+    } else if (typeof content === 'function') {
+      content(overlayContent);
+    } else {
+      overlayContent.html(content);
+    }
+    overlay.style('display', null);
+
+    if (spinner) {
+      overlayContent.append('img')
+        .classed('spinner', true)
+        .attr('src', 'img/spinner.gif');
+    }
+    if (prompt !== null) {
+      overlayContent.append('input')
+        .classed('prompt', true)
+        .property('value', prompt);
+    }
+    if (ok || cancel) {
+      const dialogButtons = overlayContent.append('div')
+        .classed('dialogButtons', true);
+      if (cancel) {
+        const cancelButton = dialogButtons.append('div')
+          .classed('cancel', true)
+          .classed('button', true)
+          .on('click', cancel);
+        cancelButton.append('a');
+        cancelButton.append('span').text('Cancel');
+      }
+      if (ok) {
+        const okButton = dialogButtons.append('div')
+          .classed('ok', true)
+          .classed('button', true)
+          .on('click', ok);
+        okButton.append('a');
+        okButton.append('span').text('OK');
+      }
+    }
   }
   hideOverlay () {
-    this.showOverlay();
+    this.showOverlay({ content: null });
   }
   /**
    * @param  {String} [content='']
@@ -457,7 +484,7 @@ sites in your browser settings.`);
   async alert (message) {
     return new Promise((resolve, reject) => {
       this.showOverlay({
-        message,
+        content: `<h2>${message}</h2>`,
         ok: () => { this.hideOverlay(); resolve(); }
       });
     });
@@ -465,7 +492,7 @@ sites in your browser settings.`);
   async prompt (message, defaultValue = '') {
     return new Promise((resolve, reject) => {
       this.showOverlay({
-        message,
+        content: `<h2>${message}</h2>`,
         ok: () => {
           const value = d3.select('#overlay .prompt').property('value');
           this.hideOverlay();
