@@ -10,7 +10,7 @@ class MainView extends View {
     // access the classes it generates directly
     this.subViews = {};
 
-    this.sampling = false;
+    this.tableCounts = {};
 
     mure.on('tableUpdate', () => {
       this.render();
@@ -29,43 +29,22 @@ class MainView extends View {
   setup () {
     this.hideTooltip();
     this.showOverlay({
-      message: 'Loading assets...',
+      content: '<h2>Loading page...</h2>',
       spinner: true
     });
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
+    this.firstDraw = true;
   }
   draw () {
-    const self = this;
     this.mainMenu.render();
     this.d3el.select(':scope > .emptyState')
       .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
-    this.d3el.select('#samplingSpinner')
-      .style('display', this.sampling ? null : 'none')
-      .on('mouseover', function () {
-        self.sampleSpinnerBounds = this.getBoundingClientRect();
-        self.updateSampleTooltip();
-      }).on('mouseout', () => {
-        this.sampleSpinnerBounds = null;
-        this.updateSampleTooltip();
-      });
     Object.values(this.subViews).forEach(subView => {
       subView.render();
     });
-    this.hideOverlay();
-  }
-  updateSampleTooltip () {
-    if (this.sampleSpinnerBounds) {
-      const currentTables = mure.getClassData();
-      let content = 'Loaded:' +
-        Object.entries(currentTables).map(([classId, { complete, data }]) => {
-          return `<br/>${mure.classes[classId].className}: ${Object.keys(data).length} samples`;
-        });
-      this.showTooltip({
-        content,
-        targetBounds: this.sampleSpinnerBounds
-      });
-    } else {
-      this.hideTooltip();
+    if (this.firstDraw) {
+      this.firstDraw = false;
+      this.hideOverlay();
     }
   }
   saveLayoutState () {
@@ -84,36 +63,16 @@ class MainView extends View {
     }
   }
   updateSamples () {
-    window.clearTimeout(this.sampleTimer);
     this.sampling = true;
-    const iterators = {};
+    const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(mure.classes)) {
-      iterators[classId] = classObj.table.iterate({ limit: Infinity });
+      this.tableCounts[classId] = null;
+      tableCountPromises[classId] = classObj.table.countRows()
+        .then(count => {
+          this.tableCounts[classId] = count;
+          this.render();
+        });
     }
-
-    let n = 0;
-    const addSamples = async () => {
-      let allDone = true;
-      for (const iterator of Object.values(iterators)) {
-        const sample = await iterator.next();
-        if (!sample.done) {
-          allDone = false;
-        }
-      }
-      if (!allDone) {
-        this.sampleTimer = window.setTimeout(addSamples, 5);
-        n++;
-        if (n >= 25) {
-          // trigger a tooltip update for every 25 data points
-          n = 0;
-          this.updateSampleTooltip();
-        }
-      } else {
-        this.sampling = false;
-        this.render();
-      }
-    };
-    this.sampleTimer = window.setTimeout(addSamples, 5);
   }
   getAttributes (classId) {
     return mure.classes[classId].table.attributes;
@@ -346,6 +305,8 @@ sites in your browser settings.`);
     d3.select('body').on('click.tooltip', () => {
       if (showEvent !== d3.event) {
         this.hideTooltip();
+      } else {
+        d3.event.stopPropagation();
       }
     });
 

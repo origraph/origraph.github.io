@@ -275,6 +275,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     };
 
     let dragged = function (d) {
+      self.simulation.alpha(0.1).restart();
       let mouse = d3.mouse(d3.select(this.parentNode).node());
 
       mouse[0] = mouse[0] - 10;
@@ -403,8 +404,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     // //Fix the position of all nodes
     this.simulation.on('end', () => {
-      console.log('done');
-      // graph.nodes.map(n=>{n.fx = n.x; n.fy = n.y;})
+      graph.nodes.map(n => { n.fx = n.x; n.fy = n.y; });
     });
 
     let nodes = this.nodeLayer.selectAll('.object')
