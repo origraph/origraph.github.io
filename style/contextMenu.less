@@ -7,6 +7,13 @@
     display:inline-block;
     vertical-align: top;
 
+    a .icon {
+      width: @smallButtonImageSize;
+      height: @smallButtonImageSize;
+      filter: @textColorImageFilter;
+      padding-right: @smallButtonImageSize / 2;
+    }
+
     a.active {
       background-color: @selectionColor;
       color: @invertedTextColor;

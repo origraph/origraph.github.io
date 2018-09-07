@@ -1,8 +1,12 @@
 /* globals d3, mure, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
 
-function itemProxy (uniqueSelector) {
-  return { uniqueSelector };
+function itemProxy (index) {
+  // Handsontable doesn't have a good way to pass the actual, wrapped data items
+  // in naturally (circular references result in stack overflow errors).
+  // Instead, we give it a "dataset" just containing the indexes, that we use to
+  // look up the original data items in columns functions
+  return { index };
 }
 
 class TableView extends GoldenLayoutView {
@@ -50,34 +54,40 @@ class TableView extends GoldenLayoutView {
           window.mainView.showContextMenu({
             targetBounds: this.getBoundingClientRect(),
             menuEntries: {
-              'Aggregate': () => {
-                classObj.aggregate(attribute);
-              },
-              'Expand': async () => {
-                const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
-                if (delimiter !== null) {
-                  classObj.expand(attribute, delimiter);
+              'Aggregate': {
+                onClick: () => {
+                  classObj.aggregate(attribute);
                 }
               },
-              'Facet': async () => {
-                window.mainView.showOverlay({
-                  content: `<div class="newClassNames"></div>`,
-                  spinner: true
-                });
-                const newClasses = [];
-                for await (const newClass of classObj.openFacet(attribute)) {
-                  newClasses.push(newClass);
+              'Expand': {
+                onClick: async () => {
+                  const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
+                  if (delimiter !== null) {
+                    classObj.expand(attribute, delimiter);
+                  }
+                }
+              },
+              'Facet': {
+                onClick: async () => {
                   window.mainView.showOverlay({
-                    content: overlay => {
-                      let names = overlay.select('.newClassNames').selectAll('h3')
-                        .data(newClasses);
-                      const namesEnter = names.enter().append('h3');
-                      names = names.merge(namesEnter);
-                      names.text(classObj => classObj.className);
-                    }
+                    content: `<div class="newClassNames"></div>`,
+                    spinner: true
                   });
+                  const newClasses = [];
+                  for await (const newClass of classObj.openFacet(attribute)) {
+                    newClasses.push(newClass);
+                    window.mainView.showOverlay({
+                      content: overlay => {
+                        let names = overlay.select('.newClassNames').selectAll('h3')
+                          .data(newClasses);
+                        const namesEnter = names.enter().append('h3');
+                        names = names.merge(namesEnter);
+                        names.text(classObj => classObj.className);
+                      }
+                    });
+                  }
+                  window.mainView.hideOverlay();
                 }
-                window.mainView.hideOverlay();
               }
             }
           });
@@ -85,6 +95,8 @@ class TableView extends GoldenLayoutView {
     });
     const self = this;
     if (!this.isEmpty()) {
+      // TODO: this.tabElement is occasionally not ready because GoldenLayoutView
+      // creates it on an event... should probably await its creation?
       this.tabElement.append('div')
         .classed('lm_tab_icon', true)
         .classed('hoverable', true)
@@ -140,15 +152,15 @@ class TableView extends GoldenLayoutView {
       // TODO: show some kind of empty state content
     } else {
       const classObj = mure.classes[this.classId];
-      const data = Object.values(classObj.table.currentData.data);
+      const data = Object.keys(classObj.table.currentData.data);
       const attributes = classObj.table.attributes;
       attributes.unshift('ID');
       const columns = attributes.map((attr, columnIndex) => {
         if (columnIndex === 0) {
           return {
-            data: (dataItem, newIndex) => {
+            data: (index, newIndex) => {
               // TODO: handle newIndex if readOnly is false
-              return dataItem.index;
+              return index;
             },
             renderer: this.getCellRenderFunction({
               idColumn: true
@@ -156,9 +168,9 @@ class TableView extends GoldenLayoutView {
           };
         } else {
           return {
-            data: (dataItem, newValue) => {
+            data: (index, newValue) => {
               // TODO: handle newValue if readOnly is false
-              const value = dataItem.row[attr];
+              const value = classObj.table.currentData.data[index].row[attr];
               if (value === undefined) {
                 return '';
               } else if (typeof value === 'object') {

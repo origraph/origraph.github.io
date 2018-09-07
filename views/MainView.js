@@ -62,7 +62,7 @@ class MainView extends View {
       window.localStorage.setItem('layout', JSON.stringify(config));
     }
   }
-  updateSamples () {
+  async updateSamples () {
     this.sampling = true;
     const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(mure.classes)) {
@@ -73,6 +73,8 @@ class MainView extends View {
           this.render();
         });
     }
+    await Promise.all(Object.values(tableCountPromises));
+    this.sampling = false;
   }
   getAttributes (classId) {
     return mure.classes[classId].table.attributes;
@@ -200,7 +202,6 @@ class MainView extends View {
     });
     this.goldenLayout.on('itemDestroyed', event => {
       if (event.instance) {
-        console.warn(`TODO: delete class`);
         delete this.subViews[event.instance.id];
       }
     });
@@ -408,9 +409,18 @@ sites in your browser settings.`);
         const menuItemsEnter = menuItems.enter().append('a');
         menuItems = menuItems.merge(menuItemsEnter);
 
-        menuItems.text(d => d.key);
+        menuItemsEnter.append('img')
+          .classed('icon', true);
+        menuItems.select('.icon')
+          .attr('src', d => d.value.icon || null)
+          .style('display', d => d.value.icon ? null : 'none');
+
+        menuItemsEnter.append('label');
+        menuItems.select('label')
+          .text(d => d.key);
+
         menuItems.on('click', async d => {
-          const result = d.value();
+          const result = d.value.onClick();
           if (result instanceof Promise) {
             await result;
           }
@@ -423,21 +433,32 @@ sites in your browser settings.`);
     this.showContextMenu({
       targetBounds,
       menuEntries: {
-        'Rename': async () => {
-          const newName = await window.mainView
-            .prompt('Enter a new name for the class', mure.classes[classId].className);
-          if (newName) {
-            mure.classes[classId].setClassName(newName);
+        'Rename': {
+          onClick: async () => {
+            const newName = await window.mainView
+              .prompt('Enter a new name for the class', mure.classes[classId].className);
+            if (newName) {
+              mure.classes[classId].setClassName(newName);
+            }
           }
         },
-        'Interpret as Node': () => {
-          mure.classes[classId].interpretAsNodes();
+        'Interpret as Node': {
+          icon: 'img/node2.svg',
+          onClick: () => {
+            mure.classes[classId].interpretAsNodes();
+          }
         },
-        'Interpret as Edge': () => {
-          mure.classes[classId].interpretAsEdges();
+        'Interpret as Edge': {
+          icon: 'img/edge2.svg',
+          onClick: () => {
+            mure.classes[classId].interpretAsEdges();
+          }
         },
-        'Delete': () => {
-          mure.classes[classId].delete();
+        'Delete': {
+          icon: 'img/delete2.svg',
+          onClick: () => {
+            mure.classes[classId].delete();
+          }
         }
       }
     });
