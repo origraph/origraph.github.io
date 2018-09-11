@@ -21,6 +21,12 @@ class TableView extends GoldenLayoutView {
   get id () {
     return (this.classId && this.classId + 'TableView') || 'EmptyTableView';
   }
+  get icon () {
+    if (this.classId === null) {
+      return 'img/null.svg';
+    }
+    return `img/${mure.classes[this.classId].lowerCamelCaseType}.svg`;
+  }
   isEmpty () {
     return this.classId === null;
   }
@@ -40,63 +46,35 @@ class TableView extends GoldenLayoutView {
       disableVisualSelection: true
     });
     this.renderer.addHook('afterRender', () => {
-      // Patch event listeners on after the fact
-      const classObj = mure.classes[self.classId];
-      this.content.selectAll('.ht_clone_top .colHeader .sortIndicator')
-        .on('click', function () {
-          const columnSorting = self.renderer.getPlugin('ColumnSorting');
-          const columnIndex = parseInt(this.dataset.columnIndex);
-          columnSorting.sort(columnIndex, columnSorting.getNextOrderState(columnIndex));
-        });
-      this.content.selectAll('.ht_clone_top .colHeader .menu')
-        .on('click', function () {
-          const attribute = this.dataset.attribute;
-          window.mainView.showContextMenu({
-            targetBounds: this.getBoundingClientRect(),
-            menuEntries: {
-              'Aggregate': {
-                onClick: () => {
-                  classObj.aggregate(attribute);
-                }
-              },
-              'Expand': {
-                onClick: async () => {
-                  const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
-                  if (delimiter !== null) {
-                    classObj.expand(attribute, delimiter);
-                  }
-                }
-              },
-              'Facet': {
-                onClick: async () => {
-                  window.mainView.showOverlay({
-                    content: `<div class="newClassNames"></div>`,
-                    spinner: true
-                  });
-                  const newClasses = [];
-                  for await (const newClass of classObj.openFacet(attribute)) {
-                    newClasses.push(newClass);
-                    window.mainView.showOverlay({
-                      content: overlay => {
-                        let names = overlay.select('.newClassNames').selectAll('h3')
-                          .data(newClasses);
-                        const namesEnter = names.enter().append('h3');
-                        names = names.merge(namesEnter);
-                        names.text(classObj => classObj.className);
-                      }
-                    });
-                  }
-                  window.mainView.hideOverlay();
-                }
-              }
-            }
-          });
-        });
+      this.finishTableDraw();
     });
+  }
+  setupTab () {
+    super.setupTab();
     const self = this;
     if (!this.isEmpty()) {
-      // TODO: this.tabElement is occasionally not ready because GoldenLayoutView
-      // creates it on an event... should probably await its creation?
+      const classObj = mure.classes[this.classId];
+      const titleElement = this.tabElement.select('.lm_title')
+        .attr('contenteditable', 'true')
+        .style('cursor', 'text')
+        .style('font-style', classObj !== null && classObj.hasCustomName ? null : 'italic')
+        .on('click', function () {
+          // Hack to get contenteditable to actually work
+          this.focus();
+        }).on('keyup', function () {
+          if (d3.event.keyCode === 13) { // return key
+            this.blur();
+          } else if (d3.event.keyCode === 27) { // esc key
+            this.blur();
+          }
+        }).on('blur', () => {
+          const newName = titleElement.text();
+          if (classObj !== null && newName) {
+            classObj.setClassName(newName);
+          } else {
+            window.mainView.render();
+          }
+        });
       this.tabElement.append('div')
         .classed('lm_tab_icon', true)
         .classed('hoverable', true)
@@ -109,33 +87,13 @@ class TableView extends GoldenLayoutView {
         });
     }
   }
-  drawTitle () {
+  drawTab () {
     const classObj = this.classId === null ? null : mure.classes[this.classId];
     const classLabel = classObj === null ? 'No active classes' : classObj.className;
-    const titleElement = this.tabElement.select(':scope > .lm_title')
+    this.tabElement.select('.viewIcon')
+      .style('background-image', `url(${this.icon})`);
+    this.tabElement.select(':scope > .lm_title')
       .text(classLabel);
-    const renameTitle = () => {
-      const newName = titleElement.text();
-      if (classObj !== null && newName) {
-        classObj.setClassName(newName);
-      } else {
-        window.mainView.render();
-      }
-    };
-    titleElement.attr('contenteditable', 'true')
-      .style('cursor', 'text')
-      .style('font-style', classObj !== null && classObj.hasCustomName ? null : 'italic')
-      .on('click', function () {
-        // Hack to get contenteditable to actually work
-        this.focus();
-      }).on('blur', renameTitle)
-      .on('keyup', function () {
-        if (d3.event.keyCode === 13) { // return key
-          this.blur();
-        } else if (d3.event.keyCode === 27) { // esc key
-          this.blur();
-        }
-      });
   }
   getCellRenderFunction ({ idColumn = false, isSelected = () => false } = {}) {
     return function (instance, td, row, col, prop, value, cellProperties) {
@@ -146,7 +104,9 @@ class TableView extends GoldenLayoutView {
     };
   }
   draw () {
-    this.drawTitle();
+    if (this.tabElement) {
+      this.drawTab();
+    }
 
     if (this.classId === null) {
       // TODO: show some kind of empty state content
@@ -196,6 +156,75 @@ class TableView extends GoldenLayoutView {
       this.renderer.updateSettings(spec);
       this.renderer.render();
     }
+  }
+  finishTableDraw () {
+    // Patch event listeners on after the fact
+    const classObj = mure.classes[this.classId];
+    this.content.selectAll('.ht_clone_top .colHeader .sortIndicator')
+      .on('click', function () {
+        const columnSorting = this.renderer.getPlugin('ColumnSorting');
+        const columnIndex = parseInt(this.dataset.columnIndex);
+        columnSorting.sort(columnIndex, columnSorting.getNextOrderState(columnIndex));
+      });
+    this.content.selectAll('.ht_clone_top .colHeader .menu')
+      .on('click', function () {
+        const attribute = this.dataset.attribute;
+        window.mainView.showContextMenu({
+          targetBounds: this.getBoundingClientRect(),
+          menuEntries: {
+            'Aggregate': {
+              onClick: () => {
+                classObj.aggregate(attribute);
+              }
+            },
+            'Expand...': {
+              onClick: async () => {
+                const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
+                if (delimiter !== null) {
+                  classObj.expand(attribute, delimiter);
+                }
+              }
+            },
+            'Facet': {
+              onClick: async () => {
+                window.mainView.showOverlay({
+                  content: `<div class="newClassNames"></div>`,
+                  spinner: true
+                });
+                const newClasses = [];
+                for await (const newClass of classObj.openFacet(attribute)) {
+                  newClasses.push(newClass);
+                  window.mainView.showOverlay({
+                    content: overlay => {
+                      let names = overlay.select('.newClassNames').selectAll('h3')
+                        .data(newClasses);
+                      const namesEnter = names.enter().append('h3');
+                      names = names.merge(namesEnter);
+                      names.text(classObj => classObj.className);
+                    }
+                  });
+                }
+                window.mainView.hideOverlay();
+              }
+            },
+            'Sort': {
+              onClick: async () => {
+                window.mainView.alert(`Sorry, not implemented yet...`);
+              }
+            },
+            'Filter...': {
+              onClick: async () => {
+                window.mainView.alert(`Sorry, not implemented yet...`);
+              }
+            },
+            'Hide + Suppress': {
+              onClick: async () => {
+                window.mainView.alert(`Sorry, not implemented yet...`);
+              }
+            }
+          }
+        });
+      });
   }
 }
 TableView.icon = 'img/table.svg';

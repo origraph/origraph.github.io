@@ -443,19 +443,19 @@ sites in your browser settings.`);
           }
         },
         'Interpret as Node': {
-          icon: 'img/node2.svg',
+          icon: 'img/node.svg',
           onClick: () => {
             mure.classes[classId].interpretAsNodes();
           }
         },
         'Interpret as Edge': {
-          icon: 'img/edge2.svg',
+          icon: 'img/edge.svg',
           onClick: () => {
             mure.classes[classId].interpretAsEdges();
           }
         },
         'Delete': {
-          icon: 'img/delete2.svg',
+          icon: 'img/delete.svg',
           onClick: () => {
             mure.classes[classId].delete();
           }
