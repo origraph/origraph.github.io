@@ -45,8 +45,12 @@ class TableView extends GoldenLayoutView {
       preventOverflow: 'horizontal',
       disableVisualSelection: true
     });
+    const self = this;
     this.renderer.addHook('afterRender', () => {
-      this.finishTableDraw();
+      this.content.selectAll('.ht_clone_top .colHeader .text')
+        .each(function () {
+          self.drawColumnHeader(d3.select(this.parentNode), self.attributes[this.dataset.columnIndex]);
+        });
     });
   }
   setupTab () {
@@ -95,93 +99,63 @@ class TableView extends GoldenLayoutView {
     this.tabElement.select(':scope > .lm_title')
       .text(classLabel);
   }
-  getCellRenderFunction ({ idColumn = false, isSelected = () => false } = {}) {
-    return function (instance, td, row, col, prop, value, cellProperties) {
-      Handsontable.renderers.TextRenderer.apply(this, arguments);
-      const dataItem = instance.getSourceDataAtRow(row);
-      d3.select(td).classed('selected', isSelected(dataItem))
-        .classed('idColumn', idColumn);
-    };
+  drawCell (element, attribute, dataValue) {
+    element.classed('idColumn', attribute.name === null);
   }
-  draw () {
-    if (this.tabElement) {
-      this.drawTab();
+  drawColumnHeader (element, attribute) {
+    const self = this;
+    const classObj = mure.classes[this.classId];
+
+    // Remove handsontable's click handler (in the future, we want to use dragging
+    // the column header for connection, not clicking for sorting)
+    element.on('mousedown', () => {
+      d3.event.stopPropagation();
+    });
+
+    const indicatorList = ['filtered', 'derived', 'copied', 'reduced']
+      .filter(d => attribute[d]);
+    if (element.classed('ascending')) {
+      indicatorList.push('ascending');
+    } else if (element.classed('descending')) {
+      indicatorList.push('descending');
     }
 
-    if (this.classId === null) {
-      // TODO: show some kind of empty state content
-    } else {
-      const classObj = mure.classes[this.classId];
-      const data = Object.keys(classObj.table.currentData.data);
-      const attributes = classObj.table.attributes;
-      attributes.unshift('ID');
-      const columns = attributes.map((attr, columnIndex) => {
-        if (columnIndex === 0) {
-          return {
-            data: (index, newIndex) => {
-              // TODO: handle newIndex if readOnly is false
-              return index;
-            },
-            renderer: this.getCellRenderFunction({
-              idColumn: true
-            })
-          };
+    let indicators = element.select('.indicatorIcons')
+      .selectAll('.icon')
+      .data(indicatorList, d => d);
+    indicators.exit().remove();
+    const indicatorsEnter = indicators.enter().append('div')
+      .classed('icon', true);
+    indicators = indicators.merge(indicatorsEnter);
+
+    indicators.style('background-image', d => `url(img/${d}.svg)`)
+      .on('click', d => {
+        if (d === 'ascending' || d === 'descending') {
+          this.sortAttribute(attribute);
         } else {
-          return {
-            data: (index, newValue) => {
-              // TODO: handle newValue if readOnly is false
-              const value = classObj.table.currentData.data[index].row[attr];
-              if (value === undefined) {
-                return '';
-              } else if (typeof value === 'object') {
-                return '{}';
-              } else {
-                return value;
-              }
-            },
-            renderer: this.getCellRenderFunction()
-          };
+          window.mainView.alert(`Sorry, clicking the ${d} indicator isn't implemented yet`);
         }
       });
-      const colHeaders = (columnIndex) => {
-        return `<div data-column-index="${columnIndex}" class="sortIndicator icon"></div>
-          <div class="text">${attributes[columnIndex]}</div>
-          <div data-attribute="${attributes[columnIndex]}" class="menu icon"></div>`;
-      };
-      const spec = {
-        data,
-        colHeaders,
-        columns
-      };
-      this.renderer.updateSettings(spec);
-      this.renderer.render();
-    }
-  }
-  finishTableDraw () {
-    // Patch event listeners on after the fact
-    const classObj = mure.classes[this.classId];
-    this.content.selectAll('.ht_clone_top .colHeader .sortIndicator')
+
+    // Update the text label (maybe unnecessary?)
+    element.select('.text').text(attribute.name === null ? 'ID' : attribute.name);
+
+    // Attach menu event + entries
+    element.select('.menu')
       .on('click', function () {
-        const columnSorting = this.renderer.getPlugin('ColumnSorting');
-        const columnIndex = parseInt(this.dataset.columnIndex);
-        columnSorting.sort(columnIndex, columnSorting.getNextOrderState(columnIndex));
-      });
-    this.content.selectAll('.ht_clone_top .colHeader .menu')
-      .on('click', function () {
-        const attribute = this.dataset.attribute;
         window.mainView.showContextMenu({
           targetBounds: this.getBoundingClientRect(),
           menuEntries: {
             'Aggregate': {
               onClick: () => {
-                classObj.aggregate(attribute);
+                classObj.aggregate(attribute.name);
               }
             },
             'Expand...': {
               onClick: async () => {
                 const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
                 if (delimiter !== null) {
-                  classObj.expand(attribute, delimiter);
+                  classObj.expand(attribute.name, delimiter);
                 }
               }
             },
@@ -192,7 +166,7 @@ class TableView extends GoldenLayoutView {
                   spinner: true
                 });
                 const newClasses = [];
-                for await (const newClass of classObj.openFacet(attribute)) {
+                for await (const newClass of classObj.openFacet(attribute.name)) {
                   newClasses.push(newClass);
                   window.mainView.showOverlay({
                     content: overlay => {
@@ -209,7 +183,7 @@ class TableView extends GoldenLayoutView {
             },
             'Sort': {
               onClick: async () => {
-                window.mainView.alert(`Sorry, not implemented yet...`);
+                self.sortAttribute(attribute);
               }
             },
             'Filter...': {
@@ -225,6 +199,69 @@ class TableView extends GoldenLayoutView {
           }
         });
       });
+  }
+  draw () {
+    if (this.tabElement) {
+      this.drawTab();
+    }
+
+    const self = this;
+
+    if (this.classId === null) {
+      // TODO: show some kind of empty state content
+    } else {
+      const classObj = mure.classes[this.classId];
+      const data = Object.keys(classObj.table.currentData.data);
+      this.attributes = Object.values(classObj.table.getAttributeDetails());
+      this.attributes.unshift(classObj.table.getIndexDetails());
+      this.attributes.forEach((attr, index) => {
+        attr.columnIndex = index;
+      });
+      const columns = this.attributes.map(attribute => {
+        return {
+          renderer: function (instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
+            const dataValue = instance.getSourceDataAtRow(row);
+            self.drawCell(d3.select(td), attribute, dataValue);
+          },
+          data: (index, newValue) => {
+            // TODO: handle newValue if readOnly is false
+            if (attribute.name === null) {
+              return index;
+            } else {
+              const value = classObj.table.currentData.data[index].row[attribute.name];
+              if (value === undefined) {
+                return '';
+              } else if (typeof value === 'object') {
+                return '{}';
+              } else {
+                return value;
+              }
+            }
+          }
+        };
+      });
+      const colHeaders = (columnIndex) => {
+        const attribute = this.attributes[columnIndex];
+        const name = attribute.name === null ? 'ID' : attribute.name;
+        return `<div class="indicatorIcons"></div>
+          <div class="text" data-column-index=${columnIndex}>${name}</div>
+          <div class="menu icon"></div>`;
+      };
+      const spec = {
+        data,
+        colHeaders,
+        columns
+      };
+      this.renderer.updateSettings(spec);
+      this.renderer.render();
+    }
+  }
+  sortAttribute (attribute) {
+    const columnSorting = this.renderer.getPlugin('ColumnSorting');
+    columnSorting.sort(attribute.columnIndex, columnSorting.getNextOrderState(attribute.columnIndex));
+    const autoColumnSize = this.renderer.getPlugin('AutoColumnSize');
+    autoColumnSize.recalculateAllColumnsWidth();
   }
 }
 TableView.icon = 'img/table.svg';

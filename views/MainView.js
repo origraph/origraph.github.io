@@ -434,6 +434,7 @@ sites in your browser settings.`);
       targetBounds,
       menuEntries: {
         'Rename': {
+          icon: 'img/pencil.svg',
           onClick: async () => {
             const newName = await window.mainView
               .prompt('Enter a new name for the class', mure.classes[classId].className);
