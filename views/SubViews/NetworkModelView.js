@@ -461,19 +461,16 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       .attr('opacity', 0);
 
     nodes.select('.edgeIcon')
-      .attr('xlink:href', (d) => d.type === 'Edge' ? '' : '../img/edge2.svg')
-      .attr('x', d => d.type === 'Generic' ? MENU_SIZE + 5 : 0)
-      .on('click', d => { d3.event.stopPropagation(); mure.classes[d.classId].interpretAsEdges(); });
+      .attr('xlink:href', (d) => d.type === 'Edge' ? '' : '../img/edge.svg')
+      .attr('x', d => d.type === 'Generic' ? MENU_SIZE + 5 : 0);
 
     nodes.select('.nodeIcon')
-      .attr('xlink:href', (d) => d.type === 'Node' ? '' : '../img/node2.svg')
-      .attr('x', 0)
-      .on('click', d => { d3.event.stopPropagation(); mure.classes[d.classId].interpretAsNodes(); });
+      .attr('xlink:href', (d) => d.type === 'Node' ? '' : '../img/node.svg')
+      .attr('x', 0); // d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
 
     nodes.select('.deleteIcon')
-      .attr('xlink:href', '../img/delete2.svg')
-      .attr('x', d => d.type === 'Generic' ? 2 * MENU_SIZE + 10 : MENU_SIZE + 5)
-      .on('click', d => { d3.event.stopPropagation(); mure.classes[d.classId].delete(); });
+      .attr('xlink:href', '../img/delete.svg')
+      .attr('x', d => d.type === 'Generic' ? 2 * MENU_SIZE + 10 : MENU_SIZE + 5);
 
     nodes.selectAll('.nodeIcon,.deleteIcon')
       .attr('height', MENU_SIZE)

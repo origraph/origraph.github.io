@@ -10,11 +10,11 @@ class GoldenLayoutView extends View {
   }) {
     super(null, resources);
     this.container = container;
+    this._icon = icon;
     this.container.setTitle(label);
     this.container.on('tab', tab => {
-      tab.element.addClass(this.constructor.name);
-      tab.element.prepend(`<div class="lm_tab_icon" style="background-image:url('${icon}')"></div>`);
       this.tabElement = d3.select(tab.element[0]);
+      this.setupTab();
     });
     this.container.on('open', () => {
       this.render(d3.select(this.container.getElement()[0]));
@@ -25,12 +25,25 @@ class GoldenLayoutView extends View {
   get id () {
     return this.constructor.name;
   }
+  get icon () {
+    return this._icon;
+  }
   setup () {
     this.d3el.classed(this.constructor.name, true);
     this.emptyStateDiv = this.d3el.append('div')
       .classed('emptyState', true)
       .style('display', 'none');
     this.content = this.setupContentElement(this.d3el);
+  }
+  setupTab () {
+    this.tabElement.classed(this.constructor.name, true);
+    this.tabElement.insert('div', ':first-child')
+      .classed('lm_tab_icon', true)
+      .classed('viewIcon', true)
+      .style('background-image', `url(${this.icon})`);
+  }
+  drawTab () {
+    // Should be overridden
   }
   setupContentElement () {
     // Default setup is a scrollable div; SvgViewMixin overrides this
@@ -39,6 +52,9 @@ class GoldenLayoutView extends View {
   }
   draw () {
     this.emptyStateDiv.style('display', this.isEmpty() ? null : 'none');
+    if (this.tabElement) {
+      this.drawTab();
+    }
   }
 }
 

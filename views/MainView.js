@@ -10,7 +10,7 @@ class MainView extends View {
     // access the classes it generates directly
     this.subViews = {};
 
-    this.sampling = false;
+    this.tableCounts = {};
 
     mure.on('tableUpdate', () => {
       this.render();
@@ -29,43 +29,22 @@ class MainView extends View {
   setup () {
     this.hideTooltip();
     this.showOverlay({
-      message: 'Loading assets...',
+      content: '<h2>Loading page...</h2>',
       spinner: true
     });
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
+    this.firstDraw = true;
   }
   draw () {
-    // const self = this;
     this.mainMenu.render();
     this.d3el.select(':scope > .emptyState')
       .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
-    // this.d3el.select('#samplingSpinner')
-    //   .style('display', this.sampling ? null : 'none')
-    //   .on('mouseover', function () {
-    //     self.sampleSpinnerBounds = this.getBoundingClientRect();
-    //     self.updateSampleTooltip();
-    //   }).on('mouseout', () => {
-    //     this.sampleSpinnerBounds = null;
-    //     this.updateSampleTooltip();
-    //   });
     Object.values(this.subViews).forEach(subView => {
       subView.render();
     });
-    this.hideOverlay();
-  }
-  updateSampleTooltip () {
-    if (this.sampleSpinnerBounds) {
-      const currentTables = mure.getClassData();
-      let content = 'Loaded:' +
-        Object.entries(currentTables).map(([classId, { complete, data }]) => {
-          return `<br/>${mure.classes[classId].className}: ${Object.keys(data).length} samples`;
-        });
-      this.showTooltip({
-        content,
-        targetBounds: this.sampleSpinnerBounds
-      });
-    } else {
-      this.hideTooltip();
+    if (this.firstDraw) {
+      this.firstDraw = false;
+      this.hideOverlay();
     }
   }
   saveLayoutState () {
@@ -83,37 +62,19 @@ class MainView extends View {
       window.localStorage.setItem('layout', JSON.stringify(config));
     }
   }
-  updateSamples () {
-    window.clearTimeout(this.sampleTimer);
+  async updateSamples () {
     this.sampling = true;
-    const iterators = {};
+    const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(mure.classes)) {
-      iterators[classId] = classObj.table.iterate({ limit: Infinity });
+      this.tableCounts[classId] = null;
+      tableCountPromises[classId] = classObj.table.countRows()
+        .then(count => {
+          this.tableCounts[classId] = count;
+          this.render();
+        });
     }
-
-    let n = 0;
-    const addSamples = async () => {
-      let allDone = true;
-      for (const iterator of Object.values(iterators)) {
-        const sample = await iterator.next();
-        if (!sample.done) {
-          allDone = false;
-        }
-      }
-      if (!allDone) {
-        this.sampleTimer = window.setTimeout(addSamples, 5);
-        n++;
-        if (n >= 25) {
-          // trigger a tooltip update for every 25 data points
-          n = 0;
-          // this.updateSampleTooltip();
-        }
-      } else {
-        this.sampling = false;
-        this.render();
-      }
-    };
-    this.sampleTimer = window.setTimeout(addSamples, 5);
+    await Promise.all(Object.values(tableCountPromises));
+    this.sampling = false;
   }
   getAttributes (classId) {
     return mure.classes[classId].table.attributes;
@@ -241,7 +202,6 @@ class MainView extends View {
     });
     this.goldenLayout.on('itemDestroyed', event => {
       if (event.instance) {
-        console.warn(`TODO: delete class`);
         delete this.subViews[event.instance.id];
       }
     });
@@ -449,9 +409,18 @@ sites in your browser settings.`);
         const menuItemsEnter = menuItems.enter().append('a');
         menuItems = menuItems.merge(menuItemsEnter);
 
-        menuItems.text(d => d.key);
+        menuItemsEnter.append('img')
+          .classed('icon', true);
+        menuItems.select('.icon')
+          .attr('src', d => d.value.icon || null)
+          .style('display', d => d.value.icon ? null : 'none');
+
+        menuItemsEnter.append('label');
+        menuItems.select('label')
+          .text(d => d.key);
+
         menuItems.on('click', async d => {
-          const result = d.value();
+          const result = d.value.onClick();
           if (result instanceof Promise) {
             await result;
           }
@@ -464,21 +433,33 @@ sites in your browser settings.`);
     this.showContextMenu({
       targetBounds,
       menuEntries: {
-        'Rename': async () => {
-          const newName = await window.mainView
-            .prompt('Enter a new name for the class', mure.classes[classId].className);
-          if (newName) {
-            mure.classes[classId].setClassName(newName);
+        'Rename': {
+          icon: 'img/pencil.svg',
+          onClick: async () => {
+            const newName = await window.mainView
+              .prompt('Enter a new name for the class', mure.classes[classId].className);
+            if (newName) {
+              mure.classes[classId].setClassName(newName);
+            }
           }
         },
-        'Interpret as Node': () => {
-          mure.classes[classId].interpretAsNodes();
+        'Interpret as Node': {
+          icon: 'img/node.svg',
+          onClick: () => {
+            mure.classes[classId].interpretAsNodes();
+          }
         },
-        'Interpret as Edge': () => {
-          mure.classes[classId].interpretAsEdges();
+        'Interpret as Edge': {
+          icon: 'img/edge.svg',
+          onClick: () => {
+            mure.classes[classId].interpretAsEdges();
+          }
         },
-        'Delete': () => {
-          mure.classes[classId].delete();
+        'Delete': {
+          icon: 'img/delete.svg',
+          onClick: () => {
+            mure.classes[classId].delete();
+          }
         }
       }
     });
