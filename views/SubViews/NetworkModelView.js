@@ -566,7 +566,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         case 'Edge':
           let parent = d3.select(this.parentNode).select('.nodeObject').node().getBoundingClientRect();
           let translate = d3.select(this.parentNode).attr('transform') ? self.parse(d3.select(this.parentNode).attr('transform')).translate : [0, 0];
-          console.log(parent, translate);
           x = parent.x - translate[0];
           y = parent.y - translate[1];
           break;
