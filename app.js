@@ -1,4 +1,4 @@
-/* globals d3, mure */
+/* globals d3 */
 import MainView from './views/MainView.js';
 import * as MODALS from './views/Modals/Modals.js';
 import * as SUBVIEW_CLASSES from './views/SubViews/SubViews.js';
@@ -40,38 +40,6 @@ window.DEFAULT_LAYOUT = {
       }]
     }
   ]
-};
-
-window.autoLoad = async () => {
-  // Load files
-  const files = ['people.csv', 'movies.csv', 'movieEdges.csv'];
-  const classes = await Promise.all(files.map(async filename => {
-    const text = await d3.text(`docs/exampleDatasets/${filename}`);
-    return mure.addStringAsStaticTable({
-      name: filename,
-      extension: mure.mime.extension(mure.mime.lookup(filename)),
-      text
-    });
-  }));
-
-  const [ peopleId, moviesId, movieEdgesId ] = classes.map(classObj => classObj.classId);
-
-  await mure.classes[peopleId].interpretAsNodes();
-  await mure.classes[moviesId].interpretAsNodes();
-  await mure.classes[movieEdgesId].interpretAsEdges();
-
-  await mure.classes[peopleId].connectToEdgeClass({
-    edgeClass: mure.classes[movieEdgesId],
-    direction: 'source',
-    nodeAttribute: 'id',
-    edgeAttribute: 'sourceID'
-  });
-  await mure.classes[movieEdgesId].connectToNodeClass({
-    nodeClass: mure.classes[moviesId],
-    direction: 'target',
-    nodeAttribute: 'id',
-    edgeAttribute: 'targetID'
-  });
 };
 
 window.onload = () => {
