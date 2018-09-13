@@ -1,0 +1,23 @@
+@import '../colors.less';
+@import '../measurements.less';
+
+.InstanceView {
+  .nodeLayer {
+    .node circle {
+      fill: @textColor;
+      stroke-width: 2px;
+      stroke: @invertedTextColor;
+    }
+    .node.dummy circle {
+      fill: none;
+      stroke: none;
+    }
+  }
+
+  .edgeLayer {
+    .edge .line {
+      stroke-width: 2px;
+      stroke: @textColor;
+    }
+  }
+}

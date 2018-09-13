@@ -64,13 +64,13 @@ window.autoLoad = async () => {
     edgeClass: mure.classes[movieEdgesId],
     direction: 'source',
     nodeAttribute: 'id',
-    edgeAttribute: 'sourceId'
+    edgeAttribute: 'sourceID'
   });
   await mure.classes[movieEdgesId].connectToNodeClass({
     nodeClass: mure.classes[moviesId],
     direction: 'target',
     nodeAttribute: 'id',
-    edgeAttribute: 'targetId'
+    edgeAttribute: 'targetID'
   });
 };
 

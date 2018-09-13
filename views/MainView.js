@@ -12,6 +12,8 @@ class MainView extends View {
 
     this.tableCounts = {};
 
+    this.instances = null;
+
     mure.on('tableUpdate', () => {
       this.render();
     });
@@ -46,6 +48,19 @@ class MainView extends View {
       this.firstDraw = false;
       this.hideOverlay();
     }
+  }
+  seed (instances) {
+    if (!(instances instanceof Array)) {
+      instances = [ instances ];
+    }
+    this.instances = this.instances || [];
+    for (const instance of instances) {
+      // TODO: more efficient set union?
+      if (this.instances.indexOf(instance) === -1) {
+        this.instances.push(instance);
+      }
+    }
+    this.trigger('seed');
   }
   saveLayoutState () {
     // debounce this call if goldenlayout isn't ready;

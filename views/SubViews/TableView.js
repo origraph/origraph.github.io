@@ -101,8 +101,14 @@ class TableView extends GoldenLayoutView {
   }
   drawCell (element, attribute, dataValue) {
     element.classed('idColumn', attribute.name === null)
-      .classed('metaColumn', attribute.meta);
-    if (attribute.meta) {
+      .classed('metaColumn', attribute.meta)
+      .classed('seed', attribute.seed);
+    if (attribute.seed) {
+      element.text('')
+        .on('click', () => {
+          window.mainView.seed(dataValue);
+        });
+    } else if (attribute.meta) {
       (async () => {
         let count = 0;
         if (attribute.edgeId) {
@@ -172,37 +178,45 @@ class TableView extends GoldenLayoutView {
 
     let menuEntries = {};
 
-    // Add sort to all columns
-    const sortState = this.renderer.getPlugin('ColumnSorting')
-      .getNextOrderState(attribute.columnIndex);
-    const sortIcon = sortState === 'asc' ? 'img/ascending.svg'
-      : sortState === 'desc' ? 'img/descending.svg' : 'img/null.svg';
-    const sortLabel = sortState === 'none' ? 'Clear Sorting' : 'Sort';
-    menuEntries[sortLabel] = {
-      icon: sortIcon,
-      onClick: () => {
-        this.sortAttribute(attribute);
-      }
-    };
+    if (attribute.seed) {
+      // Only one menu entry for the seed column (to seed everything)
+      menuEntries['Seed All Rows'] = {
+        icon: 'img/instanceView.svg',
+        onClick: async () => {
+          window.mainView.seed(Object.values(classObj.table.currentData.data));
+        }
+      };
+    } else {
+      // Add sort, filter, and hide to all other columns
+      const sortState = this.renderer.getPlugin('ColumnSorting')
+        .getNextOrderState(attribute.columnIndex);
+      const sortIcon = sortState === 'asc' ? 'img/ascending.svg'
+        : sortState === 'desc' ? 'img/descending.svg' : 'img/null.svg';
+      const sortLabel = sortState === 'none' ? 'Clear Sorting' : 'Sort';
+      menuEntries[sortLabel] = {
+        icon: sortIcon,
+        onClick: () => {
+          this.sortAttribute(attribute);
+        }
+      };
 
-    // Add filter to all columns
-    menuEntries['Filter...'] = {
-      icon: 'img/filter.svg',
-      onClick: async () => {
-        window.mainView.alert(`Sorry, not implemented yet...`);
-      }
-    };
+      menuEntries['Filter...'] = {
+        icon: 'img/filter.svg',
+        onClick: async () => {
+          window.mainView.alert(`Sorry, not implemented yet...`);
+        }
+      };
 
-    // Add Hide to all columns...
-    menuEntries['Hide'] = {
-      icon: 'img/hide.svg',
-      onClick: async () => {
-        window.mainView.alert(`Sorry, not implemented yet...`);
-      }
-    };
+      menuEntries['Hide'] = {
+        icon: 'img/hide.svg',
+        onClick: async () => {
+          window.mainView.alert(`Sorry, not implemented yet...`);
+        }
+      };
+    }
 
     if (attribute.name === null) {
-      // Add options specific to the ID column
+      // Add Transpose to the ID column
       menuEntries.Transpose = {
         icon: 'img/transpose.svg',
         onClick: () => {
@@ -210,7 +224,7 @@ class TableView extends GoldenLayoutView {
         }
       };
     } else if (attribute.meta) {
-      // Add options specific to meta columns
+      // Add options specific to meta columns (currently none)
     } else {
       // Add options specific to regular attributes
       menuEntries.Aggregate = {
@@ -291,6 +305,12 @@ class TableView extends GoldenLayoutView {
       }
       // ID column:
       this.attributes.unshift(classObj.table.getIndexDetails());
+      // Instance seed column:
+      this.attributes.push({
+        name: '',
+        seed: true,
+        meta: true
+      });
       this.attributes.forEach((attr, index) => {
         attr.columnIndex = index;
       });
