@@ -100,11 +100,32 @@ class TableView extends GoldenLayoutView {
       .text(classLabel);
   }
   drawCell (element, attribute, dataValue) {
-    element.classed('idColumn', attribute.name === null);
+    element.classed('idColumn', attribute.name === null)
+      .classed('metaColumn', attribute.meta);
+    if (attribute.meta) {
+      (async () => {
+        let count = 0;
+        if (attribute.edgeId) {
+          const edgeIds = {};
+          edgeIds[attribute.edgeId] = true;
+          for await (const edgeItem of dataValue.edges({ edgeIds })) { // eslint-disable-line no-unused-vars
+            count++;
+          }
+        } else if (attribute.name === 'Sources') {
+          for await (const nodeItem of dataValue.sourceNodes()) { // eslint-disable-line no-unused-vars
+            count++;
+          }
+        } else if (attribute.name === 'Targets') {
+          for await (const nodeItem of dataValue.targetNodes()) { // eslint-disable-line no-unused-vars
+            count++;
+          }
+        }
+        element.text(count);
+      })();
+    }
   }
   drawColumnHeader (element, attribute) {
     const self = this;
-    const classObj = mure.classes[this.classId];
 
     // Remove handsontable's click handler (in the future, we want to use dragging
     // the column header for connection, not clicking for sorting)
@@ -140,65 +161,98 @@ class TableView extends GoldenLayoutView {
     // Update the text label (maybe unnecessary?)
     element.select('.text').text(attribute.name === null ? 'ID' : attribute.name);
 
-    // Attach menu event + entries
+    // Attach menu event
     element.select('.menu')
       .on('click', function () {
-        window.mainView.showContextMenu({
-          targetBounds: this.getBoundingClientRect(),
-          menuEntries: {
-            'Aggregate': {
-              onClick: () => {
-                classObj.aggregate(attribute.name);
-              }
-            },
-            'Expand...': {
-              onClick: async () => {
-                const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
-                if (delimiter !== null) {
-                  classObj.expand(attribute.name, delimiter);
-                }
-              }
-            },
-            'Facet': {
-              onClick: async () => {
-                window.mainView.showOverlay({
-                  content: `<div class="newClassNames"></div>`,
-                  spinner: true
-                });
-                const newClasses = [];
-                for await (const newClass of classObj.openFacet(attribute.name)) {
-                  newClasses.push(newClass);
-                  window.mainView.showOverlay({
-                    content: overlay => {
-                      let names = overlay.select('.newClassNames').selectAll('h3')
-                        .data(newClasses);
-                      const namesEnter = names.enter().append('h3');
-                      names = names.merge(namesEnter);
-                      names.text(classObj => classObj.className);
-                    }
-                  });
-                }
-                window.mainView.hideOverlay();
-              }
-            },
-            'Sort': {
-              onClick: async () => {
-                self.sortAttribute(attribute);
-              }
-            },
-            'Filter...': {
-              onClick: async () => {
-                window.mainView.alert(`Sorry, not implemented yet...`);
-              }
-            },
-            'Hide + Suppress': {
-              onClick: async () => {
-                window.mainView.alert(`Sorry, not implemented yet...`);
-              }
-            }
-          }
-        });
+        self.showAttributeMenu(this.getBoundingClientRect(), attribute);
       });
+  }
+  showAttributeMenu (targetBounds, attribute) {
+    const classObj = mure.classes[this.classId];
+
+    let menuEntries = {};
+
+    // Add sort to all columns
+    const sortState = this.renderer.getPlugin('ColumnSorting')
+      .getNextOrderState(attribute.columnIndex);
+    const sortIcon = sortState === 'asc' ? 'img/ascending.svg'
+      : sortState === 'desc' ? 'img/descending.svg' : 'img/null.svg';
+    const sortLabel = sortState === 'none' ? 'Clear Sorting' : 'Sort';
+    menuEntries[sortLabel] = {
+      icon: sortIcon,
+      onClick: () => {
+        this.sortAttribute(attribute);
+      }
+    };
+
+    // Add filter to all columns
+    menuEntries['Filter...'] = {
+      icon: 'img/filter.svg',
+      onClick: async () => {
+        window.mainView.alert(`Sorry, not implemented yet...`);
+      }
+    };
+
+    // Add Hide to all columns...
+    menuEntries['Hide'] = {
+      icon: 'img/hide.svg',
+      onClick: async () => {
+        window.mainView.alert(`Sorry, not implemented yet...`);
+      }
+    };
+
+    if (attribute.name === null) {
+      // Add options specific to the ID column
+      menuEntries.Transpose = {
+        icon: 'img/transpose.svg',
+        onClick: () => {
+          this.collectNewClasses(classObj.openTranspose());
+        }
+      };
+    } else if (attribute.meta) {
+      // Add options specific to meta columns
+    } else {
+      // Add options specific to regular attributes
+      menuEntries.Aggregate = {
+        onClick: () => {
+          classObj.aggregate(attribute.name);
+        }
+      };
+      menuEntries['Expand...'] = {
+        onClick: async () => {
+          const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
+          if (delimiter !== null) {
+            classObj.expand(attribute.name, delimiter);
+          }
+        }
+      };
+      menuEntries.Facet = {
+        onClick: () => {
+          this.collectNewClasses(classObj.openFacet(attribute.name));
+        }
+      };
+    }
+    window.mainView.showContextMenu({ targetBounds, menuEntries });
+  }
+  async collectNewClasses (iterator) {
+    window.mainView.showOverlay({
+      content: `<div class="newClassNames"></div>`,
+      spinner: true
+    });
+    const newClasses = [];
+    for await (const newClass of iterator) {
+      newClasses.push(newClass);
+      window.mainView.showOverlay({
+        content: overlay => {
+          let names = overlay.select('.newClassNames').selectAll('h3')
+            .data(newClasses);
+          const namesEnter = names.enter().append('h3');
+          names = names.merge(namesEnter);
+          names.text(classObj => classObj.className);
+        }
+      });
+    }
+    window.mainView.hideOverlay();
   }
   draw () {
     if (this.tabElement) {
@@ -211,8 +265,31 @@ class TableView extends GoldenLayoutView {
       // TODO: show some kind of empty state content
     } else {
       const classObj = mure.classes[this.classId];
-      const data = Object.keys(classObj.table.currentData.data);
+      const currentTable = classObj.table.currentData;
+      const data = Object.keys(currentTable.data);
       this.attributes = Object.values(classObj.table.getAttributeDetails());
+      if (classObj.type === 'Node') {
+        // Degree columns:
+        for (const edgeId of Object.keys(classObj.edgeClassIds)) {
+          const edgeClass = mure.classes[edgeId];
+          this.attributes.unshift({
+            name: `${edgeClass.className} Degree`,
+            edgeId,
+            meta: true
+          });
+        }
+      } else if (classObj.type === 'Edge') {
+        // Sources and Targets columns:
+        this.attributes.unshift({
+          name: 'Sources',
+          meta: true
+        });
+        this.attributes.push({
+          name: 'Targets',
+          meta: true
+        });
+      }
+      // ID column:
       this.attributes.unshift(classObj.table.getIndexDetails());
       this.attributes.forEach((attr, index) => {
         attr.columnIndex = index;
@@ -221,13 +298,16 @@ class TableView extends GoldenLayoutView {
         return {
           renderer: function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
-            const dataValue = instance.getSourceDataAtRow(row);
-            self.drawCell(d3.select(td), attribute, dataValue);
+            const index = instance.getSourceDataAtRow(row);
+            self.drawCell(d3.select(td), attribute, currentTable.data[index]);
           },
           data: (index, newValue) => {
             // TODO: handle newValue if readOnly is false
             if (attribute.name === null) {
               return index;
+            } else if (attribute.meta) {
+              // Meta values are computed asynchronously
+              return '...';
             } else {
               const value = classObj.table.currentData.data[index].row[attribute.name];
               if (value === undefined) {
