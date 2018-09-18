@@ -24,7 +24,7 @@ class InstanceView extends SvgViewMixin(GoldenLayoutView) {
       .classed('nodeLayer', true);
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink()) // .distance(50)) //.id(d => d.id))
-      .force('charge', d3.forceManyBody().strength(-NODE_SIZE))
+      .force('charge', d3.forceManyBody())
       .force('center', d3.forceCenter())
       .force('collide', d3.forceCollide().radius(NODE_SIZE));
     window.mainView.on('seed', () => {
@@ -45,7 +45,24 @@ class InstanceView extends SvgViewMixin(GoldenLayoutView) {
 
     nodesEnter.append('circle')
       .attr('r', NODE_SIZE);
-    nodes.classed('dummy', d => d.dummy);
+    nodes.classed('dummy', d => d.dummy)
+      .call(d3.drag()
+        .on('start', d => {
+          if (!d3.event.active) {
+            this.simulation.alphaTarget(0.3).restart();
+          }
+          d.fx = d.x;
+          d.fy = d.y;
+        }).on('drag', d => {
+          d.fx = d3.event.x;
+          d.fy = d3.event.y;
+        }).on('end', d => {
+          if (!d3.event.active) {
+            this.simulation.alphaTarget(0);
+          }
+          delete d.fx;
+          delete d.fy;
+        }));
 
     let edges = this.content.select('.edgeLayer')
       .selectAll('.edge').data(graph.edges);
@@ -97,15 +114,15 @@ class InstanceView extends SvgViewMixin(GoldenLayoutView) {
         const sources = [];
         for await (const source of edgeTableInstance.sourceNodes()) {
           const sourceId = source.table.tableId + source.index;
-          if (nodeLookup[sourceId]) {
+          if (nodeLookup[sourceId] !== undefined) {
             sources.push(nodeLookup[sourceId]);
           }
         }
         const targets = [];
         for await (const target of edgeTableInstance.targetNodes()) {
           const targetId = target.table.tableId + target.index;
-          if (nodeLookup[targetId]) {
-            sources.push(nodeLookup[targetId]);
+          if (nodeLookup[targetId] !== undefined) {
+            targets.push(nodeLookup[targetId]);
           }
         }
         if (sources.length === 0) {
