@@ -2,6 +2,7 @@
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './MainMenu/MainMenu.js';
 import InstanceGraph from '../models/InstanceGraph.js';
+import NetworkModelGraph from '../models/NetworkModelGraph.js';
 
 class MainView extends View {
   constructor (d3el) {
@@ -16,12 +17,15 @@ class MainView extends View {
     this.instances = null;
     this.instanceGraph = new InstanceGraph();
 
+    this.networkModelGraph = new NetworkModelGraph();
+
     mure.on('tableUpdate', () => {
       this.render();
     });
-    mure.on('classUpdate', () => {
+    mure.on('classUpdate', async () => {
       this.updateSamples();
       this.updateLayout();
+      await this.networkModelGraph.update();
       this.render();
     });
 
@@ -38,6 +42,10 @@ class MainView extends View {
     });
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
     this.firstDraw = true;
+    (async () => {
+      await this.networkModelGraph.update();
+      this.render();
+    })();
   }
   draw () {
     this.mainMenu.render();

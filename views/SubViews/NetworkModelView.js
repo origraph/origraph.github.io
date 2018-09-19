@@ -395,30 +395,17 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     console.log('calling draw');
     const self = this;
     const bounds = this.getContentBounds(this.content);
-    const graph = this.deriveGraph();
-
-    console.log(bounds, graph);
 
     this.simulation.force('center')
       .x(bounds.width / 2)
       .y(bounds.height / 2);
 
-    this.simulation.nodes(graph.nodes);
+    this.simulation.nodes(window.mainView.networkModelGraph.nodes);
     this.simulation.force('link')
-      .links(graph.links);
-
-    // Fix the position of all nodes  - isn't being called on simulation.stop;
-    this.simulation.on('end', () => {
-      console.log('simulation has ended');
-      graph.nodes.map(n => {
-        n.fx = n.x;
-        n.fy = n.y;
-      });
-      graph.nodes.map(n => console.log(n.fx === n.x));
-    });
+      .links(window.mainView.networkModelGraph.edges);
 
     let nodes = this.nodeLayer.selectAll('.object')
-      .data(graph.nodes, d => d.classId);
+      .data(window.mainView.networkModelGraph.nodes, d => d.classId);
     nodes.exit().remove();
 
     let nodesEnter = nodes.enter().append('g')
@@ -694,44 +681,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       out[attr.shift()] = attr;
     }
     return out;
-  }
-
-  deriveGraph () {
-    const edgeClasses = [];
-    const nodeLookup = {}; // maps a class selector to an index in graph.nodes
-    let graph = {
-      nodes: [],
-      links: []
-    };
-
-    // Create nodes + pseudo-nodes
-    Object.entries(mure.classes).forEach(([selector, classObj]) => {
-      nodeLookup[classObj.classId] = graph.nodes.length;
-      graph.nodes.push(classObj);
-      if (classObj.type === 'Edge') {
-        edgeClasses.push(classObj);
-      }
-    });
-
-    // Get any links that exist
-    edgeClasses.forEach(edgeClass => {
-      if (edgeClass.sourceClassId !== null) {
-        graph.links.push({
-          source: nodeLookup[edgeClass.sourceClassId],
-          target: nodeLookup[edgeClass.classId],
-          directed: edgeClass.directed
-        });
-      }
-      if (edgeClass.targetClassId !== null) {
-        graph.links.push({
-          source: nodeLookup[edgeClass.classId],
-          target: nodeLookup[edgeClass.targetClassId],
-          directed: edgeClass.directed
-        });
-      }
-    });
-
-    return graph;
   }
 }
 NetworkModelView.icon = 'img/networkModel.svg';
