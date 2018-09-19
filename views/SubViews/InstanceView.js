@@ -27,17 +27,16 @@ class InstanceView extends SvgViewMixin(GoldenLayoutView) {
       .force('charge', d3.forceManyBody())
       .force('center', d3.forceCenter())
       .force('collide', d3.forceCollide().radius(NODE_SIZE));
-    window.mainView.on('seed', () => {
+    window.mainView.instanceGraph.on('update', () => {
       this.simulation.alpha(0.3).restart();
       this.render();
     });
   }
-  async draw () {
-    const graph = await this.deriveGraph();
+  draw () {
     const bounds = this.getContentBounds(this.content);
 
     let nodes = this.content.select('.nodeLayer')
-      .selectAll('.node').data(graph.nodes);
+      .selectAll('.node').data(window.mainView.instanceGraph.nodes);
     nodes.exit().remove();
     const nodesEnter = nodes.enter().append('g')
       .classed('node', true);
@@ -65,7 +64,7 @@ class InstanceView extends SvgViewMixin(GoldenLayoutView) {
         }));
 
     let edges = this.content.select('.edgeLayer')
-      .selectAll('.edge').data(graph.edges);
+      .selectAll('.edge').data(window.mainView.instanceGraph.edges);
     edges.exit().remove();
     const edgesEnter = edges.enter().append('g')
       .classed('edge', true);
@@ -80,98 +79,11 @@ class InstanceView extends SvgViewMixin(GoldenLayoutView) {
       nodes.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
-    this.simulation.nodes(graph.nodes);
-    this.simulation.force('link').links(graph.edges);
+    this.simulation.nodes(window.mainView.instanceGraph.nodes);
+    this.simulation.force('link').links(window.mainView.instanceGraph.edges);
     this.simulation.force('center')
       .x(bounds.width / 2)
       .y(bounds.height / 2);
-  }
-  async deriveGraph () {
-    const graph = {
-      nodes: [],
-      edges: []
-    };
-    const nodeLookup = {};
-    if (window.mainView.instances === null) {
-      // The user has never directly interacted with the instance view, so
-      // we should pick some smart default. TODO: fancy graph sampling
-      return graph;
-    } else {
-      const edgeTableEntries = [];
-      for (const instance of window.mainView.instances) {
-        if (instance.type === 'Node') {
-          const nodeId = instance.table.tableId + instance.index;
-          nodeLookup[nodeId] = graph.nodes.length;
-          graph.nodes.push({
-            nodeTableInstance: instance,
-            dummy: false
-          });
-        } else if (instance.type === 'Edge') {
-          edgeTableEntries.push(instance);
-        }
-      }
-      for (const edgeTableInstance of edgeTableEntries) {
-        const sources = [];
-        for await (const source of edgeTableInstance.sourceNodes()) {
-          const sourceId = source.table.tableId + source.index;
-          if (nodeLookup[sourceId] !== undefined) {
-            sources.push(nodeLookup[sourceId]);
-          }
-        }
-        const targets = [];
-        for await (const target of edgeTableInstance.targetNodes()) {
-          const targetId = target.table.tableId + target.index;
-          if (nodeLookup[targetId] !== undefined) {
-            targets.push(nodeLookup[targetId]);
-          }
-        }
-        if (sources.length === 0) {
-          if (targets.length === 0) {
-            // We have completely hanging edges, make dummy nodes for the
-            // source and target
-            graph.edges.push({
-              edgeTableInstance,
-              source: graph.nodes.length,
-              target: graph.nodes.length + 1
-            });
-            graph.nodes.push({ dummy: true });
-            graph.nodes.push({ dummy: true });
-          } else {
-            // The sources are hanging, but we have targets
-            for (const target of targets) {
-              graph.edges.push({
-                edgeTableInstance,
-                source: graph.nodes.length,
-                target
-              });
-              graph.nodes.push({ dummy: true });
-            }
-          }
-        } else if (targets.length === 0) {
-          // The targets are hanging, but we have sources
-          for (const source of sources) {
-            graph.edges.push({
-              edgeTableInstance,
-              source,
-              target: graph.nodes.length
-            });
-            graph.nodes.push({ dummy: true });
-          }
-        } else {
-          // Neither the source, nor the target are hanging
-          for (const source of sources) {
-            for (const target of targets) {
-              graph.edges.push({
-                edgeTableInstance,
-                source,
-                target
-              });
-            }
-          }
-        }
-      }
-      return graph;
-    }
   }
 }
 InstanceView.icon = 'img/instanceView.svg';

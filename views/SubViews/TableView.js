@@ -106,7 +106,7 @@ class TableView extends GoldenLayoutView {
     if (attribute.seed) {
       element.text('')
         .on('click', () => {
-          window.mainView.seed(dataValue);
+          window.mainView.instanceGraph.seed(dataValue);
         });
     } else if (attribute.meta) {
       (async () => {
@@ -183,7 +183,7 @@ class TableView extends GoldenLayoutView {
       menuEntries['Seed All Rows'] = {
         icon: 'img/instanceView.svg',
         onClick: async () => {
-          window.mainView.seed(Object.values(classObj.table.currentData.data));
+          window.mainView.instanceGraph.seed(Object.values(classObj.table.currentData.data));
         }
       };
     } else {
