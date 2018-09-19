@@ -11,28 +11,85 @@ class InstanceGraph extends PersistentGraph {
       // we should pick some smart default. TODO: fancy graph sampling
       return [];
     } else {
-      return this._instances;
+      return Object.values(this._instances);
     }
+  }
+  contains (instance) {
+    return this._instances && !!this._instances[this.getInstanceId(instance)];
+  }
+  async unseed (instances) {
+    if (!this.instances) {
+      return;
+    }
+    if (!(instances instanceof Array)) {
+      instances = [ instances ];
+    }
+    // For now, don't do anything fancy; just unseed exactly the specified instances
+    for (const instance of instances) {
+      delete this._instances[this.getInstanceId(instance)];
+    }
+    await this.update();
   }
   async seed (instances) {
     if (!(instances instanceof Array)) {
       instances = [ instances ];
     }
-    this._instances = this._instances || [];
+    this._instances = this._instances || {};
+    const newNodes = {};
     for (const instance of instances) {
-      // TODO: more efficient set union?
-      if (this.instances.indexOf(instance) === -1) {
-        this.instances.push(instance);
+      const id = this.getInstanceId(instance);
+      this._instances[id] = instance;
+      if (instance.type === 'Node') {
+        newNodes[id] = true;
+      } else if (instance.type === 'Edge') {
+        // Add source and target nodes when we seed edges
+        for await (const node of instance.sourceNodes()) {
+          const nodeId = this.getInstanceId(node);
+          this._instances[nodeId] = node;
+        }
+        for await (const node of instance.targetNodes()) {
+          const nodeId = this.getInstanceId(node);
+          this._instances[nodeId] = node;
+        }
+      }
+    }
+    // Add any edges that connect new nodes to existing ones
+    for (const newNodeId of Object.keys(newNodes)) {
+      for await (const edge of this._instances[newNodeId].edges()) {
+        const edgeId = this.getInstanceId(edge);
+        if (!this._instances[edgeId]) {
+          let sourceExists = false;
+          let targetExists = false;
+          for await (const node of edge.sourceNodes()) {
+            const nodeId = this.getInstanceId(node);
+            if (this._instances[nodeId]) {
+              sourceExists = true;
+              break;
+            }
+          }
+          for await (const node of edge.targetNodes()) {
+            const nodeId = this.getInstanceId(node);
+            if (this._instances[nodeId]) {
+              targetExists = true;
+              break;
+            }
+          }
+          if (sourceExists && targetExists) {
+            this._instances[edgeId] = edge;
+          }
+        }
       }
     }
     await this.update();
-    this.trigger('update');
+  }
+  getInstanceId (instance) {
+    return instance.classObj.classId + instance.index;
   }
   keyFunction (node) {
     if (node.dummy) {
       return null;
     } else {
-      return node.nodeTableInstance.table.tableId + node.nodeTableInstance.index;
+      return this.getInstanceId(node.nodeTableInstance);
     }
   }
   async deriveGraph () {
@@ -44,7 +101,7 @@ class InstanceGraph extends PersistentGraph {
     const edgeTableEntries = [];
     for (const instance of this.instances) {
       if (instance.type === 'Node') {
-        const nodeId = instance.table.tableId + instance.index;
+        const nodeId = this.getInstanceId(instance);
         nodeLookup[nodeId] = graph.nodes.length;
         graph.nodes.push({
           nodeTableInstance: instance,
@@ -57,14 +114,14 @@ class InstanceGraph extends PersistentGraph {
     for (const edgeTableInstance of edgeTableEntries) {
       const sources = [];
       for await (const source of edgeTableInstance.sourceNodes()) {
-        const sourceId = source.table.tableId + source.index;
+        const sourceId = this.getInstanceId(source);
         if (nodeLookup[sourceId] !== undefined) {
           sources.push(nodeLookup[sourceId]);
         }
       }
       const targets = [];
       for await (const target of edgeTableInstance.targetNodes()) {
-        const targetId = target.table.tableId + target.index;
+        const targetId = this.getInstanceId(target);
         if (nodeLookup[targetId] !== undefined) {
           targets.push(nodeLookup[targetId]);
         }

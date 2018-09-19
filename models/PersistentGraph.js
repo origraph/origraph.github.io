@@ -32,6 +32,7 @@ class PersistentGraph extends Model {
     }
     this.nodes = newGraph.nodes;
     this.edges = newGraph.edges;
+    this.trigger('update');
   }
 }
 export default PersistentGraph;

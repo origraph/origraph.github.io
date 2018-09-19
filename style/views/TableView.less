@@ -76,12 +76,18 @@
       color: @textColor;
     }
 
-    .seed {
+    .seedColumn {
       background-size: @tableHeaderButtonSize;
       background-position: center center;
       background-repeat: no-repeat;
-      background-image: data-uri('../img/instanceView.svg');
       cursor: pointer;
+
+      &.addSeed {
+        background-image: data-uri('../img/addSeed.svg');
+      }
+      &.removeSeed {
+        background-image: data-uri('../img/removeSeed.svg');
+      }
     }
   }
 }

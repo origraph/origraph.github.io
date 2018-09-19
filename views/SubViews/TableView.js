@@ -102,11 +102,19 @@ class TableView extends GoldenLayoutView {
   drawCell (element, attribute, dataValue) {
     element.classed('idColumn', attribute.name === null)
       .classed('metaColumn', attribute.meta)
-      .classed('seed', attribute.seed);
+      .classed('seedColumn', attribute.seed);
     if (attribute.seed) {
+      const isSeeded = window.mainView.instanceGraph.contains(dataValue);
       element.text('')
-        .on('click', () => {
-          window.mainView.instanceGraph.seed(dataValue);
+        .classed('addSeed', !isSeeded)
+        .classed('removeSeed', isSeeded)
+        .on('click', async () => {
+          if (isSeeded) {
+            await window.mainView.instanceGraph.unseed(dataValue);
+          } else {
+            await window.mainView.instanceGraph.seed(dataValue);
+          }
+          this.render();
         });
     } else if (attribute.meta) {
       (async () => {
@@ -181,7 +189,7 @@ class TableView extends GoldenLayoutView {
     if (attribute.seed) {
       // Only one menu entry for the seed column (to seed everything)
       menuEntries['Seed All Rows'] = {
-        icon: 'img/instanceView.svg',
+        icon: 'img/addSeed.svg',
         onClick: async () => {
           window.mainView.instanceGraph.seed(Object.values(classObj.table.currentData.data));
         }
@@ -307,7 +315,7 @@ class TableView extends GoldenLayoutView {
       this.attributes.unshift(classObj.table.getIndexDetails());
       // Instance seed column:
       this.attributes.push({
-        name: '',
+        name: 'Seed',
         seed: true,
         meta: true
       });
