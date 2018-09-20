@@ -24,9 +24,37 @@ class InstanceGraph extends PersistentGraph {
     if (!(instances instanceof Array)) {
       instances = [ instances ];
     }
-    // For now, don't do anything fancy; just unseed exactly the specified instances
+    // Unseed each instance
     for (const instance of instances) {
       delete this._instances[this.getInstanceId(instance)];
+      // When a node is un-seeded, un-seed any of its edges that have that node
+      // as its only source or target (i.e. we only want to see floating edges
+      // in the instance model view that are actually floating in the network
+      // model)
+      if (instance.type === 'Node') {
+        for await (const edge of instance.edges()) {
+          const edgeId = this.getInstanceId(edge);
+          if (this._instances[edgeId]) {
+            let otherSourceExists = false;
+            let otherTargetExists = false;
+            for await (const node of edge.sourceNodes()) {
+              if (node !== instance) {
+                otherSourceExists = true;
+                break;
+              }
+            }
+            for await (const node of edge.targetNodes()) {
+              if (node !== instance) {
+                otherTargetExists = true;
+                break;
+              }
+            }
+            if (!otherSourceExists || !otherTargetExists) {
+              delete this._instances[edgeId];
+            }
+          }
+        }
+      }
     }
     await this.update();
   }
@@ -83,7 +111,7 @@ class InstanceGraph extends PersistentGraph {
     await this.update();
   }
   getInstanceId (instance) {
-    return instance.classObj.classId + instance.index;
+    return instance.classObj.classId + '_' + instance.index;
   }
   keyFunction (node) {
     if (node.dummy) {
