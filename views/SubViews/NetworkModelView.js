@@ -7,15 +7,15 @@ const NODE_SIZE = 25;
 const OBJECT_PATHS = {
   // Diamond for generic classes
   'Generic': `\
-M0,${-NODE_SIZE}
-L${NODE_SIZE},0
-L0,${NODE_SIZE}
-L${-NODE_SIZE},0
+M0,${-NODE_SIZE}\
+L${NODE_SIZE},0\
+L0,${NODE_SIZE}\
+L${-NODE_SIZE},0\
 Z`,
   // Circle for node classes
   'Node': `\
-M0,${-NODE_SIZE}
-A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${NODE_SIZE}
+M0,${-NODE_SIZE}\
+A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${NODE_SIZE}\
 A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${-NODE_SIZE}`,
   // No object path for edge classes; these are only represented
   // in the lines layer
@@ -26,7 +26,7 @@ const DEFAULT_FORCES = {
   link: d3.forceLink(),
   charge: d3.forceManyBody(),
   center: d3.forceCenter(),
-  collide: d3.forceCollide().radius(NODE_SIZE)
+  collide: d3.forceCollide().radius(2 * NODE_SIZE)
 };
 
 class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
@@ -58,6 +58,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     this.handleLayer = this.content.append('g').classed('handleLayer', true);
 
     this.simulation.on('tick', () => {
+      this.drawLineLayer();
       this.objectLayer.selectAll('.object')
         .attr('transform', d => `translate(${d.x},${d.y})`);
       this.handleLayer.selectAll('.handleGroup')
@@ -70,7 +71,50 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   }
 
   drawLineLayer () {
-    // TODO: draw the connections + hanging edges
+    // Lines associated with edge classes
+    const edgeClasses = window.mainView.networkModelGraph.nodes
+      .filter(d => d.type === 'Edge');
+    let edgeLines = this.lineLayer.selectAll('.edge')
+      .data(edgeClasses, d => d.classId);
+    edgeLines.exit().remove();
+    const edgeLinesEnter = edgeLines.enter().append('path')
+      .classed('edge', true);
+    edgeLines = edgeLines.merge(edgeLinesEnter);
+
+    edgeLines.attr('d', d => {
+      if (d.x === undefined || d.y === undefined) {
+        return '';
+      } else {
+        return `\
+M${d.x - d.labelWidth / 2 - this.emSize},${d.y}\
+L${d.x + d.labelWidth / 2 + this.emSize},${d.y}`;
+      }
+    });
+
+    // Lines between edge classes and node classes
+    let connectionLines = this.lineLayer.selectAll('.connection')
+      .data(window.mainView.networkModelGraph.edges, d => d.id);
+    connectionLines.exit().remove();
+    const connectionLinesEnter = connectionLines.enter().append('path')
+      .classed('connection', true);
+    connectionLines = connectionLines.merge(connectionLinesEnter);
+
+    connectionLines.attr('d', d => {
+      if (d.source.x === undefined || d.source.y === undefined ||
+          d.target.x === undefined || d.target.y === undefined) {
+        return '';
+      } else if (d.source.type === 'Node') {
+        return `\
+M${d.source.x},${d.source.y}\
+Q${d.target.x - d.target.labelWidth / 2 - this.emSize - 4 * NODE_SIZE},${d.target.y}\
+,${d.target.x - d.target.labelWidth / 2 - this.emSize},${d.target.y}`;
+      } else {
+        return `\
+M${d.source.x + d.source.labelWidth / 2 + this.emSize},${d.source.y}\
+Q${d.source.x + d.source.labelWidth / 2 + this.emSize + 4 * NODE_SIZE},${d.source.y}\
+,${d.target.x},${d.target.y}`;
+      }
+    });
   }
 
   drawObjectLayer () {
@@ -83,10 +127,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     // Manually patch the class on (so we can just use classObj.type)
     objects.attr('class', d => `${d.type} object`);
-
-    // Sneaky way for groups in different layers that correspond to
-    // the same class to communicate with each other:
-    objects.attr('data-class-id', d => d.classId);
 
     // Dragging behavior (disabled when handles are being dragged)
     objects.call(d3.drag()
@@ -132,7 +172,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     textGroupEnter.append('rect'); // background
     textGroupEnter.append('text');
     objects.select('.textGroup').attr('transform',
-      d => `translate(0,${d.type === 'Edge' ? 0 : NODE_SIZE + this.emSize})`);
+      d => `translate(0,${d.type === 'Edge' ? this.emSize : NODE_SIZE + this.emSize})`);
     objects.select('text').text(d => d.className);
     // Patch the string width of Edge classes onto the data, so it's available elsewhere
     objects.each(function (d) {
@@ -153,7 +193,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     objectsEnter.selectAll('.icons image')
       .attr('width', this.emSize)
       .attr('height', this.emSize)
-      .attr('y', d => d.type === 'Edge' ? -2 * this.emSize : -this.emSize / 2);
+      .attr('y', d => d.type === 'Edge' ? -this.emSize : -this.emSize / 2);
     objects.select('.typeIcon')
       .attr('xlink:href', d => `img/${d.type.toLowerCase()}.svg`)
       .attr('x', d => d.type === 'Edge' ? d.labelWidth / 2 - 2 * this.emSize : -this.emSize);
@@ -175,10 +215,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     const handleGroupsEnter = handleGroups.enter().append('g')
       .classed('handleGroup', true);
     handleGroups = handleGroups.merge(handleGroupsEnter);
-
-    // Sneaky way for groups in different layers that correspond to
-    // the same class to communicate with each other:
-    handleGroups.attr('data-class-id', d => d.classId);
 
     // TODO: actually draw the handles
   }

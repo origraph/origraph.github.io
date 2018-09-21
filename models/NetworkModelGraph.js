@@ -26,6 +26,7 @@ class NetworkModelGraph extends PersistentGraph {
     edgeClasses.forEach(edgeClass => {
       if (edgeClass.sourceClassId !== null) {
         graph.edges.push({
+          id: `${edgeClass.sourceClassId}_${edgeClass.classId}`,
           source: nodeLookup[edgeClass.sourceClassId],
           target: nodeLookup[edgeClass.classId],
           directed: edgeClass.directed
@@ -33,6 +34,7 @@ class NetworkModelGraph extends PersistentGraph {
       }
       if (edgeClass.targetClassId !== null) {
         graph.edges.push({
+          id: `${edgeClass.classId}_${edgeClass.targetClassId}`,
           source: nodeLookup[edgeClass.classId],
           target: nodeLookup[edgeClass.targetClassId],
           directed: edgeClass.directed
