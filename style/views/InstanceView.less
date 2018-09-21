@@ -3,14 +3,25 @@
 
 .InstanceView {
   .nodeLayer {
-    .node circle {
-      fill: @textColor;
-      stroke-width: 2px;
-      stroke: @invertedTextColor;
-    }
-    .node.dummy circle {
-      fill: none;
-      stroke: none;
+    .node {
+      cursor: grab;
+      &:active {
+        cursor: grabbing;
+      }
+
+      circle {
+        fill: @textColor;
+        stroke-width: 2px;
+        stroke: @invertedTextColor;
+      }
+      &.dummy {
+        cursor: default;
+
+        circle {
+          fill: none;
+          stroke: none;
+        }
+      }
     }
   }
 

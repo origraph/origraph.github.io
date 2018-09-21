@@ -2,11 +2,32 @@
 import GoldenLayoutView from './GoldenLayoutView.js';
 import SvgViewMixin from './SvgViewMixin.js';
 
-const NODE_SIZE = 35;
-const FLOATING_EDGE_LENGTH = 100;
-const EDGE_STUB_LENGTH = 25;
-const MENU_SIZE = 25;
-let TICK_COUNT = 0;
+const NODE_SIZE = 25;
+
+const OBJECT_PATHS = {
+  // Diamond for generic classes
+  'Generic': `\
+M0,${-NODE_SIZE}
+L${NODE_SIZE},0
+L0,${NODE_SIZE}
+L${-NODE_SIZE},0
+Z`,
+  // Circle for node classes
+  'Node': `\
+M0,${-NODE_SIZE}
+A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${NODE_SIZE}
+A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${-NODE_SIZE}`,
+  // No object path for edge classes; these are only represented
+  // in the lines layer
+  'Edge': ''
+};
+
+const DEFAULT_FORCES = {
+  link: d3.forceLink(),
+  charge: d3.forceManyBody(),
+  center: d3.forceCenter(),
+  collide: d3.forceCollide().radius(NODE_SIZE)
+};
 
 class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   constructor ({
@@ -25,662 +46,164 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   setup () {
     super.setup();
 
-    this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink()) // .distance(50)) //.id(d => d.id))
-      .force('charge', d3.forceManyBody().strength(-NODE_SIZE))
-      .force('center', d3.forceCenter())
-      .force('collide', d3.forceCollide().radius(NODE_SIZE));
+    this.draggingHandle = false;
 
-    this.lineGenerator = d3.line();
-    // .curve(d3.curveBasis);
+    this.simulation = d3.forceSimulation();
+    for (const [forceName, force] of Object.entries(DEFAULT_FORCES)) {
+      this.simulation.force(forceName, force);
+    }
 
-    // Dictionary of node positions to be preserved if draw is called again;
-    this.nodePos = {};
+    this.lineLayer = this.content.append('g').classed('lineLayer', true);
+    this.objectLayer = this.content.append('g').classed('objectLayer', true);
+    this.handleLayer = this.content.append('g').classed('handleLayer', true);
 
-    // flag to monitor if user is dragging (supress mouseover callbacks)
-    this.dragging = false;
-    // flag to monitor mouseover to render self/edges
-    this.sourceMousedOver = false;
-    this.sourceDrag = undefined;
-
-    // flag to monitor mouseover to connect edges
-    this.targetDrag = undefined;
-
-    let self = this;
     this.simulation.on('tick', () => {
-      TICK_COUNT = TICK_COUNT + 1;
-      if (TICK_COUNT > 5) {
-        // fix position of all nodes;
-        d3.selectAll('.nodeObject').each(n => {
-          n.fx = n.x;
-          n.fy = n.y;
-        });
-        this.simulation.stop();
-      }
-      this.updateGraph();
+      this.objectLayer.selectAll('.object')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+      this.handleLayer.selectAll('.handleGroup')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
-    // create markers for edge endpoints
-    let markers = [{
-      id: 0,
-      name: 'circle',
-      path: 'M 0, 0  m -5, 0  a 5,5 0 1,0 10,0  a 5,5 0 1,0 -10,0',
-      viewbox: '-6 -6 12 12'
-    }, {
-      id: 1,
-      name: 'square',
-      path: 'M 0,0 m -5,-5 L 5,-5 L 5,5 L -5,5 Z',
-      viewbox: '-5 -5 10 10'
-    }, {
-      id: 2,
-      name: 'arrow',
-      path: 'M 0,0 m -5,-5 L 5,0 L -5,5 Z',
-      viewbox: '-5 -5 10 10'
-    }, {
-      id: 2,
-      name: 'stub',
-      path: 'M 0,0 m -1,-5 L 1,-5 L 1,5 L -1,5 Z',
-      viewbox: '-1 -5 2 10'
-    }];
-
-    let defs = this.content.append('svg:defs');
-    defs.selectAll('marker')
-      .data(markers)
-      .enter()
-      .append('svg:marker')
-      .attr('id', function (d) {
-        return 'marker_' + d.name;
-      })
-      .attr('markerHeight', 2)
-      .attr('markerWidth', 2)
-      .attr('markerUnits', 'strokeWidth')
-      .attr('orient', 'auto')
-      .attr('refX', 0)
-      .attr('refY', 0)
-      .attr('viewBox', function (d) {
-        return d.viewbox;
-      })
-      .append('svg:path')
-      .attr('d', function (d) {
-        return d.path;
-      });
-
-    this.linkLayer = this.content.append('g').classed('linkLayer', true);
-    this.nodeLayer = this.content.append('g').classed('nodeLayer', true);
-
-    // set drag behavior
-    let dragstarted = (d) => {
-      // Keep track of dragging to inhibit mouseover events
-      this.dragging = true;
-      // Keep track of what the source of the drag action is
-      this.sourceDrag = d;
-      d.fx = d.fy = null;
-    };
-
-    let dragended = async function (d) {
-      // Keep track of dragging to inhibit mouseover events
-      self.dragging = false;
-
-      let dragObject = d3.select(this).attr('class');
-
-      // reset edge stub to it's original position
-      if (dragObject.includes('anchor')) {
-        d3.select(this.parentNode).select('.anchor')
-          .attr('d', self.lineGenerator(
-            [
-              [0, 0],
-              [NODE_SIZE + EDGE_STUB_LENGTH, 0]
-            ]
-          ));
-      }
-
-      // Fix node position
-      d.fx = d.x;
-      d.fy = d.y;
-
-      if (self.targetDrag && (self.targetDrag !== d || dragObject.includes('anchor'))) {
-        let sourceNode = d;
-        let targetNode = self.targetDrag;
-
-        console.log(targetNode);
-
-        let sourceAttr = window.mainView.getAttributes(sourceNode.classId);
-        let targetAttr = window.mainView.getAttributes(targetNode.classId);
-
-        // Create empty tooltip
-        window.mainView.showTooltip({
-          content: ' ',
-          targetBounds: this.getBoundingClientRect()
-        });
-
-        let menu = d3.select('#tooltip')
-          .selectAll('.vertical-menu')
-          .data([{
-            'role': 'source',
-            'node': sourceNode
-          }, {
-            'role': 'target',
-            'node': targetNode
-          }]);
-
-        let menuEnter = menu.enter().append('div');
-
-        menu.exit().remove();
-
-        menu = menuEnter.merge(menu);
-
-        menu.attr('class', d => d.role);
-        menu.classed('vertical-menu', true);
-
-        let headers = menu.selectAll('.active').data(d => [d.node.className]);
-
-        headers.enter().append('a')
-          .attr('href', '#')
-          .attr('class', 'active')
-          .html(d => d);
-
-        let menuItems = menu.selectAll('.menuItem').data(d => d.role === 'source' ? sourceAttr : targetAttr);
-
-        menuItems.enter().append('a')
-          .attr('href', '#')
-          .attr('class', 'menuItem')
-          .text(d => d);
-
-        d3.select('#tooltip').append('div').attr('class', 'menu-submit').append('a').attr('href', '#').text('Connect');
-
-        // set listeners for each menu
-        d3.selectAll('.vertical-menu').selectAll('.menuItem').on('click', function (d) {
-          d3.event.stopPropagation();
-          d3.select(this).classed('selected', !d3.select(this).classed('selected'));
-        });
-
-        d3.select('.menu-submit').on('click', () => {
-          // let selectedAttr = d3.select('#tooltip').selectAll('.selected');
-
-          let sourceNode = d3.select('#tooltip').select('.source').datum().node;
-          let targetNode = d3.select('#tooltip').select('.target').datum().node;
-
-          let sourceId = sourceNode.classId;
-          let targetId = targetNode.classId;
-
-          let sourceAttr = d3.select('#tooltip').select('.source').select('.selected').text();
-          let targetAttr = d3.select('#tooltip').select('.target').select('.selected').text();
-
-          console.log(sourceNode.className, sourceId, sourceAttr);
-
-          if (dragObject === 'sourceHandle' || dragObject === 'targetHandle') {
-            dragObject === 'sourceHandle' ? sourceNode.sourceClassId = targetNode.classId : sourceNode.targetClassId = targetNode.classId;
-
-            // self.draw();
-
-            // console.log('Source is Edge')
-            mure.classes[sourceId].connectToNodeClass({
-              nodeClass: mure.classes[targetId],
-              direction: 'target',
-              nodeAttribute: targetAttr,
-              edgeAttribute: sourceAttr
-            });
-
-            // .disconnectSource();
-          } else if (sourceNode.type === 'Node' && targetNode.type === 'Node') {
-
-            // console.log(sourceId,targetId,sourceHash,targetHash)
-            // mure.classes[sourceId].connectToNodeClass({
-            //   otherNodeClass: mure.classes[targetId],
-            //   directed: true, // or false
-            //   thisHashName: sourceHash,
-            //   otherHashName: targetHash
-            // });
-          }
-        });
-      }
-    };
-
-    let dragged = function (d) {
-      let mouse = d3.mouse(d3.select(this.parentNode).node());
-
-      let dragObject = d3.select(this).attr('class');
-
-      if (dragObject === 'targetHandle' || dragObject === 'sourceHandle') {
-        d.dragged = true;
-        mouse[0] = mouse[0] - 10;
-        mouse[1] = mouse[1] - 10;
-        d3.select(this)
-          .attr('cx', mouse[0])
-          .attr('cy', mouse[1]);
-
-        d3.select(this.parentNode).select('.nodeObject').attr('d', () => {
-          let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
-          let coords = dragObject === 'targetHandle' ? [
-            [handle.attr('cx'), handle.attr('cy')], mouse
-          ] : [mouse, [handle.attr('cx'), handle.attr('cy')]];
-          return self.lineGenerator(coords);
-        });
-
-        // position text
-        // d3.select(this.parentNode).selectAll('.textGroup')
-        //   .attr('transform', function () {
-        //     let parent = d3.select(this.parentNode).select('.nodeObject').node().getBoundingClientRect();
-        //     let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
-        //     let currentObj = d3.select(this.parentNode).select('.' + dragObject);
-        //     let translate;
-        //     if (Number(handle.attr('cy')) < Number(d3.select(this.parentNode).select('.' + dragObject).attr('cy'))) {
-        //       if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))) {
-        //         translate = 'translate(' + (parent.width / 2 + Number(handle.attr('cx'))) + ',' + (parent.height / 2) + ')';
-        //       } else {
-        //         translate = 'translate(' + (Number(currentObj.attr('cx')) + parent.width / 2) + ',' + (parent.height / 2) + ')';
-        //       }
-        //     } else {
-        //       if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))) {
-        //         translate = 'translate(' + (parent.width / 2 + Number(handle.attr('cx'))) + ',' + (-parent.height / 2) + ')';
-        //       } else {
-        //         translate = 'translate(' + (Number(currentObj.attr('cx')) + parent.width / 2) + ',' + (-parent.height / 2) + ')';
-        //       }
-        //     }
-        //     return translate;
-        //   });
-
-        // d3.select(this.parentNode).selectAll('.icons')
-        //   .attr('transform', function () {
-        //     let parent = d3.select(this.parentNode).select('.nodeObject').node().getBoundingClientRect();
-        //     let text = d3.select(this.parentNode).select('.textGroup');
-        //     let textBoundingRect = text.node().getBoundingClientRect();
-        //     let handle = dragObject === 'targetHandle' ? d3.select(this.parentNode).select('.sourceHandle') : d3.select(this.parentNode).select('.targetHandle');
-        //     let currentObj = d3.select(this.parentNode).select('.' + dragObject);
-        //     let offset = MENU_SIZE * 2;
-        //     let out;
-
-        //     let textTransform = self.parse(text.attr('transform'));
-        //     let translate = textTransform.translate ? textTransform.translate[0] : 0;
-
-        //     if (Number(handle.attr('cy')) < Number(d3.select(this.parentNode).select('.' + dragObject).attr('cy'))) {
-        //       if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))) {
-        //         out = 'translate(' + (Number(translate) + textBoundingRect.width / 2 - offset) + ',' + (parent.height / 2 - MENU_SIZE * 2) + ')';
-        //       } else {
-        //         out = 'translate(' + (Number(translate) + textBoundingRect.width / 2 - offset) + ',' + (parent.height / 2 - MENU_SIZE * 2) + ')';
-        //       }
-        //     } else {
-        //       if (Number(handle.attr('cx')) < Number(currentObj.attr('cx'))) {
-        //         out = 'translate(' + (Number(translate) + textBoundingRect.width / 2 - offset) + ',' + (-parent.height / 2 - MENU_SIZE * 2) + ')';
-        //       } else {
-        //         out = 'translate(' + (Number(translate) + textBoundingRect.width / 2 - offset) + ',' + (-parent.height / 2 - MENU_SIZE * 2) + ')';
-        //       }
-        //     }
-        //     return out;
-        //   });
-        // self.updateGraph();
-      } else if (dragObject.includes('anchor')) {
-        // check to see if user is dragging over the source node:
-        if (self.sourceMousedOver) {
-          // create preview of self edge;
-          d3.select(this.parentNode).select('.anchor')
-            .attr('d', d => d.type === 'Node' ? self.lineGenerator.curve(d3.curveBasis)(
-              [
-                [NODE_SIZE * 0.9, -NODE_SIZE / 2],
-                [NODE_SIZE * 1.5, -NODE_SIZE / 3],
-                [NODE_SIZE * 1.5, NODE_SIZE / 3],
-                [NODE_SIZE, NODE_SIZE / 2]
-              ]
-            ) : '');
-        } else {
-          // have the edge be a straight line to the mouse pointer
-          d3.select(this.parentNode).select('.anchor')
-            .attr('d', d => d.type === 'Node' ? self.lineGenerator(
-              [
-                [0, 0], mouse
-              ]
-            ) : '');
-        }
-      } else {
-        d.x = d3.event.x;
-        d.y = d3.event.y;
-        self.updateGraph();
-      }
-      // self.simulation.alpha(0.1).restart();
-    };
-
-    this.drag = d3.drag()
-      .on('start', dragstarted)
-      .on('drag', dragged)
-      .on('end', dragended);
+    this.container.on('resize', () => {
+      this.simulation.alpha(0.3);
+    });
   }
 
-  // Function to call on tick or anytime the user wishes to update the graph;
-  updateGraph () {
-    let self = this;
+  drawLineLayer () {
+    // TODO: draw the connections + hanging edges
+  }
 
-    // ensure the network model stays within the bounds of the visible area of this view.
-    const bounds = this.getContentBounds(this.content);
+  drawObjectLayer () {
+    // Object groups
+    let objects = this.objectLayer.selectAll('.object')
+      .data(window.mainView.networkModelGraph.nodes, d => d.classId);
+    objects.exit().remove();
+    const objectsEnter = objects.enter().append('g');
+    objects = objects.merge(objectsEnter);
 
-    d3.selectAll('.object').attr('transform', node => {
-      node.x = Math.max(NODE_SIZE, Math.min(bounds.width - NODE_SIZE, node.x));
-      node.y = Math.max(NODE_SIZE, Math.min(bounds.height - NODE_SIZE, node.y));
-      return `translate(${node.x},${node.y})`;
+    // Manually patch the class on (so we can just use classObj.type)
+    objects.attr('class', d => `${d.type} object`);
+
+    // Sneaky way for groups in different layers that correspond to
+    // the same class to communicate with each other:
+    objects.attr('data-class-id', d => d.classId);
+
+    // Dragging behavior (disabled when handles are being dragged)
+    objects.call(d3.drag()
+      .on('start', d => {
+        if (!this.draggingHandle) {
+          // disable link, charge, and center forces (keep collision)
+          this.simulation.force('link', null);
+          this.simulation.force('charge', null);
+          // this.simulation.force('center', null);
+          if (!d3.event.active) {
+            this.simulation.alpha(0.1).restart();
+          }
+          d.fx = d.x;
+          d.fy = d.y;
+        }
+      }).on('drag', d => {
+        if (!this.draggingHandle) {
+          d.fx = d3.event.x;
+          d.fy = d3.event.y;
+        }
+      }).on('end', d => {
+        if (!this.draggingHandle) {
+          // re-enable link, charge, and center forces
+          this.simulation.force('link', DEFAULT_FORCES.link);
+          this.simulation.force('charge', DEFAULT_FORCES.charge);
+          // this.simulation.force('center', DEFAULT_FORCES.center);
+          if (!d3.event.active) {
+            this.simulation.alpha(0);
+          }
+          delete d.fx;
+          delete d.fy;
+        }
+      }));
+
+    // Diamond, circle, or line
+    objectsEnter.append('path').classed('objectShape', true);
+    objects.select('.objectShape').attr('d', d => {
+      return OBJECT_PATHS[d.type];
     });
 
-    d3.selectAll('.edge').select('.nodeObject')
-      .attr('d', function (d) {
-        let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-        let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
+    // Label
+    const textGroupEnter = objectsEnter.append('g').classed('textGroup', true);
+    textGroupEnter.append('rect'); // background
+    textGroupEnter.append('text');
+    objects.select('.textGroup').attr('transform',
+      d => `translate(0,${d.type === 'Edge' ? 0 : NODE_SIZE + this.emSize})`);
+    objects.select('text').text(d => d.className);
+    // Patch the string width of Edge classes onto the data, so it's available elsewhere
+    objects.each(function (d) {
+      d.labelWidth = this.querySelector('text').getBoundingClientRect().width;
+    });
+    // Size the label background
+    objects.select('.textGroup rect')
+      .attr('x', d => -d.labelWidth / 2)
+      .attr('y', -this.emSize)
+      .attr('width', d => d.labelWidth)
+      .attr('height', this.emSize);
 
-        return self.edgePathGenerator(source, target, d3.select(this.parentNode), d);
+    // Icons
+    const iconGroupEnter = objectsEnter.append('g').classed('icons', true);
+    iconGroupEnter.append('image').classed('typeIcon', true);
+    iconGroupEnter.append('image').classed('menuIcon', true)
+      .attr('xlink:href', d => `img/hamburger.svg`);
+    objectsEnter.selectAll('.icons image')
+      .attr('width', this.emSize)
+      .attr('height', this.emSize)
+      .attr('y', d => d.type === 'Edge' ? -2 * this.emSize : -this.emSize / 2);
+    objects.select('.typeIcon')
+      .attr('xlink:href', d => `img/${d.type.toLowerCase()}.svg`)
+      .attr('x', d => d.type === 'Edge' ? d.labelWidth / 2 - 2 * this.emSize : -this.emSize);
+    objects.select('.menuIcon')
+      .attr('x', d => d.type === 'Edge' ? d.labelWidth / 2 - this.emSize : 0)
+      .on('click', function (d) {
+        window.mainView.showClassContextMenu({
+          classId: d.classId,
+          targetBounds: this.getBoundingClientRect()
+        });
       });
+  }
 
-    d3.selectAll('.edge').select('.sourceHandle')
-      .attr('cx', function (d) {
-        let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-        let out = self.normalize(source, d3.select(this.parentNode));
-        return source === d ? -FLOATING_EDGE_LENGTH - 10 : out[0];
-      })
-      .attr('cy', function (d) {
-        let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-        let out = self.normalize(source, d3.select(this.parentNode));
-        return source === d ? 0 : out[1];
-      });
+  drawHandleLayer () {
+    // Handle groups
+    let handleGroups = this.handleLayer.selectAll('.handleGroup')
+      .data(window.mainView.networkModelGraph.nodes, d => d.classId);
+    handleGroups.exit().remove();
+    const handleGroupsEnter = handleGroups.enter().append('g')
+      .classed('handleGroup', true);
+    handleGroups = handleGroups.merge(handleGroupsEnter);
 
-    d3.selectAll('.edge').select('.targetHandle')
-      .attr('cx', function (d) {
-        let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-        let out = self.normalize(target, d3.select(this.parentNode));
-        return target === d ? +FLOATING_EDGE_LENGTH : out[0];
-      })
-      .attr('cy', function (d) {
-        let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-        let out = self.normalize(target, d3.select(this.parentNode));
-        return target === d ? 0 : out[1];
-      });
+    // Sneaky way for groups in different layers that correspond to
+    // the same class to communicate with each other:
+    handleGroups.attr('data-class-id', d => d.classId);
+
+    // TODO: actually draw the handles
   }
 
   draw () {
-    console.log('calling draw');
-    const self = this;
     const bounds = this.getContentBounds(this.content);
 
-    this.simulation.force('center')
-      .x(bounds.width / 2)
-      .y(bounds.height / 2);
+    // drawObjectLayer updates labelWidth, so it should be called before
+    // anything that relies on labelWidth
+    this.drawObjectLayer();
+    this.drawLineLayer();
+    this.drawHandleLayer();
 
     this.simulation.nodes(window.mainView.networkModelGraph.nodes);
-    this.simulation.force('link')
-      .links(window.mainView.networkModelGraph.edges);
 
-    let nodes = this.nodeLayer.selectAll('.object')
-      .data(window.mainView.networkModelGraph.nodes, d => d.classId);
-    nodes.exit().remove();
-
-    let nodesEnter = nodes.enter().append('g')
-      .classed('object', true);
-
-    nodesEnter.append('path')
-      .attr('class', 'anchorMouseCatcher');
-
-    nodesEnter.append('path')
-      .attr('class', 'anchor')
-      .style('stroke-dasharray', '3px 2px');
-
-    nodesEnter.append('path').attr('class', 'nodeObject').attr('id', d => d.classId); // diamond, circle, or line
-    let textGroup = nodesEnter.append('g').attr('class', 'textGroup');
-    textGroup.append('rect').classed('textBackground', true);
-    textGroup.append('text').append('textPath'); // class Name
-    let g = nodesEnter.append('g').attr('class', 'icons');
-
-    g.append('image').attr('class', 'nodeIcon');
-    g.append('image').attr('class', 'edgeIcon');
-    g.append('image').attr('class', 'deleteIcon');
-
-    // for edges, append two endpoints to the edge line
-    nodesEnter.append('circle')
-      .attr('class', 'sourceHandle');
-
-    nodesEnter.append('circle')
-      .attr('class', 'targetHandle');
-
-    nodes = nodes.merge(nodesEnter);
-
-    // let edgeNodes = nodes.filter(n => n.type === 'Edge');
-    // let nonEdgeNodes = nodes.filter(n => n.type !== 'Edge');
-
-    nodes.select('.anchor')
-      .attr('opacity', 0)
-      .attr('marker-end', d => d.type === 'Node' ? 'url(#marker_circle)' : '');
-
-    nodes.select('.anchorMouseCatcher')
-      .attr('opacity', 0);
-
-    nodes.select('.edgeIcon')
-      .attr('xlink:href', (d) => d.type === 'Edge' ? '' : '../img/edge.svg')
-      .attr('x', d => d.type === 'Generic' ? MENU_SIZE + 5 : 0);
-
-    nodes.select('.nodeIcon')
-      .attr('xlink:href', (d) => d.type === 'Node' ? '' : '../img/node.svg')
-      .attr('x', 0); // d => d.type === 'Node' ? NODE_SIZE - MENU_SIZE : MENU_SIZE)
-
-    nodes.select('.deleteIcon')
-      .attr('xlink:href', '../img/delete.svg')
-      .attr('x', d => d.type === 'Generic' ? 2 * MENU_SIZE + 10 : MENU_SIZE + 5);
-
-    nodes.selectAll('.nodeIcon,.deleteIcon')
-      .attr('height', MENU_SIZE)
-      .attr('width', MENU_SIZE)
-      .attr('y', d => d.type === 'Node' ? NODE_SIZE / 2 - MENU_SIZE / 2 : 0);
-
-    nodes.selectAll('.edgeIcon')
-      .attr('height', (d) => d.type === 'Edge' ? 0 : MENU_SIZE);
-
-    nodes.select('.icons').attr('transform', function (d) {
-      let iconSize = d3.select(this).node().getBoundingClientRect();
-      return d.type === 'Edge' ? '' : 'translate(' + -(iconSize.width / 2) + ',' + (d.type === 'Edge' ? NODE_SIZE / 2 : -NODE_SIZE / 2) + ')';
-    });
-
-    d3.selectAll('.anchor,.anchorMouseCatcher')
-      .attr('d', d => d.type === 'Node' ? this.lineGenerator(
-        [
-          [0, 0],
-          [NODE_SIZE + EDGE_STUB_LENGTH, 0]
-        ]
-      ) : '');
-
-    nodes
-      .call(this.drag);
-
-    nodes.selectAll('.sourceHandle,.targetHandle')
-      .attr('r', d => d.type === 'Edge' ? NODE_SIZE / 4 : 0);
-    nodes.selectAll('.sourceHandle,.targetHandle').call(this.drag);
-    nodes.attr('class', d => d.type.toLowerCase());
-    nodes.classed('object', true);
-
-    d3.selectAll('.anchor,.anchorMouseCatcher').call(this.drag);
-
-    // Draw actual node/edges
-    nodes.select('.nodeObject').attr('d', function (d) {
-      let xr = d.type === 'Node' || d.type === 'Generic' ? Math.round(NODE_SIZE) : Math.round(NODE_SIZE / 8);
-      let yr = d.type === 'Node' || d.type === 'Generic' ? NODE_SIZE * 1.3 : Math.round(NODE_SIZE / 8);
-
-      let diamondPath = 'M0 ' + -yr + ' l ' + xr + ' ' + yr + ' l' + -xr + ' ' + (yr) + ' ' + 'l' + -xr + ' ' + -yr + 'Z';
-      let circlePath = 'M0,0' + 'm' + -NODE_SIZE + ',0' + 'a' + NODE_SIZE + ',' + NODE_SIZE + ' 0 1,0 ' + (2 * NODE_SIZE) + ',0' + 'a' + NODE_SIZE + ',' + NODE_SIZE + ' 0 1,0 ' + -(2 * NODE_SIZE) + ',0Z';
-
-      switch (d.type) {
-        case 'Node':
-          return circlePath;
-        case 'Edge':
-
-          let source = mure.classes[d.sourceClassId] ? mure.classes[d.sourceClassId] : d;
-          let target = mure.classes[d.targetClassId] ? mure.classes[d.targetClassId] : d;
-          let edge = self.edgePathGenerator(source, target, d3.select(this.parentNode), d);
-          return edge;
-        case 'Generic':
-          return diamondPath;
-      }
-    });
-
-    // nodes.select('textPath').text(d => d.className)
-    // nodes.select('textPath').attr('href', d => '#' + d.classId);
-    // nodes.select('textPath').attr('startOffset', '10');
-
-    nodes.select('text').text(d => d.className); // type === 'Node' ? 'nodeClass' : ''); //(d => d.type === 'Node' ? d.className : '');
-    nodes.select('text').style('text-anchor', 'middle');
-
-    nodes.select('.textBackground')
-      .attr('width', function (d) {
-        return d.type === 'Edge' ? d3.select(this.parentNode).select('text').node().getBoundingClientRect().width : 0;
-      })
-      .attr('height', function (d) {
-        return d.type === 'Edge' ? d3.select(this.parentNode).select('text').node().getBoundingClientRect().height : 0;
-      })
-      .attr('x', function () {
-        return -d3.select(this.parentNode).select('text').node().getBoundingClientRect().width / 2;
-      })
-      .attr('y', function () {
-        return -d3.select(this.parentNode).select('text').node().getBoundingClientRect().height * 0.75;
-      });
-
-    // nodes.select('text').attr('x',function(d) {
-    //   switch (d.type) {
-    //     case 'Edge':
-    //       let parent = d3.select(this.parentNode).node().getBoundingClientRect();
-    //       return - parent.width / 2 // -NODE_SIZE/2
-    //     default:
-    //       return 0
-    //   }
-    // })
-
-    nodes.select('.textGroup').attr('transform', function (d) {
-      let x, y;
-      switch (d.type) {
-        case 'Edge':
-          let parent = d3.select(this.parentNode).select('.nodeObject').node().getBoundingClientRect();
-          let translate = d3.select(this.parentNode).attr('transform') ? self.parse(d3.select(this.parentNode).attr('transform')).translate : [0, 0];
-          x = parent.x - translate[0];
-          y = parent.y - translate[1];
-          break;
-        default:
-          x = 0;
-          y = NODE_SIZE + 20;
-      }
-      return 'translate(' + x + ',' + y + ')';
-    });
-
-    // nodes.select('text').attr('y',function(d) {
-    //   switch (d.type) {
-    //     case 'Edge':
-    //       let parent = d3.select(this.parentNode).node().getBoundingClientRect();
-    //       return - parent.height / 2 // -NODE_SIZE/2
-    //     default:
-    //       return NODE_SIZE + 20
-    //   }
-    // })
-
-    // self = this;
-    const hover = function (d) {
-      if (self.dragging) {
-        return;
-      }
-      d3.selectAll('.anchor,.anchorMouseCatcher')
-        .attr('opacity', 0);
-
-      d3.select(this).selectAll('.anchor,.anchorMouseCatcher')
-        .attr('opacity', 1);
-
-      d3.select(this).classed('hovered', true);
-    };
-    const unhover = function () {
-      if (self.dragging) {
-        return;
-      }
-
-      d3.select(this).selectAll('.anchor,.anchorMouseCatcher')
-        .attr('opacity', 0);
-      // window.mainView.hideTooltip();
-      d3.select(this).classed('hovered', false);
-    };
-    // const click = async d => {
-    //   window.mainView.setUserSelection(await this.location.filter({
-    //     className: d.key
-    //   }));
-    // };
-    nodes.on('mouseenter', hover);
-
-    nodes.select('.nodeObject').on('mouseover', (d) => {
-      this.targetDrag = d;
-      this.sourceMousedOver = this.sourceDrag && d.classId === this.sourceDrag.classId;
-    });
-
-    nodes.select('.nodeObject').on('mouseout', (d) => {
-      this.targetDrag = undefined;
-      this.sourceMousedOver = false;
-    });
-
-    nodes.on('mouseleave', unhover);
-    nodes.on('click', async function (d) {
-      d3.event.stopPropagation();
-
-      window.mainView.showClassContextMenu({
-        classId: d.classId,
-        targetBounds: this.getBoundingClientRect()
-      });
-    });
-
-    // links.on('click', click);
-    TICK_COUNT = 0;
-    this.simulation.alpha(0.1).restart();
-  }
-
-  edgePathGenerator (source, target, parentNode, edgeNode) {
-    // floating edges
-    if (source === target) {
-      return this.lineGenerator([
-        [-FLOATING_EDGE_LENGTH, 0],
-        [FLOATING_EDGE_LENGTH, 0]
-      ]);
+    if (this.simulation.force('link')) {
+      this.simulation.force('link')
+        .links(window.mainView.networkModelGraph.edges);
     }
-
-    // get parent offset;
-    let translate = parentNode.attr('transform') ? this.parse(parentNode.attr('transform')).translate : [0, 0];
-
-    if (source.type === 'Edge') {
-      let p = [target.x, target.y];
-      return this.lineGenerator([
-        [-FLOATING_EDGE_LENGTH, edgeNode.y - translate[1]],
-        [FLOATING_EDGE_LENGTH, edgeNode.y - translate[1]],
-        [p[0] - translate[0], p[1] - translate[1]]
-      ]);
+    if (this.simulation.force('center')) {
+      this.simulation.force('center')
+        .x(bounds.width / 2)
+        .y(bounds.height / 2);
     }
-
-    if (target.type === 'Edge') {
-      let p = [source.x, source.y];
-      return this.lineGenerator([
-        [p[0] - translate[0], p[1] - translate[1]],
-        [-FLOATING_EDGE_LENGTH, edgeNode.y - translate[1]],
-        [FLOATING_EDGE_LENGTH, edgeNode.y - translate[1]]
-      ]);
-    }
-
-    let sourceP = [source.x, source.y];
-    let targetP = [target.x, target.y];
-
-    return this.lineGenerator([
-      [sourceP[0] - translate[0], sourceP[1] - translate[1]],
-      [targetP[0] - translate[0], targetP[1] - translate[1]]
-    ]);
-
-    // edge has at least one "anchor"
-    // return 'M' + (source.x - translate[0]) + ' ' + (source.y - translate[1]) + ' L ' + (target.x - translate[0]) + ' ' + (target.y - translate[1]);
-  }
-
-  // accounts for group transform and returns absolute position of nodes in translated group.
-  normalize (node, parentNode) {
-    let translate = this.parse(parentNode.attr('transform')).translate;
-    return [node.x - translate[0], node.y - translate[1]];
-  }
-
-  // function to parse out transforms into x and y offsets
-  parse (transform) {
-    var out = {};
-    for (var i in transform = transform.match(/(\w+\((-?\d+\.?\d*e?-?\d*,?)+\))+/g)) {
-      var attr = transform[i].match(/[\w.-]+/g);
-      out[attr.shift()] = attr;
-    }
-    return out;
+    // TODO: make a custom force to resist labels overlapping each other
   }
 }
 NetworkModelView.icon = 'img/networkModel.svg';

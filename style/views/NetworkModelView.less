@@ -1,88 +1,36 @@
 @import '../colors.less';
 
 .NetworkModelView {
-  text{
-    pointer-events: none;
-    font-size: 30px;
-  }
+  user-select: none;
 
-  .anchor,{
-    stroke:#717070;
-    stroke-width: 7px;
-    fill:none;
-  }
+  .objectLayer {
+    .object {
+      cursor: grab;
+      &:active {
+        cursor: grabbing;
+      }
 
-  .textBackground{
-    fill:white
-  }
-
-  .anchorMouseCatcher{
-    stroke:white;
-    stroke-width: 20px;
-  }
-
-  marker#marker_arrow,  marker#marker_circle,  marker#marker_stub, marker#marker_square{
-    fill:#717070;
-    // opacity: 0.5;
-  }
-
-
-  .node,.edge,.generic {
-
-    // image {
-    //   filter: @textColorImageFilter;
-    // }
-    circle, .nodeObject {
-      // opacity: 0.5;
-      fill: @LightGrey; //@textColor;
-      stroke: none;
+      .objectShape {
+        fill: @darkBackgroundColor;
+        &.selected {
+          fill: @selectionColor;
+        }
+      }
+      .textGroup {
+        rect {
+          fill: fade(@backgroundColor, 50%);
+        }
+        text {
+          text-anchor: middle;
+        }
+      }
+      .menuIcon {
+        opacity: 0.5;
+        cursor: pointer;
+        &:hover {
+          opacity: 1;
+        }
+      }
     }
-    &.selected .nodeObject {
-      fill: @selectionColor;
-    }
-    &.hovered .nodeObject, &.hovered .anchor, .hovered .targetHandle, .hovered .sourceHandle {
-      // opacity: .7;
-      cursor: pointer;
-    }
-  }
-
-  .edge{
-
-    text{
-      text-decoration: overline;
-    }
-    circle, .nodeObject {
-      opacity: 1;
-      fill: @textColor;
-      stroke: none;
-    }
-
-  }
-  .edge {
-    .nodeObject{
-      opacity: 0.5;
-      fill: none;
-      stroke: @DarkTeal;
-      stroke-width: 9px;
-    }
-
-    .sourceHandle, .targetHandle{
-      opacity: .8;
-      fill:@textColor;
-      stroke: white;
-      stroke-width: 3px;
-
-    }
-    &.selected .nodeObject {
-      stroke: @selectionColor;
-    }
-    &.hovered .nodeObject {
-      // opacity: 1.0;
-      cursor: pointer;
-    }
-  }
-
-  image:hover{
-    filter: @selectionColorImageFilter
   }
 }
