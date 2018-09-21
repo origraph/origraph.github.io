@@ -3,6 +3,7 @@ import GoldenLayoutView from './GoldenLayoutView.js';
 import SvgViewMixin from './SvgViewMixin.js';
 
 const NODE_SIZE = 25;
+const CURVE_OFFSET = NODE_SIZE * 4;
 
 const OBJECT_PATHS = {
   // Diamond for generic classes
@@ -20,6 +21,22 @@ A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${-NODE_SIZE}`,
   // No object path for edge classes; these are only represented
   // in the lines layer
   'Edge': ''
+};
+
+const HANDLE_SIZE = 6;
+const HANDLE_PATHS = {
+  // Arrow for directed handles
+  'directed': `\
+M${-HANDLE_SIZE},${-HANDLE_SIZE}\
+L${HANDLE_SIZE},0\
+L${-HANDLE_SIZE},${HANDLE_SIZE}\
+Z`,
+  // Circle for undirected handles
+  'undirected': `\
+M0,${-HANDLE_SIZE}\
+A${HANDLE_SIZE},${HANDLE_SIZE},0,1,1,0,${HANDLE_SIZE}\
+A${HANDLE_SIZE},${HANDLE_SIZE},0,1,1,0,${-HANDLE_SIZE}
+`
 };
 
 const DEFAULT_FORCES = {
@@ -58,62 +75,17 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     this.handleLayer = this.content.append('g').classed('handleLayer', true);
 
     this.simulation.on('tick', () => {
+      // We do some funkiness to the data object to help us draw:
+      // drawObjectLayer updates labelWidth, and inititializes node.handlePositions
+      this.drawObjectLayer();
+      // drawLineLayer uses labelWidth, and updates node.handlePositions
       this.drawLineLayer();
-      this.objectLayer.selectAll('.object')
-        .attr('transform', d => `translate(${d.x},${d.y})`);
-      this.handleLayer.selectAll('.handleGroup')
-        .attr('transform', d => `translate(${d.x},${d.y})`);
+      // drawHandleLayer uses node.handlePositions
+      this.drawHandleLayer();
     });
 
     this.container.on('resize', () => {
       this.simulation.alpha(0.3);
-    });
-  }
-
-  drawLineLayer () {
-    // Lines associated with edge classes
-    const edgeClasses = window.mainView.networkModelGraph.nodes
-      .filter(d => d.type === 'Edge');
-    let edgeLines = this.lineLayer.selectAll('.edge')
-      .data(edgeClasses, d => d.classId);
-    edgeLines.exit().remove();
-    const edgeLinesEnter = edgeLines.enter().append('path')
-      .classed('edge', true);
-    edgeLines = edgeLines.merge(edgeLinesEnter);
-
-    edgeLines.attr('d', d => {
-      if (d.x === undefined || d.y === undefined) {
-        return '';
-      } else {
-        return `\
-M${d.x - d.labelWidth / 2 - this.emSize},${d.y}\
-L${d.x + d.labelWidth / 2 + this.emSize},${d.y}`;
-      }
-    });
-
-    // Lines between edge classes and node classes
-    let connectionLines = this.lineLayer.selectAll('.connection')
-      .data(window.mainView.networkModelGraph.edges, d => d.id);
-    connectionLines.exit().remove();
-    const connectionLinesEnter = connectionLines.enter().append('path')
-      .classed('connection', true);
-    connectionLines = connectionLines.merge(connectionLinesEnter);
-
-    connectionLines.attr('d', d => {
-      if (d.source.x === undefined || d.source.y === undefined ||
-          d.target.x === undefined || d.target.y === undefined) {
-        return '';
-      } else if (d.source.type === 'Node') {
-        return `\
-M${d.source.x},${d.source.y}\
-Q${d.target.x - d.target.labelWidth / 2 - this.emSize - 4 * NODE_SIZE},${d.target.y}\
-,${d.target.x - d.target.labelWidth / 2 - this.emSize},${d.target.y}`;
-      } else {
-        return `\
-M${d.source.x + d.source.labelWidth / 2 + this.emSize},${d.source.y}\
-Q${d.source.x + d.source.labelWidth / 2 + this.emSize + 4 * NODE_SIZE},${d.source.y}\
-,${d.target.x},${d.target.y}`;
-      }
     });
   }
 
@@ -125,8 +97,21 @@ Q${d.source.x + d.source.labelWidth / 2 + this.emSize + 4 * NODE_SIZE},${d.sourc
     const objectsEnter = objects.enter().append('g');
     objects = objects.merge(objectsEnter);
 
-    // Manually patch the class on (so we can just use classObj.type)
-    objects.attr('class', d => `${d.type} object`);
+    // Initialize handlePositions
+    objects.each(d => {
+      d.handlePositions = {};
+    });
+
+    // Manually patch the class on (so we can just use classObj.type),
+    // and set each group's position
+    objects.attr('class', d => `${d.type} object`)
+      .attr('transform', d => {
+        if (d.x === undefined || d.y === undefined) {
+          return '';
+        } else {
+          return `translate(${d.x},${d.y})`;
+        }
+      });
 
     // Dragging behavior (disabled when handles are being dragged)
     objects.call(d3.drag()
@@ -172,7 +157,7 @@ Q${d.source.x + d.source.labelWidth / 2 + this.emSize + 4 * NODE_SIZE},${d.sourc
     textGroupEnter.append('rect'); // background
     textGroupEnter.append('text');
     objects.select('.textGroup').attr('transform',
-      d => `translate(0,${d.type === 'Edge' ? this.emSize : NODE_SIZE + this.emSize})`);
+      d => `translate(0,${d.type === 'Edge' ? 3 / 2 * this.emSize : NODE_SIZE + this.emSize})`);
     objects.select('text').text(d => d.className);
     // Patch the string width of Edge classes onto the data, so it's available elsewhere
     objects.each(function (d) {
@@ -207,6 +192,82 @@ Q${d.source.x + d.source.labelWidth / 2 + this.emSize + 4 * NODE_SIZE},${d.sourc
       });
   }
 
+  drawLineLayer () {
+    // Lines associated with edge classes
+    const edgeClasses = window.mainView.networkModelGraph.nodes
+      .filter(d => d.type === 'Edge');
+    let edgeLines = this.lineLayer.selectAll('.edge')
+      .data(edgeClasses, d => d.classId);
+    edgeLines.exit().remove();
+    const edgeLinesEnter = edgeLines.enter().append('path')
+      .classed('edge', true);
+    edgeLines = edgeLines.merge(edgeLinesEnter);
+
+    edgeLines.attr('d', d => {
+      if (d.x === undefined || d.y === undefined) {
+        return '';
+      } else {
+        // Round up to avoid gaps in the path
+        const offset = Math.ceil(d.labelWidth / 2);
+        return `\
+M${d.x - offset - this.emSize},${d.y + this.emSize / 3}\
+L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
+      }
+    });
+
+    // Lines between edge classes and node classes
+    let connectionLines = this.lineLayer.selectAll('.connection')
+      .data(window.mainView.networkModelGraph.edges, d => d.id);
+    connectionLines.exit().remove();
+    const connectionLinesEnter = connectionLines.enter().append('path')
+      .classed('connection', true);
+    connectionLines = connectionLines.merge(connectionLinesEnter);
+
+    connectionLines.attr('d', d => {
+      if (d.source.x === undefined || d.source.y === undefined ||
+          d.target.x === undefined || d.target.y === undefined) {
+        return '';
+      } else if (d.source.type === 'Node') {
+        // Round down to avoid gaps in the path
+        const offset = Math.floor(d.target.labelWidth / 2) + this.emSize;
+        const curveX = d.target.x - offset - CURVE_OFFSET;
+        const curveY = d.target.y + this.emSize / 3;
+        const curveTheta = Math.atan2(curveY - d.source.y, curveX - d.source.x);
+        // Update the node's outgoing handlePositions
+        d.source.handlePositions[d.id] = {
+          edgeClassId: d.target.classId,
+          theta: curveTheta,
+          x: NODE_SIZE * Math.cos(curveTheta),
+          y: NODE_SIZE * Math.sin(curveTheta)
+        };
+        // Return the arc
+        return `\
+M${d.source.x},${d.source.y}\
+Q${curveX},${curveY}\
+,${d.target.x - offset},${curveY}`;
+      } else {
+        // Round down to avoid gaps in the path
+        const offset = Math.floor(d.source.labelWidth / 2) + this.emSize;
+        const curveX = d.source.x + offset + CURVE_OFFSET;
+        const curveY = d.source.y + this.emSize / 3;
+        const curveTheta = Math.atan2(curveY - d.target.y, curveX - d.target.x);
+        // Update the node's incoming handlePositions
+        d.target.handlePositions[d.id] = {
+          edgeClassId: d.source.classId,
+          theta: curveTheta,
+          incoming: true,
+          x: NODE_SIZE * Math.cos(curveTheta),
+          y: NODE_SIZE * Math.sin(curveTheta)
+        };
+        // Return the arc
+        return `\
+M${d.source.x + offset},${curveY}\
+Q${curveX},${curveY}\
+,${d.target.x},${d.target.y}`;
+      }
+    });
+  }
+
   drawHandleLayer () {
     // Handle groups
     let handleGroups = this.handleLayer.selectAll('.handleGroup')
@@ -216,17 +277,59 @@ Q${d.source.x + d.source.labelWidth / 2 + this.emSize + 4 * NODE_SIZE},${d.sourc
       .classed('handleGroup', true);
     handleGroups = handleGroups.merge(handleGroupsEnter);
 
-    // TODO: actually draw the handles
+    // Update each group's position
+    handleGroups.attr('transform', d => {
+      if (d.x === undefined || d.y === undefined) {
+        return '';
+      } else {
+        return `translate(${d.x},${d.y})`;
+      }
+    });
+
+    // Draw the handles
+    let handles = handleGroups.selectAll('.handle')
+      .data(d => {
+        if (d.type === 'Node') {
+          return Object.values(d.handlePositions);
+        } else if (d.type === 'Edge') {
+          return [
+            {
+              nodeClassId: d.sourceClassId,
+              theta: 0,
+              x: -d.labelWidth / 2 - this.emSize,
+              y: this.emSize / 3
+            },
+            {
+              nodeClassId: d.targetClassId,
+              theta: 0,
+              x: d.labelWidth / 2 + this.emSize,
+              y: this.emSize / 3
+            }
+          ];
+        } else {
+          return [];
+        }
+      }, d => d.edgeClassId);
+    handles.exit().remove();
+    const handlesEnter = handles.enter().append('g')
+      .classed('handle', true);
+    handles = handles.merge(handlesEnter);
+
+    // Handle circles
+    handlesEnter.append('path');
+    handles.select('path')
+      .attr('transform', d => {
+        let angle = 180 * d.theta / Math.PI;
+        if (d.incoming) {
+          angle += 180;
+        }
+        return `translate(${d.x},${d.y}) rotate(${angle})`;
+      })
+      .attr('d', HANDLE_PATHS.directed);
   }
 
   draw () {
     const bounds = this.getContentBounds(this.content);
-
-    // drawObjectLayer updates labelWidth, so it should be called before
-    // anything that relies on labelWidth
-    this.drawObjectLayer();
-    this.drawLineLayer();
-    this.drawHandleLayer();
 
     this.simulation.nodes(window.mainView.networkModelGraph.nodes);
 
