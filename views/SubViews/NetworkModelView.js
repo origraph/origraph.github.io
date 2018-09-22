@@ -233,7 +233,7 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
 
     connectionLines.classed('targeted', d => d.id === this.draggingConnection);
 
-    // Compute the path (and the handle positions along the way)
+    // Compute the connection paths (and their handle positions along the way)
     connectionLines.attr('d', d => {
       if (d.source.x === undefined || d.source.y === undefined ||
           d.target.x === undefined || d.target.y === undefined) {
@@ -241,7 +241,7 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
       } else if (d.source.type === 'Node') {
         // Round down to avoid gaps in the path
         const offset = Math.floor(d.target.labelWidth / 2) + this.emSize;
-        // Compute handle and curve anchor point positions
+        // Update the node's outgoing handlePosition
         d.source.handlePositions[d.id] = d.source.handlePositions[d.id] || {};
         const curveX = d.target.x - offset - CURVE_OFFSET;
         const curveY = d.target.y + this.emSize / 3;
@@ -250,7 +250,6 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
           (d.source.handlePositions[d.id].dx || 0);
         const y = d.source.y + NODE_SIZE * Math.sin(theta) +
           (d.source.handlePositions[d.id].dy || 0);
-        // Update the node's outgoing handlePositions
         Object.assign(d.source.handlePositions[d.id], {
           connectionId: d.id,
           edgeClassId: d.target.classId,
@@ -263,7 +262,7 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
       } else {
         // Round down to avoid gaps in the path
         const offset = Math.floor(d.source.labelWidth / 2) + this.emSize;
-        // Compute handle and curve anchor point positions
+        // Update the node's incoming handlePosition
         d.target.handlePositions[d.id] = d.target.handlePositions[d.id] || {};
         const curveX = d.source.x + offset + CURVE_OFFSET;
         const curveY = d.source.y + this.emSize / 3;
@@ -272,7 +271,6 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
           (d.target.handlePositions[d.id].dx || 0);
         const y = d.target.y + NODE_SIZE * Math.sin(theta) +
           (d.target.handlePositions[d.id].dy || 0);
-        // Update the node's incoming handlePositions
         Object.assign(d.target.handlePositions[d.id], {
           connectionId: d.id,
           edgeClassId: d.source.classId,
@@ -348,13 +346,11 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
 
     // Dragging behavior
     handles.call(d3.drag().on('start', d => {
-      if (!this.draggingConnection) { // allow at most one handle drag in a multi-touch environment
-        this.draggingConnection = d.connectionId;
-        this.handleTarget = null;
-        this.simulation.alpha(0);
-        d.x0 = d3.event.x;
-        d.y0 = d3.event.y;
-      }
+      this.draggingConnection = d.connectionId;
+      this.handleTarget = null;
+      this.simulation.alpha(0);
+      d.x0 = d3.event.x;
+      d.y0 = d3.event.y;
     }).on('drag', d => {
       d.dx = d3.event.x - d.x0;
       d.dy = d3.event.y - d.y0;
@@ -366,7 +362,8 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
       delete d.dx;
       delete d.y0;
       delete d.dy;
-      // console.log(this.handleTarget);
+      // TODO: connect or disconnect, based on this.handleTarget and
+      // d.edgeClassId or d.nodeClassId
       this.handleTarget = null;
       this.simulation.alpha(0).restart();
     }));
