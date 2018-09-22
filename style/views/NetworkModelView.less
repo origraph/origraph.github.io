@@ -9,6 +9,9 @@
       stroke: @darkBackgroundColor;
       stroke-width: 0.3em;
     }
+    .connection.targeted {
+      stroke-dasharray: 3px 2px;
+    }
   }
 
   .objectLayer {
@@ -20,7 +23,12 @@
 
       .objectShape {
         fill: @darkBackgroundColor;
-        &.selected {
+        &:hover {
+          fill: @darkestBackgroundColor;
+        }
+      }
+      &.targeted {
+        .objectShape {
           fill: @selectionColor;
         }
       }
@@ -32,6 +40,9 @@
           text-anchor: middle;
         }
       }
+      .typeIcon {
+        opacity: 0.5;
+      }
       .menuIcon {
         opacity: 0.5;
         cursor: pointer;
@@ -39,6 +50,33 @@
           opacity: 1;
         }
       }
+    }
+  }
+
+  .handleLayer {
+    .handle {
+      cursor: grab;
+      &:active {
+        cursor: none;
+      }
+      .halo {
+        fill: transparent;
+      }
+      .anchor {
+        opacity: 0.5;
+        &:hover {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  svg.hideCursor {
+    cursor: none;
+    .objectLayer .object,
+    .objectLayer .object:active,
+    .objectLayer .object .menuIcon {
+      cursor: none;
     }
   }
 }
