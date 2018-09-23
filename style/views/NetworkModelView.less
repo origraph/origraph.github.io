@@ -7,10 +7,16 @@
     path {
       fill: none;
       stroke: @darkBackgroundColor;
-      stroke-width: 0.3em;
+      stroke-width: 0.5em;
     }
-    .connection.targeted {
+    .connection.dragging {
       stroke-dasharray: 3px 2px;
+    }
+    .connection.connecting {
+      stroke: @selectionColor;
+    }
+    .connection.deleting {
+      stroke: @errorColor;
     }
   }
 
@@ -20,18 +26,28 @@
       &:active {
         cursor: grabbing;
       }
-
       .objectShape {
         fill: @darkBackgroundColor;
-        &:hover {
-          fill: @darkestBackgroundColor;
-        }
       }
-      &.targeted {
-        .objectShape {
-          fill: @selectionColor;
-        }
+
+      &:hover .objectShape {
+        fill: @darkestBackgroundColor;
       }
+      &.connecting .objectShape {
+        fill: @selectionColor;
+      }
+      &.Edge .objectShape {
+        fill: none;
+        stroke-width: 0.5em;
+        stroke: @darkBackgroundColor;
+      }
+      &.Edge:hover .objectShape {
+        stroke: @darkestBackgroundColor;
+      }
+      &.Edge.connecting .objectShape {
+        stroke: @selectionColor;
+      }
+
       .textGroup {
         rect {
           fill: fade(@backgroundColor, 50%);

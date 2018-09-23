@@ -3,7 +3,7 @@ import GoldenLayoutView from './GoldenLayoutView.js';
 import SvgViewMixin from './SvgViewMixin.js';
 
 const NODE_SIZE = 30;
-const CURVE_OFFSET = NODE_SIZE * 4;
+const CURVE_OFFSET = NODE_SIZE * 2;
 
 const OBJECT_PATHS = {
   // Diamond for generic classes
@@ -17,13 +17,11 @@ Z`,
   'Node': `\
 M0,${-NODE_SIZE}\
 A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${NODE_SIZE}\
-A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${-NODE_SIZE}`,
-  // No object path for edge classes; these are only represented
-  // in the lines layer
-  'Edge': ''
+A${NODE_SIZE},${NODE_SIZE},0,1,1,0,${-NODE_SIZE}`
+  // Edge shapes are just lines, dynamically determined in drawObjectLayer()
 };
 
-const HANDLE_SIZE = 10;
+const HANDLE_SIZE = 7;
 const HANDLE_PATHS = {
   // Arrow for directed handles
   'directed': `\
@@ -77,11 +75,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     this.simulation.on('tick', () => {
       // We do some funkiness to the data object to help us draw:
-      // drawObjectLayer updates labelWidth, and inititializes node.handlePositions
+      // drawObjectLayer updates labelWidth, and inititializes node.handles
       this.drawObjectLayer();
-      // drawLineLayer uses labelWidth, and updates node.handlePositions
+      // drawLineLayer uses labelWidth, and updates node.handles
       this.drawLineLayer();
-      // drawHandleLayer uses node.handlePositions
+      // drawHandleLayer uses node.handles
       this.drawHandleLayer();
     });
 
@@ -91,21 +89,23 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   }
 
   drawObjectLayer () {
+    // Only need to create object layer groups for non-dummy nodes
+    const nodes = window.mainView.networkModelGraph.nodes.filter(d => !!d.classObj);
+
     // Object groups
     let objects = this.objectLayer.selectAll('.object')
-      .data(window.mainView.networkModelGraph.nodes, d => d.classId);
+      .data(nodes, d => d.classObj.classId);
     objects.exit().remove();
     const objectsEnter = objects.enter().append('g');
     objects = objects.merge(objectsEnter);
 
-    // Initialize handlePositions
+    // Initialize handles
     objects.each(d => {
-      d.handlePositions = {};
+      d.handles = {};
     });
 
-    // Manually patch the class on (so we can just use classObj.type),
-    // and set each group's position
-    objects.attr('class', d => `${d.type} object`)
+    // Manually patch the class on based on type and set each group's position
+    objects.attr('class', d => `${d.classObj.type} object`)
       .attr('transform', d => {
         if (d.x === undefined || d.y === undefined) {
           return '';
@@ -114,7 +114,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         }
       });
 
-    // Dragging behavior (disabled when handles are being dragged)
+    // Class dragging behavior (disabled when handles are being dragged)
     objects.call(d3.drag()
       .on('start', d => {
         // disable link, charge, and center forces (keep collision)
@@ -144,30 +144,27 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     const self = this;
     objects.on('mouseenter', function (d) {
       if (self.draggingConnection) {
-        self.handleTarget = d.classId;
-        d3.select(this).classed('targeted', true);
+        self.handleTarget = d.classObj.classId;
+        d3.select(this).classed('connecting', true);
       }
     }).on('mouseleave', function (d) {
       if (self.draggingConnection) {
         self.handleTarget = null;
-        d3.select(this).classed('targeted', false);
+        d3.select(this).classed('connecting', false);
       }
     });
 
-    // Diamond, circle, or line
+    // Add the diamond, circle, or line (updated after labelWidth is calculated)
     objectsEnter.append('path').classed('objectShape', true);
-    objects.select('.objectShape').attr('d', d => {
-      return OBJECT_PATHS[d.type];
-    });
 
-    // Label
+    // Label (on top of the shape)
     const textGroupEnter = objectsEnter.append('g').classed('textGroup', true);
     textGroupEnter.append('rect'); // background
     textGroupEnter.append('text');
     objects.select('.textGroup').attr('transform',
-      d => `translate(0,${d.type === 'Edge' ? 3 / 2 * this.emSize : NODE_SIZE + this.emSize})`);
-    objects.select('text').text(d => d.className);
-    // Patch the string width of Edge classes onto the data, so it's available elsewhere
+      d => `translate(0,${d.classObj.type === 'Edge' ? 2.5 * this.emSize : NODE_SIZE + this.emSize})`);
+    objects.select('text').text(d => d.classObj.className);
+    // Patch labelWidth onto the data, so it's available elsewhere
     objects.each(function (d) {
       d.labelWidth = this.querySelector('text').getBoundingClientRect().width;
     });
@@ -178,52 +175,253 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       .attr('width', d => d.labelWidth)
       .attr('height', this.emSize);
 
+    // Now that we know labelWidth, apply the diamond, circle, or line shape
+    objects.select('.objectShape').attr('d', d => {
+      if (d.classObj.type === 'Edge') {
+        if (d.x === undefined || d.y === undefined) {
+          return '';
+        } else {
+          // Round the offset up to avoid gaps with connection paths
+          const offset = Math.ceil(d.labelWidth / 2);
+          return `\
+M${-offset - this.emSize},${this.emSize}\
+L${offset + this.emSize},${this.emSize}`;
+        }
+      } else {
+        return OBJECT_PATHS[d.classObj.type];
+      }
+    });
+
     // Icons
     const iconGroupEnter = objectsEnter.append('g').classed('icons', true);
     iconGroupEnter.append('image').classed('typeIcon', true);
     iconGroupEnter.append('image').classed('menuIcon', true)
-      .attr('xlink:href', d => `img/hamburger.svg`);
+      .attr('xlink:href', `img/hamburger.svg`);
     objectsEnter.selectAll('.icons image')
       .attr('width', this.emSize)
       .attr('height', this.emSize)
-      .attr('y', d => d.type === 'Edge' ? -this.emSize : -this.emSize / 2);
+      .attr('y', -this.emSize / 2);
     objects.select('.typeIcon')
-      .attr('xlink:href', d => `img/${d.type.toLowerCase()}.svg`)
-      .attr('x', d => d.type === 'Edge' ? d.labelWidth / 2 - 2 * this.emSize : -this.emSize);
+      .attr('xlink:href', d => `img/${d.classObj.type.toLowerCase()}.svg`)
+      .attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 - 2 * this.emSize : -this.emSize);
     objects.select('.menuIcon')
-      .attr('x', d => d.type === 'Edge' ? d.labelWidth / 2 - this.emSize : 0)
+      .attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 - this.emSize : 0)
       .on('click', function (d) {
         window.mainView.showClassContextMenu({
-          classId: d.classId,
+          classId: d.classObj.classId,
           targetBounds: this.getBoundingClientRect()
         });
       });
   }
 
-  drawLineLayer () {
-    // Lines associated with edge classes
-    const edgeClasses = window.mainView.networkModelGraph.nodes
-      .filter(d => d.type === 'Edge');
-    let edgeLines = this.lineLayer.selectAll('.edge')
-      .data(edgeClasses, d => d.classId);
-    edgeLines.exit().remove();
-    const edgeLinesEnter = edgeLines.enter().append('path')
-      .classed('edge', true);
-    edgeLines = edgeLines.merge(edgeLinesEnter);
+  updateEdgeDummyHandle ({
+    connection,
+    handle,
+    offsetDirection,
+    xEdgeOffset,
+    yEdgeOffset
+  }) {
+    handle.connection = connection;
+    handle.isEdgeHandle = true;
+    handle.x = connection.x0 = connection.target.x + offsetDirection * xEdgeOffset;
+    handle.y = connection.y0 = connection.target.y + yEdgeOffset;
+    connection.curveX = connection.x0 * offsetDirection * CURVE_OFFSET;
+    connection.curveY = connection.y0;
+    handle.x += (handle.dx || 0);
+    handle.y += (handle.dy || 0);
+    connection.x1 = handle.x;
+    connection.y1 = handle.y;
+    handle.pointTheta = handle.theta = 0;
+  }
 
-    edgeLines.attr('d', d => {
-      if (d.x === undefined || d.y === undefined) {
-        return '';
+  updateBothHandles ({
+    connection,
+    nodeHandle,
+    edgeHandle,
+    offsetDirection,
+    edgeX,
+    edgeY,
+    nodeX,
+    nodeY,
+    xEdgeOffset,
+    yEdgeOffset
+  }) {
+    nodeHandle.connection = connection;
+    nodeHandle.isEdgeHandle = false;
+    edgeHandle.connection = connection;
+    edgeHandle.isEdgeHandle = true;
+    // First assume that there's no dragging going on (for both
+    // calculations later, we need to know where the node handle *would* be)
+    edgeHandle.x = connection.x1 = edgeX + offsetDirection * xEdgeOffset;
+    edgeHandle.y = connection.y1 = edgeY + yEdgeOffset;
+    connection.curveX = connection.x1 + offsetDirection * CURVE_OFFSET;
+    connection.curveY = connection.y1;
+    edgeHandle.pointTheta = edgeHandle.theta = 0;
+    nodeHandle.pointTheta = nodeHandle.theta = Math.atan2(connection.curveY - nodeY, connection.curveX - nodeX);
+    if (offsetDirection === 1) {
+      // The incoming handle should point inward
+      nodeHandle.pointTheta += Math.PI;
+    }
+    nodeHandle.x = connection.x0 = nodeX + NODE_SIZE * Math.cos(nodeHandle.theta);
+    nodeHandle.y = connection.y0 = nodeY + NODE_SIZE * Math.sin(nodeHandle.theta);
+    // Okay, if dragging is happening, update some things:
+    if (connection.id === this.draggingConnection) {
+      if (this.isDraggingEdgeHandle) {
+        edgeHandle.x = connection.x1 = edgeHandle.x + (edgeHandle.dx || 0);
+        edgeHandle.y = connection.y1 = edgeHandle.y + (edgeHandle.dy || 0);
+        // We're dragging the edge, so curve relative to the node instead
+        connection.curveX = connection.x0 + CURVE_OFFSET * Math.cos(nodeHandle.theta);
+        connection.curveY = connection.y0 + CURVE_OFFSET * Math.sin(nodeHandle.theta);
+        edgeHandle.pointTheta = edgeHandle.theta = Math.atan2(connection.curveY - edgeHandle.y, connection.curveX - edgeHandle.x);
+        if (offsetDirection === -1) {
+          // The outgoing handle should point outward
+          edgeHandle.pointTheta += Math.PI;
+        }
       } else {
-        // Round up to avoid gaps in the path
-        const offset = Math.ceil(d.labelWidth / 2);
-        return `\
-M${d.x - offset - this.emSize},${d.y + this.emSize / 3}\
-L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
+        nodeHandle.x = connection.x0 = nodeHandle.x + (nodeHandle.dx || 0);
+        nodeHandle.y = connection.y0 = nodeHandle.y + (nodeHandle.dy || 0);
+        nodeHandle.pointTheta = nodeHandle.theta = Math.atan2(connection.curveY - nodeHandle.y, connection.curveX - nodeHandle.x);
+        if (offsetDirection === 1) {
+          // The incoming handle should point inward
+          nodeHandle.pointTheta += Math.PI;
+        }
       }
-    });
+    }
+  }
 
-    // Lines between edge classes and node classes
+  updateNodeDummyHandles (dummyNodes) {
+    for (const connection of dummyNodes) {
+      const handle = connection.source.handles[connection.id] =
+        connection.source.handles[connection.id] || {};
+      handle.connection = connection;
+      // Figure out the largest gaps between existing handles
+      const angles = [];
+      for (const otherHandle of Object.values(connection.source.handles)) {
+        const isDraggingHandle = otherHandle.connection.id === this.draggingConnection &&
+          !this.isDraggingEdgeHandle;
+        if (otherHandle.theta !== undefined && handle !== otherHandle && !isDraggingHandle) {
+          angles.push(otherHandle.theta);
+        }
+      }
+      let gaps = angles.sort().map((theta1, index) => {
+        const theta0 = index === 0
+          ? angles[angles.length - 1] - 2 * Math.PI : angles[index - 1];
+        return { theta1, theta0, angle: theta1 - theta0 };
+      }).sort((a, b) => b.angle - a.angle);
+      if (gaps.length === 0) {
+        // When the dummy handle is the only one, angle it to π / 4
+        gaps.push({
+          theta1: (5 / 4) * Math.PI,
+          theta0: -(3 / 4) * Math.PI,
+          angle: 2 * Math.PI
+        });
+      }
+      // Split the biggest gap in half
+      handle.pointTheta = handle.theta = gaps[0].theta0 + gaps[0].angle / 2;
+      connection.x0 = connection.source.x + NODE_SIZE * Math.cos(handle.theta);
+      connection.y0 = connection.source.y + NODE_SIZE * Math.sin(handle.theta);
+      handle.x = connection.x1 = connection.x0 + (handle.dx || 0);
+      handle.y = connection.y1 = connection.y0 + (handle.dy || 0);
+      // By default, put the curve at the same spot as the handle
+      let curveRadius = NODE_SIZE;
+      let curveTheta = handle.theta;
+      if (connection.id === this.draggingConnection) {
+        // Dragging; pop the curve out a bit from the node
+        curveRadius = NODE_SIZE + CURVE_OFFSET;
+        if (this.handleTarget === connection.source.classId) {
+          // Creating a self-edge; rotate the curve to between the arc start
+          // and the handle's current location
+          curveTheta = (handle.theta +
+            Math.atan2(handle.y - connection.source.y,
+              handle.x - connection.source.x)) / 2;
+        }
+      }
+      handle.curveX = connection.source.x + curveRadius * Math.cos(curveTheta);
+      handle.curveY = connection.source.y + curveRadius * Math.sin(curveTheta);
+    }
+  }
+
+  updateHandlesAndAnchors (connection) {
+    // Don't do anything if node positions haven't yet been initialized
+    if (connection.source.x === undefined || connection.source.y === undefined ||
+        connection.target.x === undefined || connection.target.y === undefined) {
+      return [];
+    }
+
+    // Some initial computations that all the functions use; Math.floor avoids
+    // gaps with the edge's objectShape
+    const options = {
+      connection,
+      xEdgeOffset: connection.location === 'source'
+        ? Math.floor(connection.target.labelWidth / 2) + this.emSize
+        : connection.location === 'target'
+          ? Math.floor(connection.source.labelWidth / 2) + this.emSize
+          : 0,
+      yEdgeOffset: this.emSize
+    };
+
+    const dummyNodes = [];
+    if (connection.dummy) {
+      // Dummy connections; these should only have one handle
+      if (connection.location === 'node') {
+        // Arrange dummy nodes later, when we already know all the nodes'
+        // other handle positions
+        dummyNodes.push(connection);
+      } else if (connection.location === 'source') {
+        // Incoming dummy to edge
+        options.handle = connection.target.handles[connection.id] =
+          connection.target.handles[connection.id] || {};
+        options.offsetDirection = -1;
+        this.updateEdgeDummyHandle(options);
+      } else if (connection.location === 'target') {
+        // Outgoing dummy from edge
+        options.handle = connection.source.handles[connection.id] =
+          connection.source.handles[connection.id] || {};
+        options.offsetDirection = 1;
+        this.updateEdgeDummyHandle(options);
+      }
+    } else {
+      // Regular connections; these should have two handles
+      if (connection.location === 'source') {
+        // Connection from node to edge
+        options.nodeHandle = connection.source.handles[connection.id] =
+          connection.source.handles[connection.id] || {};
+        options.edgeHandle = connection.target.handles[connection.id] =
+          connection.target.handles[connection.id] || {};
+        options.nodeX = connection.source.x;
+        options.nodeY = connection.source.y;
+        options.edgeX = connection.target.x;
+        options.edgeY = connection.target.y;
+        options.offsetDirection = -1;
+        this.updateBothHandles(options);
+      } else if (connection.location === 'target') {
+        // Connection from edge to node
+        options.nodeHandle = connection.target.handles[connection.id] =
+          connection.target.handles[connection.id] || {};
+        options.edgeHandle = connection.source.handles[connection.id] =
+          connection.source.handles[connection.id] || {};
+        options.nodeX = connection.target.x;
+        options.nodeY = connection.target.y;
+        options.edgeX = connection.source.x;
+        options.edgeY = connection.source.y;
+        options.offsetDirection = 1;
+        this.updateBothHandles(options);
+      }
+    }
+    return dummyNodes;
+  }
+
+  drawLineLayer () {
+    // Compute handle and curve anchor points for everything except dummy
+    // node connections
+    const dummyNodes = window.mainView.networkModelGraph.edges
+      .reduce((agg, d) => {
+        return agg.concat(this.updateHandlesAndAnchors(d));
+      }, []);
+    // Second pass for dummy node handles
+    this.updateNodeDummyHandles(dummyNodes);
+
+    // A path for every connection
     let connectionLines = this.lineLayer.selectAll('.connection')
       .data(window.mainView.networkModelGraph.edges, d => d.id);
     connectionLines.exit().remove();
@@ -231,58 +429,23 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
       .classed('connection', true);
     connectionLines = connectionLines.merge(connectionLinesEnter);
 
-    connectionLines.classed('targeted', d => d.id === this.draggingConnection);
-
-    // Compute the connection paths (and their handle positions along the way)
+    // Path shapes
     connectionLines.attr('d', d => {
-      if (d.source.x === undefined || d.source.y === undefined ||
-          d.target.x === undefined || d.target.y === undefined) {
+      if (d.x0 === undefined || d.y0 === undefined ||
+          d.curveX === undefined || d.curveY === undefined ||
+          d.x1 === undefined || d.y1 === undefined) {
         return '';
-      } else if (d.source.type === 'Node') {
-        // Round down to avoid gaps in the path
-        const offset = Math.floor(d.target.labelWidth / 2) + this.emSize;
-        // Update the node's outgoing handlePosition
-        d.source.handlePositions[d.id] = d.source.handlePositions[d.id] || {};
-        const curveX = d.target.x - offset - CURVE_OFFSET;
-        const curveY = d.target.y + this.emSize / 3;
-        const theta = Math.atan2(curveY - d.source.y, curveX - d.source.x);
-        const x = d.source.x + NODE_SIZE * Math.cos(theta) +
-          (d.source.handlePositions[d.id].dx || 0);
-        const y = d.source.y + NODE_SIZE * Math.sin(theta) +
-          (d.source.handlePositions[d.id].dy || 0);
-        Object.assign(d.source.handlePositions[d.id], {
-          connectionId: d.id,
-          edgeClassId: d.target.classId,
-          theta,
-          x,
-          y
-        });
-        // Return the arc
-        return `M${x},${y}Q${curveX},${curveY},${d.target.x - offset},${curveY}`;
       } else {
-        // Round down to avoid gaps in the path
-        const offset = Math.floor(d.source.labelWidth / 2) + this.emSize;
-        // Update the node's incoming handlePosition
-        d.target.handlePositions[d.id] = d.target.handlePositions[d.id] || {};
-        const curveX = d.source.x + offset + CURVE_OFFSET;
-        const curveY = d.source.y + this.emSize / 3;
-        const theta = Math.atan2(curveY - d.target.y, curveX - d.target.x);
-        const x = d.target.x + NODE_SIZE * Math.cos(theta) +
-          (d.target.handlePositions[d.id].dx || 0);
-        const y = d.target.y + NODE_SIZE * Math.sin(theta) +
-          (d.target.handlePositions[d.id].dy || 0);
-        Object.assign(d.target.handlePositions[d.id], {
-          connectionId: d.id,
-          edgeClassId: d.source.classId,
-          incoming: true,
-          theta,
-          x,
-          y
-        });
-        // Return the arc
-        return `M${d.source.x + offset},${curveY}Q${curveX},${curveY},${x},${y}`;
+        return `M${d.x0},${d.y0}Q${d.curveX},${d.curveY},${d.x1},${d.y1}`;
       }
     });
+
+    // Apply relevant classes for styling
+    connectionLines.classed('dragging', d => d.id === this.draggingConnection)
+      .classed('deleting', d => d.id === this.draggingConnection &&
+        this.handleTarget === null)
+      .classed('connecting', d => d.id === this.draggingConnection &&
+        this.handleTarget !== null);
   }
 
   drawHandleLayer () {
@@ -296,28 +459,8 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
 
     // Draw the handles
     let handles = handleGroups.selectAll('.handle')
-      .data(d => {
-        if (d.type === 'Node') {
-          return Object.values(d.handlePositions);
-        } else if (d.type === 'Edge' && d.x !== undefined && d.y !== undefined) {
-          return [
-            {
-              nodeClassId: d.sourceClassId,
-              theta: 0,
-              x: d.x - d.labelWidth / 2 - this.emSize,
-              y: d.y + this.emSize / 3
-            },
-            {
-              nodeClassId: d.targetClassId,
-              theta: 0,
-              x: d.x + d.labelWidth / 2 + this.emSize,
-              y: d.y + this.emSize / 3
-            }
-          ];
-        } else {
-          return [];
-        }
-      }, d => d.edgeClassId);
+      .data(d => Object.values(d.handles || {}),
+        d => `${d.connection.id}${d.isEdgeHandle ? '_edge' : '_node'}`);
     handles.exit().remove();
     const handlesEnter = handles.enter().append('g')
       .classed('handle', true);
@@ -336,17 +479,15 @@ L${d.x + offset + this.emSize},${d.y + this.emSize / 3}`;
       .classed('anchor', true);
     handles.select('.anchor')
       .attr('transform', d => {
-        let angle = 180 * d.theta / Math.PI;
-        if (d.incoming) {
-          angle += 180;
-        }
+        let angle = 180 * d.pointTheta / Math.PI;
         return `translate(${d.x},${d.y}) rotate(${angle})`;
       })
       .attr('d', HANDLE_PATHS.directed);
 
     // Dragging behavior
     handles.call(d3.drag().on('start', d => {
-      this.draggingConnection = d.connectionId;
+      this.draggingConnection = d.connection.id;
+      this.isDraggingEdgeHandle = d.isEdgeHandle;
       this.handleTarget = null;
       this.simulation.alpha(0);
       d.x0 = d3.event.x;
