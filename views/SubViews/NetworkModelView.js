@@ -1,6 +1,6 @@
 /* globals mure, d3 */
 import GoldenLayoutView from './GoldenLayoutView.js';
-import SvgViewMixin from './SvgViewMixin.js';
+import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 
 const NODE_SIZE = 30;
 const CURVE_OFFSET = NODE_SIZE * 2;
@@ -44,7 +44,7 @@ const DEFAULT_FORCES = {
   collide: d3.forceCollide().radius(2 * NODE_SIZE)
 };
 
-class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
+class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   constructor ({
     container,
     state

@@ -1,10 +1,10 @@
 /* globals d3 */
 import GoldenLayoutView from './GoldenLayoutView.js';
-import SvgViewMixin from './SvgViewMixin.js';
+import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 
 const NODE_SIZE = 5;
 
-class InstanceView extends SvgViewMixin(GoldenLayoutView) {
+class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   constructor ({ container, state }) {
     super({
       container,
@@ -16,19 +16,12 @@ class InstanceView extends SvgViewMixin(GoldenLayoutView) {
   isEmpty () {
     return window.mainView.instances && window.mainView.instances.length === 0;
   }
-  zoom () {
-    this.content.selectAll('.nodeLayer,.edgeLayer')
-      .attr('transform', d3.event.transform);
-  }
   setup () {
     super.setup();
     this.content.append('g')
       .classed('edgeLayer', true);
     this.content.append('g')
       .classed('nodeLayer', true);
-    this.content.call(d3.zoom()
-      .scaleExtent([1 / 4, 4])
-      .on('zoom', () => { this.zoom(); }));
     this.simulation = d3.forceSimulation()
       .force('link', d3.forceLink()) // .distance(50)) //.id(d => d.id))
       .force('charge', d3.forceManyBody())
