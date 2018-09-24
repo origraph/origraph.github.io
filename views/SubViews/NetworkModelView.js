@@ -34,7 +34,22 @@ Z`,
 M0,${-HANDLE_SIZE}\
 A${HANDLE_SIZE},${HANDLE_SIZE},0,1,1,0,${HANDLE_SIZE}\
 A${HANDLE_SIZE},${HANDLE_SIZE},0,1,1,0,${-HANDLE_SIZE}
-`
+`,
+  // X for disconnecting handles
+  'disconnect': `\
+M0,${-HANDLE_SIZE / 2}\
+L${HANDLE_SIZE / 2},${-HANDLE_SIZE}\
+L${HANDLE_SIZE},${-HANDLE_SIZE / 2}\
+L${HANDLE_SIZE / 2},0\
+L${HANDLE_SIZE},${HANDLE_SIZE / 2}\
+L${HANDLE_SIZE / 2},${HANDLE_SIZE}\
+L0,${HANDLE_SIZE / 2}\
+L${-HANDLE_SIZE / 2},${HANDLE_SIZE}\
+L${-HANDLE_SIZE},${HANDLE_SIZE / 2}\
+L${-HANDLE_SIZE / 2},0\
+L${-HANDLE_SIZE},${-HANDLE_SIZE / 2}\
+L${-HANDLE_SIZE / 2},${-HANDLE_SIZE}\
+Z`
 };
 
 const DEFAULT_FORCES = {
@@ -463,10 +478,10 @@ L${offset + this.emSize},${this.emSize}`;
 
     // Apply relevant classes for styling
     connectionLines.classed('dragging', d => d.id === this.draggingConnection)
-      .classed('deleting', d => d.id === this.draggingConnection &&
-        this.handleTarget === null)
       .classed('connecting', d => d.id === this.draggingConnection &&
-        this.handleTarget !== null);
+        this.handleTarget !== null)
+      .classed('disconnecting', d => d.id === this.draggingConnection &&
+        this.handleTarget === null);
   }
 
   drawHandleLayer () {
@@ -503,7 +518,20 @@ L${offset + this.emSize},${this.emSize}`;
         let angle = 180 * d.pointTheta / Math.PI;
         return `translate(${d.x},${d.y}) rotate(${angle})`;
       })
-      .attr('d', HANDLE_PATHS.directed);
+      .attr('d', d => {
+        if (this.draggingConnection === d.connection.id &&
+            this.handleTarget === null) {
+          return HANDLE_PATHS.disconnect;
+        } else if (d.connection.directed) {
+          return HANDLE_PATHS.directed;
+        } else {
+          return HANDLE_PATHS.undirected;
+        }
+      }).classed('dragging', d => this.draggingConnection === d.connection.id)
+      .classed('connecting', d => this.handleTarget !== null &&
+        this.draggingConnection === d.connection.id)
+      .classed('disconnecting', d => this.handleTarget === null &&
+        this.draggingConnection === d.connection.id);
 
     // Dragging behavior
     handles.call(d3.drag().on('start', d => {

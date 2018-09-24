@@ -10,13 +10,13 @@
       stroke-width: 0.5em;
     }
     .connection.dragging {
-      stroke-dasharray: 3px 2px;
+      stroke: @textColor;
     }
     .connection.connecting {
-      stroke: @selectionColor;
+      stroke: @darkTextColor;
     }
-    .connection.deleting {
-      stroke: @errorColor;
+    .connection.disconnecting {
+      stroke-dasharray: 3px 2px;
     }
   }
 
@@ -30,22 +30,18 @@
         fill: @darkBackgroundColor;
       }
 
-      &:hover .objectShape {
-        fill: @darkestBackgroundColor;
-      }
+      &:hover .objectShape,
       &.connecting .objectShape {
-        fill: @selectionColor;
+        fill: @darkestBackgroundColor;
       }
       &.Edge .objectShape {
         fill: none;
         stroke-width: 0.5em;
         stroke: @darkBackgroundColor;
       }
-      &.Edge:hover .objectShape {
-        stroke: @darkestBackgroundColor;
-      }
+      &.Edge:hover .objectShape,
       &.Edge.connecting .objectShape {
-        stroke: @selectionColor;
+        stroke: @darkestBackgroundColor;
       }
 
       .textGroup {
@@ -79,9 +75,16 @@
         fill: transparent;
       }
       .anchor {
-        opacity: 0.5;
+        fill: @lightTextColor;
+        &.dragging,
         &:hover {
-          opacity: 1;
+          fill: @textColor;
+        }
+        &.connecting {
+          fill: @darkTextColor;
+        }
+        &.disconnecting {
+          fill: @lightTextColor;
         }
       }
     }

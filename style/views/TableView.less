@@ -52,15 +52,14 @@
       cursor: pointer;
       width: @tableHeaderButtonSize;
       height: @tableHeaderButtonSize;
-      filter: @textColorImageFilter;
+      filter: @lightTextColorImageFilter;
       padding: @tableHeaderButtonPadding;
       background-size: @tableHeaderButtonSize;
       background-position: center center;
       background-repeat: no-repeat;
-      opacity: 0.5;
 
       &:hover {
-        opacity: 1;
+        filter: @textColorImageFilter;
       }
     }
 
