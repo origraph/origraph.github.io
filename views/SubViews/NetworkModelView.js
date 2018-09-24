@@ -218,20 +218,30 @@ L${offset + this.emSize},${this.emSize}`;
     connection,
     handle,
     offsetDirection,
+    edgeX,
+    edgeY,
     xEdgeOffset,
     yEdgeOffset
   }) {
     handle.connection = connection;
     handle.isEdgeHandle = true;
-    handle.x = connection.x0 = connection.target.x + offsetDirection * xEdgeOffset;
-    handle.y = connection.y0 = connection.target.y + yEdgeOffset;
-    connection.curveX = connection.x0 * offsetDirection * CURVE_OFFSET;
+    handle.x = connection.x0 = edgeX + offsetDirection * xEdgeOffset;
+    handle.y = connection.y0 = edgeY + yEdgeOffset;
+    connection.x1 = handle.x = handle.x + (handle.dx || 0);
+    connection.y1 = handle.y = handle.y + (handle.dy || 0);
     connection.curveY = connection.y0;
-    handle.x += (handle.dx || 0);
-    handle.y += (handle.dy || 0);
-    connection.x1 = handle.x;
-    connection.y1 = handle.y;
-    handle.pointTheta = handle.theta = 0;
+    if (connection.id === this.draggingConnection) {
+      connection.curveX = connection.x0 + offsetDirection * CURVE_OFFSET;
+      handle.pointTheta = handle.theta =
+        Math.atan2(handle.y - connection.curveY, handle.x - connection.curveX);
+      // The incoming handle should point inward
+      if (offsetDirection === -1) {
+        handle.pointTheta += Math.PI;
+      }
+    } else {
+      connection.curveX = connection.x0;
+      handle.pointTheta = handle.theta = 0;
+    }
   }
 
   updateBothHandles ({
@@ -322,12 +332,14 @@ L${offset + this.emSize},${this.emSize}`;
       connection.y0 = connection.source.y + NODE_SIZE * Math.sin(handle.theta);
       handle.x = connection.x1 = connection.x0 + (handle.dx || 0);
       handle.y = connection.y1 = connection.y0 + (handle.dy || 0);
-      // By default, put the curve at the same spot as the handle
-      let curveRadius = NODE_SIZE;
-      let curveTheta = handle.theta;
+      // By default, don't bother drawing the path (deleteing curveX and curveY
+      // will suppress the path from being drawn)
+      delete connection.curveX;
+      delete connection.curveY;
       if (connection.id === this.draggingConnection) {
-        // Dragging; pop the curve out a bit from the node
-        curveRadius = NODE_SIZE + CURVE_OFFSET;
+        // We're dragging the handle; pop the curve out a bit from the node
+        const curveRadius = NODE_SIZE + CURVE_OFFSET;
+        let curveTheta = handle.theta;
         if (this.handleTarget === connection.source.classId) {
           // Creating a self-edge; rotate the curve to between the arc start
           // and the handle's current location
@@ -335,9 +347,10 @@ L${offset + this.emSize},${this.emSize}`;
             Math.atan2(handle.y - connection.source.y,
               handle.x - connection.source.x)) / 2;
         }
+        connection.curveX = connection.source.x + curveRadius * Math.cos(curveTheta);
+        connection.curveY = connection.source.y + curveRadius * Math.sin(curveTheta);
+        handle.pointTheta = Math.atan2(handle.y - connection.curveY, handle.x - connection.curveX);
       }
-      handle.curveX = connection.source.x + curveRadius * Math.cos(curveTheta);
-      handle.curveY = connection.source.y + curveRadius * Math.sin(curveTheta);
     }
   }
 
@@ -372,12 +385,16 @@ L${offset + this.emSize},${this.emSize}`;
         options.handle = connection.target.handles[connection.id] =
           connection.target.handles[connection.id] || {};
         options.offsetDirection = -1;
+        options.edgeX = connection.target.x;
+        options.edgeY = connection.target.y;
         this.updateEdgeDummyHandle(options);
       } else if (connection.location === 'target') {
         // Outgoing dummy from edge
         options.handle = connection.source.handles[connection.id] =
           connection.source.handles[connection.id] || {};
         options.offsetDirection = 1;
+        options.edgeX = connection.source.x;
+        options.edgeY = connection.source.y;
         this.updateEdgeDummyHandle(options);
       }
     } else {

@@ -76,6 +76,7 @@ class NetworkModelGraph extends PersistentGraph {
           location: 'target',
           dummy: true
         });
+        graph.nodes.push({ dummy: true });
       }
     });
 
