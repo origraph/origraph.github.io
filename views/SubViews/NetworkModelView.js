@@ -89,6 +89,8 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   }
 
   drawObjectLayer () {
+    const self = this;
+
     // Only need to create object layer groups for non-dummy nodes
     const nodes = window.mainView.networkModelGraph.nodes.filter(d => !!d.classObj);
 
@@ -141,7 +143,6 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         delete d.fy;
       }));
     // When dragging handles, register objects as targets
-    const self = this;
     objects.on('mouseenter', function (d) {
       if (self.draggingConnection) {
         self.handleTarget = d.classObj.classId;
@@ -166,7 +167,10 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     objects.select('text').text(d => d.classObj.className);
     // Patch labelWidth onto the data, so it's available elsewhere
     objects.each(function (d) {
-      d.labelWidth = this.querySelector('text').getBoundingClientRect().width;
+      const bounds = this.querySelector('text').getBoundingClientRect();
+      const left = self.currentZoom.invertX(bounds.left);
+      const right = self.currentZoom.invertX(bounds.right);
+      d.labelWidth = right - left;
     });
     // Size the label background
     objects.select('.textGroup rect')
