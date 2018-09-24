@@ -76,7 +76,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   setup () {
     super.setup();
 
-    this.draggingConnection = null;
+    this.draggingHandle = null;
     this.handleTarget = null;
 
     this.simulation = d3.forceSimulation();
@@ -138,7 +138,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         this.simulation.force('link', null);
         this.simulation.force('charge', null);
         // this.simulation.force('center', null);
-        if (!d3.event.active && !this.draggingConnection) {
+        if (!d3.event.active && !this.draggingHandle) {
           this.simulation.alpha(0.1).restart();
         }
         d.fx = d.x;
@@ -157,16 +157,28 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         delete d.fx;
         delete d.fy;
       }));
-    // When dragging handles, register objects as targets
+    // When dragging handles, determine if the connection is valid, and if so,
+    // register the class as this.handleTarget
     objects.on('mouseenter', function (d) {
-      if (self.draggingConnection) {
-        self.handleTarget = d.classObj.classId;
-        d3.select(this).classed('connecting', true);
+      if (self.draggingHandle) {
+        const sourceHandle = self.draggingHandle.connection.source.handles[self.draggingHandle.connection.id];
+        const otherClass = self.draggingHandle === sourceHandle
+          ? self.draggingHandle.connection.target.classObj
+          : self.draggingHandle.connection.source.classObj;
+        const canConnect = d.classObj.type === 'Edge' && otherClass.type === 'Edge';
+        if (canConnect) {
+          self.handleTarget = d.classObj;
+        } else {
+          self.handleTarget = null;
+        }
+        d3.select(this).classed('connecting', canConnect);
+        d3.select(this).classed('cantConnect', !canConnect);
       }
     }).on('mouseleave', function (d) {
-      if (self.draggingConnection) {
+      if (self.draggingHandle) {
         self.handleTarget = null;
         d3.select(this).classed('connecting', false);
+        d3.select(this).classed('cantConnect', false);
       }
     });
 
@@ -249,7 +261,7 @@ L${offset + this.emSize},${this.emSize}`;
     connection.x1 = handle.x = handle.x + (handle.dx || 0);
     connection.y1 = handle.y = handle.y + (handle.dy || 0);
     connection.curveY = connection.y0;
-    if (connection.id === this.draggingConnection) {
+    if (this.isDragging(connection)) {
       connection.curveX = connection.x0 + offsetDirection * CURVE_OFFSET;
       handle.pointTheta = handle.theta =
         Math.atan2(handle.y - connection.curveY, handle.x - connection.curveX);
@@ -294,8 +306,8 @@ L${offset + this.emSize},${this.emSize}`;
     nodeHandle.x = connection.x0 = nodeX + NODE_SIZE * Math.cos(nodeHandle.theta);
     nodeHandle.y = connection.y0 = nodeY + NODE_SIZE * Math.sin(nodeHandle.theta);
     // Okay, if dragging is happening, update some things:
-    if (connection.id === this.draggingConnection) {
-      if (this.isDraggingEdgeHandle) {
+    if (this.isDragging(connection)) {
+      if (this.draggingHandle.isEdgeHandle) {
         edgeHandle.x = connection.x1 = edgeHandle.x + (edgeHandle.dx || 0);
         edgeHandle.y = connection.y1 = edgeHandle.y + (edgeHandle.dy || 0);
         // We're dragging the edge, so curve relative to the node instead
@@ -326,9 +338,8 @@ L${offset + this.emSize},${this.emSize}`;
       // Figure out the largest gaps between existing handles
       const angles = [];
       for (const otherHandle of Object.values(connection.source.handles)) {
-        const isDraggingHandle = otherHandle.connection.id === this.draggingConnection &&
-          !this.isDraggingEdgeHandle;
-        if (otherHandle.theta !== undefined && handle !== otherHandle && !isDraggingHandle) {
+        if (otherHandle.theta !== undefined && handle !== otherHandle &&
+            otherHandle !== this.draggingHandle) {
           angles.push(otherHandle.theta);
         }
       }
@@ -355,7 +366,7 @@ L${offset + this.emSize},${this.emSize}`;
       // will suppress the path from being drawn)
       delete connection.curveX;
       delete connection.curveY;
-      if (connection.id === this.draggingConnection) {
+      if (this.isDragging(connection)) {
         // We're dragging the handle; pop the curve out a bit from the node
         let curveRadius = NODE_SIZE + CURVE_OFFSET;
         let curveTheta = handle.theta;
@@ -485,11 +496,9 @@ L${offset + this.emSize},${this.emSize}`;
     });
 
     // Apply relevant classes for styling
-    connectionLines.classed('dragging', d => d.id === this.draggingConnection)
-      .classed('connecting', d => d.id === this.draggingConnection &&
-        this.handleTarget !== null)
-      .classed('disconnecting', d => d.id === this.draggingConnection &&
-        this.handleTarget === null);
+    connectionLines.classed('dragging', d => this.isDragging(d))
+      .classed('connecting', d => this.isDragging(d) && this.handleTarget !== null)
+      .classed('disconnecting', d => this.isDragging(d) && this.handleTarget === null);
   }
 
   drawHandleLayer () {
@@ -527,24 +536,20 @@ L${offset + this.emSize},${this.emSize}`;
         return `translate(${d.x},${d.y}) rotate(${angle})`;
       })
       .attr('d', d => {
-        if (this.draggingConnection === d.connection.id &&
-            this.handleTarget === null) {
+        if (this.isDragging(d.connection) && this.handleTarget === null) {
           return HANDLE_PATHS.disconnect;
         } else if (d.connection.directed) {
           return HANDLE_PATHS.directed;
         } else {
           return HANDLE_PATHS.undirected;
         }
-      }).classed('dragging', d => this.draggingConnection === d.connection.id)
-      .classed('connecting', d => this.handleTarget !== null &&
-        this.draggingConnection === d.connection.id)
-      .classed('disconnecting', d => this.handleTarget === null &&
-        this.draggingConnection === d.connection.id);
+      }).classed('dragging', d => this.isDragging(d.connection))
+      .classed('connecting', d => this.isDragging(d.connection) && this.handleTarget !== null)
+      .classed('disconnecting', d => this.isDragging(d.connection) && this.handleTarget === null);
 
     // Dragging behavior
     handles.call(d3.drag().on('start', d => {
-      this.draggingConnection = d.connection.id;
-      this.isDraggingEdgeHandle = d.isEdgeHandle;
+      this.draggingHandle = d;
       this.handleTarget = null;
       this.simulation.alpha(0);
       d.x0 = d3.event.x;
@@ -555,23 +560,37 @@ L${offset + this.emSize},${this.emSize}`;
       this.drawLineLayer();
       this.drawHandleLayer();
     }).on('end', d => {
-      this.draggingConnection = null;
+      this.draggingHandle = null;
       delete d.x0;
       delete d.dx;
       delete d.y0;
       delete d.dy;
-      // TODO: connect or disconnect, based on this.handleTarget and
-      // d.edgeClassId or d.nodeClassId
+      this.connectOrDisconnect(d);
       this.handleTarget = null;
       this.simulation.alpha(0).restart();
     }));
 
     // While dragging handles, we want to ignore pointer events manually
     // (the :active selector doesn't seem to work as well while dragging)
-    this.handleLayer.style('pointer-events', this.draggingConnection ? 'none' : null);
+    this.handleLayer.style('pointer-events', this.draggingHandle ? 'none' : null);
     // Similarly, cursor changes mostly get ignored while dragging, so we
     // need to apply the hidden cursor everywhere
-    this.content.classed('hideCursor', !!this.draggingConnection);
+    this.content.classed('hideCursor', !!this.draggingHandle);
+  }
+
+  isDragging (connection) {
+    return this.draggingHandle && connection.id === this.draggingHandle.connection.id;
+  }
+  connectOrDisconnect (handle) {
+    if (this.handleTarget === null) {
+      // Disconnect
+      if (handle.dummy) { // no need to disconnect dummy handles
+        console.log('disconnect', handle);
+      }
+    } else {
+      // Connect
+      console.log('connect', handle, this.handleTarget);
+    }
   }
 
   draw () {
