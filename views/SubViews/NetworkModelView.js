@@ -357,14 +357,22 @@ L${offset + this.emSize},${this.emSize}`;
       delete connection.curveY;
       if (connection.id === this.draggingConnection) {
         // We're dragging the handle; pop the curve out a bit from the node
-        const curveRadius = NODE_SIZE + CURVE_OFFSET;
+        let curveRadius = NODE_SIZE + CURVE_OFFSET;
         let curveTheta = handle.theta;
-        if (this.handleTarget === connection.source.classId) {
+        if (this.handleTarget === connection.source.classObj.classId) {
           // Creating a self-edge; rotate the curve to between the arc start
           // and the handle's current location
-          curveTheta = (handle.theta +
-            Math.atan2(handle.y - connection.source.y,
-              handle.x - connection.source.x)) / 2;
+
+          // Normalize curveTheta to [-π, π]
+          while (curveTheta > Math.PI) { curveTheta -= 2 * Math.PI; }
+          while (curveTheta < -Math.PI) { curveTheta += 2 * Math.PI; }
+          const handleTheta = Math.atan2(handle.y - connection.source.y,
+            handle.x - connection.source.x);
+          if (handleTheta > curveTheta) {
+            curveTheta += (handleTheta - curveTheta) / 2;
+          } else {
+            curveTheta -= (curveTheta - handleTheta) / 2;
+          }
         }
         connection.curveX = connection.source.x + curveRadius * Math.cos(curveTheta);
         connection.curveY = connection.source.y + curveRadius * Math.sin(curveTheta);
