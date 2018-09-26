@@ -52,12 +52,61 @@ L${-HANDLE_SIZE / 2},${-HANDLE_SIZE}\
 Z`
 };
 
+function bbox (alpha) {
+  for (const node of bbox.nodes) {
+    if (node.x <= NODE_SIZE) {
+      node.vx += bbox.strength * alpha;
+    } else if (node.x >= bbox.bounds.width - NODE_SIZE) {
+      node.vx -= bbox.strength * alpha;
+    }
+    if (node.y <= NODE_SIZE) {
+      node.vy += bbox.strength * alpha;
+    } else if (node.y >= bbox.bounds.height - NODE_SIZE) {
+      node.vy -= bbox.strength * alpha;
+    }
+  }
+}
+bbox.nodes = [];
+bbox.bounds = {
+  width: 1,
+  height: 1
+};
+bbox.strength = 15;
+bbox.initialize = nodes => {
+  bbox.nodes = nodes;
+};
+
 const DEFAULT_FORCES = {
   link: d3.forceLink(),
-  charge: d3.forceManyBody(),
   center: d3.forceCenter(),
-  collide: d3.forceCollide().radius(2 * NODE_SIZE)
+  collide: d3.forceCollide().radius(NODE_SIZE),
+  bbox
 };
+
+class Handle {
+  constructor (connection) {
+    this.connection = connection;
+  }
+
+  get otherHandle () {
+    if (!this.connection.source.handles) {
+      return undefined;
+    }
+    const sourceHandle = this.connection.source.handles[this.connection.id];
+    if (this === sourceHandle) {
+      return this.connection.target.handles &&
+        this.connection.target.handles[this.connection.id];
+    } else {
+      return sourceHandle;
+    }
+  }
+
+  get classObj () {
+    return this.connection.source.handles &&
+      this === this.connection.source.handles[this.connection.id]
+      ? this.connection.source.classObj : this.connection.target.classObj;
+  }
+}
 
 class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   constructor ({
@@ -89,18 +138,43 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     this.handleLayer = this.content.append('g').classed('handleLayer', true);
 
     this.simulation.on('tick', () => {
-      // We do some funkiness to the data object to help us draw:
-      // drawObjectLayer updates labelWidth, and inititializes node.handles
-      this.drawObjectLayer();
-      // drawLineLayer uses labelWidth, and updates node.handles
-      this.drawLineLayer();
-      // drawHandleLayer uses node.handles
-      this.drawHandleLayer();
+      this.tick();
     });
 
     this.container.on('resize', () => {
       this.simulation.alpha(0.3);
     });
+    mure.on('classUpdate', () => {
+      this.simulation.alpha(0.3).restart();
+    });
+  }
+
+  draw () {
+    this.simulation.nodes(window.mainView.networkModelGraph.nodes);
+
+    if (this.simulation.force('link')) {
+      this.simulation.force('link')
+        .links(window.mainView.networkModelGraph.edges);
+    }
+    const bounds = this.getContentBounds(this.content);
+    if (this.simulation.force('center')) {
+      this.simulation.force('center')
+        .x(bounds.width / 2)
+        .y(bounds.height / 2);
+    }
+    if (this.simulation.force('bbox')) {
+      this.simulation.force('bbox').bounds = bounds;
+    }
+  }
+
+  tick () {
+    // We do some funkiness to the data object to help us draw:
+    // drawObjectLayer updates labelWidth, and inititializes node.handles
+    this.drawObjectLayer();
+    // drawLineLayer uses labelWidth, and updates node.handles
+    this.drawLineLayer();
+    // drawHandleLayer uses node.handles
+    this.drawHandleLayer();
   }
 
   drawObjectLayer () {
@@ -134,10 +208,9 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     // Class dragging behavior (disabled when handles are being dragged)
     objects.call(d3.drag()
       .on('start', d => {
-        // disable link, charge, and center forces (keep collision)
+        // disable link and center forces (keep bbox and collision)
         this.simulation.force('link', null);
-        this.simulation.force('charge', null);
-        // this.simulation.force('center', null);
+        this.simulation.force('center', null);
         if (!d3.event.active && !this.draggingHandle) {
           this.simulation.alpha(0.1).restart();
         }
@@ -147,10 +220,9 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
       }).on('end', d => {
-        // re-enable link, charge, and center forces
+        // re-enable link and center forces
         this.simulation.force('link', DEFAULT_FORCES.link);
-        this.simulation.force('charge', DEFAULT_FORCES.charge);
-        // this.simulation.force('center', DEFAULT_FORCES.center);
+        this.simulation.force('center', DEFAULT_FORCES.center);
         if (!d3.event.active) {
           this.simulation.alpha(0);
         }
@@ -161,18 +233,16 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     // register the class as this.handleTarget
     objects.on('mouseenter', function (d) {
       if (self.draggingHandle) {
-        const sourceHandle = self.draggingHandle.connection.source.handles[self.draggingHandle.connection.id];
-        const otherClass = self.draggingHandle === sourceHandle
-          ? self.draggingHandle.connection.target.classObj
-          : self.draggingHandle.connection.source.classObj;
-        const canConnect = d.classObj.type === 'Edge' && otherClass.type === 'Edge';
-        if (canConnect) {
-          self.handleTarget = d.classObj;
-        } else {
+        const otherHandle = self.draggingHandle.otherHandle;
+        const cantConnect = d.classObj.type === 'Edge' &&
+          otherHandle && otherHandle.classObj.type === 'Edge';
+        if (cantConnect) {
           self.handleTarget = null;
+        } else {
+          self.handleTarget = d.classObj;
         }
-        d3.select(this).classed('connecting', canConnect);
-        d3.select(this).classed('cantConnect', !canConnect);
+        d3.select(this).classed('connecting', !cantConnect);
+        d3.select(this).classed('cantConnect', cantConnect);
       }
     }).on('mouseleave', function (d) {
       if (self.draggingHandle) {
@@ -330,10 +400,9 @@ L${offset + this.emSize},${this.emSize}`;
     }
   }
 
-  updateNodeDummyHandles (dummyNodes) {
-    for (const connection of dummyNodes) {
-      const handle = connection.source.handles[connection.id] =
-        connection.source.handles[connection.id] || {};
+  updateNodeDummyHandles (dummyNodeConnections) {
+    for (const connection of dummyNodeConnections) {
+      const handle = this.getOrInitSourceHandle(connection);
       handle.connection = connection;
       // Figure out the largest gaps between existing handles
       const angles = [];
@@ -392,6 +461,17 @@ L${offset + this.emSize},${this.emSize}`;
     }
   }
 
+  getOrInitSourceHandle (connection) {
+    connection.source.handles[connection.id] =
+      connection.source.handles[connection.id] || new Handle(connection);
+    return connection.source.handles[connection.id];
+  }
+  getOrInitTargetHandle (connection) {
+    connection.target.handles[connection.id] =
+      connection.target.handles[connection.id] || new Handle(connection);
+    return connection.target.handles[connection.id];
+  }
+
   updateHandlesAndAnchors (connection) {
     // Don't do anything if node positions haven't yet been initialized
     if (connection.source.x === undefined || connection.source.y === undefined ||
@@ -411,38 +491,34 @@ L${offset + this.emSize},${this.emSize}`;
       yEdgeOffset: this.emSize
     };
 
-    const dummyNodes = [];
+    const dummyNodeConnections = [];
     if (connection.dummy) {
       // Dummy connections; these should only have one handle
       if (connection.location === 'node') {
         // Arrange dummy nodes later, when we already know all the nodes'
         // other handle positions
-        dummyNodes.push(connection);
+        dummyNodeConnections.push(connection);
       } else if (connection.location === 'source') {
         // Incoming dummy to edge
-        options.handle = connection.target.handles[connection.id] =
-          connection.target.handles[connection.id] || {};
         options.offsetDirection = -1;
         options.edgeX = connection.target.x;
         options.edgeY = connection.target.y;
+        options.handle = this.getOrInitTargetHandle(connection);
         this.updateEdgeDummyHandle(options);
       } else if (connection.location === 'target') {
         // Outgoing dummy from edge
-        options.handle = connection.source.handles[connection.id] =
-          connection.source.handles[connection.id] || {};
         options.offsetDirection = 1;
         options.edgeX = connection.source.x;
         options.edgeY = connection.source.y;
+        options.handle = this.getOrInitSourceHandle(connection);
         this.updateEdgeDummyHandle(options);
       }
     } else {
       // Regular connections; these should have two handles
       if (connection.location === 'source') {
         // Connection from node to edge
-        options.nodeHandle = connection.source.handles[connection.id] =
-          connection.source.handles[connection.id] || {};
-        options.edgeHandle = connection.target.handles[connection.id] =
-          connection.target.handles[connection.id] || {};
+        options.nodeHandle = this.getOrInitSourceHandle(connection);
+        options.edgeHandle = this.getOrInitTargetHandle(connection);
         options.nodeX = connection.source.x;
         options.nodeY = connection.source.y;
         options.edgeX = connection.target.x;
@@ -451,10 +527,8 @@ L${offset + this.emSize},${this.emSize}`;
         this.updateBothHandles(options);
       } else if (connection.location === 'target') {
         // Connection from edge to node
-        options.nodeHandle = connection.target.handles[connection.id] =
-          connection.target.handles[connection.id] || {};
-        options.edgeHandle = connection.source.handles[connection.id] =
-          connection.source.handles[connection.id] || {};
+        options.nodeHandle = this.getOrInitTargetHandle(connection);
+        options.edgeHandle = this.getOrInitSourceHandle(connection);
         options.nodeX = connection.target.x;
         options.nodeY = connection.target.y;
         options.edgeX = connection.source.x;
@@ -463,18 +537,18 @@ L${offset + this.emSize},${this.emSize}`;
         this.updateBothHandles(options);
       }
     }
-    return dummyNodes;
+    return dummyNodeConnections;
   }
 
   drawLineLayer () {
     // Compute handle and curve anchor points for everything except dummy
     // node connections
-    const dummyNodes = window.mainView.networkModelGraph.edges
+    const dummyNodeConnections = window.mainView.networkModelGraph.edges
       .reduce((agg, d) => {
         return agg.concat(this.updateHandlesAndAnchors(d));
       }, []);
     // Second pass for dummy node handles
-    this.updateNodeDummyHandles(dummyNodes);
+    this.updateNodeDummyHandles(dummyNodeConnections);
 
     // A path for every connection
     let connectionLines = this.lineLayer.selectAll('.connection')
@@ -584,30 +658,110 @@ L${offset + this.emSize},${this.emSize}`;
   connectOrDisconnect (handle) {
     if (this.handleTarget === null) {
       // Disconnect
-      if (handle.dummy) { // no need to disconnect dummy handles
-        console.log('disconnect', handle);
+      if (!handle.connection.dummy) { // dummy handles are already disconnected
+        const edgeClass = handle.isEdgeHandle ? handle.classObj : handle.otherHandle.classObj;
+        if (handle.connection.location === 'source') {
+          edgeClass.disconnectSource();
+        } else {
+          edgeClass.disconnectTarget();
+        }
       }
     } else {
       // Connect
-      console.log('connect', handle, this.handleTarget);
+      const options = {};
+      if (handle.connection.location === 'node') {
+        if (this.handleTarget.type === 'Edge') {
+          options.sourceClass = options.nodeClass = handle.classObj;
+          options.targetClass = options.edgeClass = this.handleTarget;
+        } else {
+          options.sourceClass = options.nodeClass = handle.classObj;
+          options.targetClass = options.otherNodeClass = this.handleTarget;
+        }
+      } else if (handle.connection.location === 'source') {
+        const classObj = handle.connection.dummy ? handle.classObj : handle.otherHandle.classObj;
+        const otherHandle = handle.otherHandle;
+        if (handle.connection.dummy || otherHandle.isEdgeHandle) {
+          options.sourceClass = options.nodeClass = this.handleTarget;
+          options.targetClass = options.edgeClass = classObj;
+        } else {
+          options.sourceClass = options.nodeClass = classObj;
+          options.targetClass = options.edgeClass = this.handleTarget;
+        }
+      } else {
+        const classObj = handle.connection.dummy ? handle.classObj : handle.otherHandle.classObj;
+        const otherHandle = handle.otherHandle;
+        if (handle.connection.dummy || otherHandle.isEdgeHandle) {
+          options.sourceClass = options.edgeClass = classObj;
+          options.targetClass = options.nodeClass = this.handleTarget;
+        } else {
+          options.sourceClass = options.edgeClass = this.handleTarget;
+          options.targetClass = options.nodeClass = classObj;
+        }
+      }
+      this.connect(options);
     }
   }
 
-  draw () {
-    const bounds = this.getContentBounds(this.content);
+  async connect (options) {
+    return new Promise((resolve, reject) => {
+      let nodeAttribute = null;
+      let edgeAttribute = null;
 
-    this.simulation.nodes(window.mainView.networkModelGraph.nodes);
+      window.mainView.showOverlay({
+        content: container => {
+          // These select menus are a temporary patch until we draw and connect table headers
+          container.html('');
+          const sourceAttrs = Object.values(options.sourceClass.table.getAttributeDetails());
+          sourceAttrs.unshift({ name: 'ID', useId: true });
+          const sourceSelect = container.append('select');
+          const sourceOptions = sourceSelect.selectAll('option').data(sourceAttrs);
+          sourceOptions.enter().append('option')
+            .property('value', d => d.useId ? null : d.name)
+            .text(d => d.name);
+          sourceSelect.on('change', function () {
+            if (options.sourceClass === options.nodeClass) {
+              nodeAttribute = this.value;
+            } else {
+              edgeAttribute = this.value;
+            }
+          });
 
-    if (this.simulation.force('link')) {
-      this.simulation.force('link')
-        .links(window.mainView.networkModelGraph.edges);
-    }
-    if (this.simulation.force('center')) {
-      this.simulation.force('center')
-        .x(bounds.width / 2)
-        .y(bounds.height / 2);
-    }
-    // TODO: make a custom force to resist labels overlapping each other
+          const targetAttrs = Object.values(options.targetClass.table.getAttributeDetails());
+          targetAttrs.unshift({ name: 'ID', useId: true });
+          const targetSelect = container.append('select');
+          const targetOptions = targetSelect.selectAll('option').data(targetAttrs);
+          targetOptions.enter().append('option')
+            .property('value', d => d.useId ? null : d.name)
+            .text(d => d.name);
+          targetSelect.on('change', function () {
+            if (options.targetClass === options.nodeClass) {
+              nodeAttribute = this.value;
+            } else {
+              edgeAttribute = this.value;
+            }
+          });
+        },
+        ok: async () => {
+          if (options.edgeClass) {
+            await options.edgeClass.connectToNodeClass({
+              nodeClass: options.nodeClass,
+              direction: options.direction,
+              nodeAttribute,
+              edgeAttribute
+            });
+          } else {
+            await options.nodeClass.connectToNodeClass({
+              nodeClass: options.otherNodeClass,
+              attribute: nodeAttribute,
+              otherAttribute: edgeAttribute
+            });
+          }
+          window.mainView.hideOverlay();
+          resolve();
+        },
+        cancel: () => { window.mainView.hideOverlay(); resolve(); }
+      });
+    });
   }
 }
 NetworkModelView.icon = 'img/networkModel.svg';

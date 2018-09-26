@@ -40,7 +40,7 @@ window.autoLoadLesMiserables = async () => {
   let [ nodeClass, edgeClass ] = baseClassObj.closedTranspose(['nodes', 'links']);
   nodeClass = await nodeClass.interpretAsNodes();
   edgeClass = await edgeClass.interpretAsEdges();
-
+  /*
   await edgeClass.connectToNodeClass({
     nodeClass,
     direction: 'source',
@@ -53,6 +53,6 @@ window.autoLoadLesMiserables = async () => {
     nodeAttribute: 'index',
     edgeAttribute: 'target'
   });
-
+  */
   baseClassObj.delete();
 };
