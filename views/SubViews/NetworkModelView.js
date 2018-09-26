@@ -230,7 +230,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         delete d.fy;
       }));
     // When dragging handles, determine if the connection is valid, and if so,
-    // register the class as this.handleTarget
+    // register this.handleTarget
     objects.on('mouseenter', function (d) {
       if (self.draggingHandle) {
         const otherHandle = self.draggingHandle.otherHandle;
@@ -239,7 +239,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         if (cantConnect) {
           self.handleTarget = null;
         } else {
-          self.handleTarget = d.classObj;
+          self.handleTarget = d;
         }
         d3.select(this).classed('connecting', !cantConnect);
         d3.select(this).classed('cantConnect', cantConnect);
@@ -439,7 +439,7 @@ L${offset + this.emSize},${this.emSize}`;
         // We're dragging the handle; pop the curve out a bit from the node
         let curveRadius = NODE_SIZE + CURVE_OFFSET;
         let curveTheta = handle.theta;
-        if (this.handleTarget === connection.source.classObj.classId) {
+        if (this.handleTarget.classObj === connection.source.classObj) {
           // Creating a self-edge; rotate the curve to between the arc start
           // and the handle's current location
 
@@ -670,32 +670,65 @@ L${offset + this.emSize},${this.emSize}`;
       // Connect
       const options = {};
       if (handle.connection.location === 'node') {
-        if (this.handleTarget.type === 'Edge') {
-          options.sourceClass = options.nodeClass = handle.classObj;
-          options.targetClass = options.edgeClass = this.handleTarget;
+        if (this.handleTarget.classObj.type === 'Edge') {
+          // Node dummy to Edge (need to auto-determine which handle)
+          options.nodeClass = handle.classObj;
+          options.edgeClass = this.handleTarget.classObj;
+          // If just one handle is hanging, connect to it
+          if (options.edgeClass.sourceClassId && options.edgeClass.targetClassId === null) {
+            options.direction = 'target';
+            options.sourceClass = options.edgeClass;
+            options.targetClass = options.nodeClass;
+          } else if (options.edgeClass.sourceClassId === null && options.edgeClass.targetClassId) {
+            options.direction = 'source';
+            options.sourceClass = options.nodeClass;
+            options.targetClass = options.edgeClass;
+          } else {
+            // Otherwise (both or neither connected), pick the one that was
+            // physically closest when the mouse was released
+            if (handle.x <= this.handleTarget.x) {
+              options.direction = 'source';
+              options.sourceClass = options.nodeClass;
+              options.targetClass = options.edgeClass;
+            } else {
+              options.direction = 'target';
+              options.sourceClass = options.edgeClass;
+              options.targetClass = options.nodeClass;
+            }
+          }
         } else {
+          // Node dummy to Node
           options.sourceClass = options.nodeClass = handle.classObj;
-          options.targetClass = options.otherNodeClass = this.handleTarget;
+          options.targetClass = options.otherNodeClass = this.handleTarget.classObj;
+          // Don't need to assign direction for node-node connections
         }
       } else if (handle.connection.location === 'source') {
         const classObj = handle.connection.dummy ? handle.classObj : handle.otherHandle.classObj;
         const otherHandle = handle.otherHandle;
         if (handle.connection.dummy || otherHandle.isEdgeHandle) {
-          options.sourceClass = options.nodeClass = this.handleTarget;
+          // Edge (source handle) to Node
+          options.sourceClass = options.nodeClass = this.handleTarget.classObj;
           options.targetClass = options.edgeClass = classObj;
+          options.direction = 'source';
         } else {
+          // Node to Edge (source handle)
           options.sourceClass = options.nodeClass = classObj;
-          options.targetClass = options.edgeClass = this.handleTarget;
+          options.targetClass = options.edgeClass = this.handleTarget.classObj;
+          options.direction = 'source';
         }
       } else {
         const classObj = handle.connection.dummy ? handle.classObj : handle.otherHandle.classObj;
         const otherHandle = handle.otherHandle;
         if (handle.connection.dummy || otherHandle.isEdgeHandle) {
+          // Edge (target handle) to Node
           options.sourceClass = options.edgeClass = classObj;
-          options.targetClass = options.nodeClass = this.handleTarget;
+          options.targetClass = options.nodeClass = this.handleTarget.classObj;
+          options.direction = 'target';
         } else {
-          options.sourceClass = options.edgeClass = this.handleTarget;
+          // Node to Edge (target handle)
+          options.sourceClass = options.edgeClass = this.handleTarget.classObj;
           options.targetClass = options.nodeClass = classObj;
+          options.direction = 'target';
         }
       }
       this.connect(options);
@@ -751,7 +784,7 @@ L${offset + this.emSize},${this.emSize}`;
             });
           } else {
             await options.nodeClass.connectToNodeClass({
-              nodeClass: options.otherNodeClass,
+              otherNodeClass: options.otherNodeClass,
               attribute: nodeAttribute,
               otherAttribute: edgeAttribute
             });

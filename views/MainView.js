@@ -25,7 +25,10 @@ class MainView extends View {
     mure.on('classUpdate', async () => {
       this.updateSamples();
       this.updateLayout();
-      await this.networkModelGraph.update();
+      await Promise.all([
+        this.networkModelGraph.update(),
+        this.instanceGraph.update()
+      ]);
       this.render();
     });
 

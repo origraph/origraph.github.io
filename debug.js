@@ -12,22 +12,23 @@ window.autoLoadMovies = async () => {
 
   const [ peopleId, moviesId, movieEdgesId ] = classes.map(classObj => classObj.classId);
 
-  await mure.classes[peopleId].interpretAsNodes();
-  await mure.classes[moviesId].interpretAsNodes();
-  await mure.classes[movieEdgesId].interpretAsEdges();
+  mure.classes[peopleId].interpretAsNodes();
+  mure.classes[moviesId].interpretAsNodes();
+  mure.classes[movieEdgesId].interpretAsEdges();
 
-  await mure.classes[peopleId].connectToEdgeClass({
+  mure.classes[peopleId].connectToEdgeClass({
     edgeClass: mure.classes[movieEdgesId],
-    direction: 'source',
+    side: 'source',
     nodeAttribute: 'id',
     edgeAttribute: 'sourceID'
   });
-  await mure.classes[movieEdgesId].connectToNodeClass({
+  mure.classes[movieEdgesId].connectToNodeClass({
     nodeClass: mure.classes[moviesId],
-    direction: 'target',
+    side: 'target',
     nodeAttribute: 'id',
     edgeAttribute: 'targetID'
   });
+  mure.classes[movieEdgesId].toggleDirection();
 };
 
 window.autoLoadLesMiserables = async () => {
@@ -38,21 +39,19 @@ window.autoLoadLesMiserables = async () => {
   });
 
   let [ nodeClass, edgeClass ] = baseClassObj.closedTranspose(['nodes', 'links']);
-  nodeClass = await nodeClass.interpretAsNodes();
-  edgeClass = await edgeClass.interpretAsEdges();
-  /*
-  await edgeClass.connectToNodeClass({
+  nodeClass = nodeClass.interpretAsNodes();
+  edgeClass = edgeClass.interpretAsEdges();
+  edgeClass.connectToNodeClass({
     nodeClass,
-    direction: 'source',
+    side: 'source',
     nodeAttribute: 'index',
     edgeAttribute: 'source'
   });
-  await edgeClass.connectToNodeClass({
+  edgeClass.connectToNodeClass({
     nodeClass,
-    direction: 'target',
+    side: 'target',
     nodeAttribute: 'index',
     edgeAttribute: 'target'
   });
-  */
   baseClassObj.delete();
 };
