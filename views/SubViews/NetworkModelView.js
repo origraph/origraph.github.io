@@ -439,7 +439,7 @@ L${offset + this.emSize},${this.emSize}`;
         // We're dragging the handle; pop the curve out a bit from the node
         let curveRadius = NODE_SIZE + CURVE_OFFSET;
         let curveTheta = handle.theta;
-        if (this.handleTarget.classObj === connection.source.classObj) {
+        if (this.handleTarget && this.handleTarget.classObj === connection.source.classObj) {
           // Creating a self-edge; rotate the curve to between the arc start
           // and the handle's current location
 
@@ -676,22 +676,22 @@ L${offset + this.emSize},${this.emSize}`;
           options.edgeClass = this.handleTarget.classObj;
           // If just one handle is hanging, connect to it
           if (options.edgeClass.sourceClassId && options.edgeClass.targetClassId === null) {
-            options.direction = 'target';
+            options.side = 'target';
             options.sourceClass = options.edgeClass;
             options.targetClass = options.nodeClass;
           } else if (options.edgeClass.sourceClassId === null && options.edgeClass.targetClassId) {
-            options.direction = 'source';
+            options.side = 'source';
             options.sourceClass = options.nodeClass;
             options.targetClass = options.edgeClass;
           } else {
             // Otherwise (both or neither connected), pick the one that was
             // physically closest when the mouse was released
             if (handle.x <= this.handleTarget.x) {
-              options.direction = 'source';
+              options.side = 'source';
               options.sourceClass = options.nodeClass;
               options.targetClass = options.edgeClass;
             } else {
-              options.direction = 'target';
+              options.side = 'target';
               options.sourceClass = options.edgeClass;
               options.targetClass = options.nodeClass;
             }
@@ -709,12 +709,12 @@ L${offset + this.emSize},${this.emSize}`;
           // Edge (source handle) to Node
           options.sourceClass = options.nodeClass = this.handleTarget.classObj;
           options.targetClass = options.edgeClass = classObj;
-          options.direction = 'source';
+          options.side = 'source';
         } else {
           // Node to Edge (source handle)
           options.sourceClass = options.nodeClass = classObj;
           options.targetClass = options.edgeClass = this.handleTarget.classObj;
-          options.direction = 'source';
+          options.side = 'source';
         }
       } else {
         const classObj = handle.connection.dummy ? handle.classObj : handle.otherHandle.classObj;
@@ -723,12 +723,12 @@ L${offset + this.emSize},${this.emSize}`;
           // Edge (target handle) to Node
           options.sourceClass = options.edgeClass = classObj;
           options.targetClass = options.nodeClass = this.handleTarget.classObj;
-          options.direction = 'target';
+          options.side = 'target';
         } else {
           // Node to Edge (target handle)
           options.sourceClass = options.edgeClass = this.handleTarget.classObj;
           options.targetClass = options.nodeClass = classObj;
-          options.direction = 'target';
+          options.side = 'target';
         }
       }
       this.connect(options);
@@ -778,7 +778,7 @@ L${offset + this.emSize},${this.emSize}`;
           if (options.edgeClass) {
             await options.edgeClass.connectToNodeClass({
               nodeClass: options.nodeClass,
-              direction: options.direction,
+              side: options.side,
               nodeAttribute,
               edgeAttribute
             });
