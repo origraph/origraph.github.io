@@ -445,38 +445,47 @@ sites in your browser settings.`);
     });
   }
   showClassContextMenu ({ classId, targetBounds = null } = {}) {
-    this.showContextMenu({
-      targetBounds,
-      menuEntries: {
-        'Rename': {
-          icon: 'img/pencil.svg',
-          onClick: async () => {
-            const newName = await window.mainView
-              .prompt('Enter a new name for the class', mure.classes[classId].className);
-            if (newName) {
-              mure.classes[classId].setClassName(newName);
-            }
-          }
-        },
-        'Interpret as Node': {
-          icon: 'img/node.svg',
-          onClick: () => {
-            mure.classes[classId].interpretAsNodes();
-          }
-        },
-        'Interpret as Edge': {
-          icon: 'img/edge.svg',
-          onClick: () => {
-            mure.classes[classId].interpretAsEdges();
-          }
-        },
-        'Delete': {
-          icon: 'img/delete.svg',
-          onClick: () => {
-            mure.classes[classId].delete();
+    const menuEntries = {
+      'Rename': {
+        icon: 'img/pencil.svg',
+        onClick: async () => {
+          const newName = await window.mainView
+            .prompt('Enter a new name for the class', mure.classes[classId].className);
+          if (newName) {
+            mure.classes[classId].setClassName(newName);
           }
         }
+      },
+      'Interpret as Node': {
+        icon: 'img/node.svg',
+        onClick: () => {
+          mure.classes[classId].interpretAsNodes();
+        }
+      },
+      'Interpret as Edge': {
+        icon: 'img/edge.svg',
+        onClick: () => {
+          mure.classes[classId].interpretAsEdges();
+        }
+      },
+      'Delete': {
+        icon: 'img/delete.svg',
+        onClick: () => {
+          mure.classes[classId].delete();
+        }
       }
+    };
+    if (mure.classes[classId].type === 'Edge') {
+      menuEntries['Toggle Direction'] = {
+        icon: 'img/toggleDirection.svg',
+        onClick: () => {
+          mure.classes[classId].toggleDirection();
+        }
+      };
+    }
+    this.showContextMenu({
+      targetBounds,
+      menuEntries
     });
   }
   async alert (message) {
