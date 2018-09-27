@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# A hook script that follows the symlink created by `npm link mure` so that
+# pre-release versions of the library are committed with the app
+
+cp node_modules/mure/dist/mure.umd.js temp.js
+rm -rf node_modules/mure
+mkdir node_modules/mure
+mkdir node_modules/mure/dist
+mv temp.js node_modules/mure/dist/mure.umd.js
+git add node_modules/mure/dist/mure.umd.js
