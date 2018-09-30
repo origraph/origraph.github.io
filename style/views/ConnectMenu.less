@@ -18,6 +18,7 @@
     .handsontable th {
       background-color: @backgroundColor;
       color: @textColor;
+      user-select: none;
     }
     .ht_clone_top tr:first-child > th,
     .ht_master tr:first-child > td {
@@ -40,6 +41,15 @@
   .sourceTable,
   .targetTable {
     background-color: @backgroundColor;
+
+    .ht_clone_top tr > th {
+      cursor: pointer;
+    }
+    .ht_clone_top tr > th.selected {
+      background-color: @selectionColor;
+      border: 1px solid @selectionColor;
+      color: @invertedTextColor;
+    }
   }
 
   .sourceTable {

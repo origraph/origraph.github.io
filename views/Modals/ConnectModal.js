@@ -4,6 +4,7 @@ import Modal from './Modal.js';
 class ConnectModal extends Modal {
   constructor (options) {
     super(options);
+    this.side = options.side;
     this.sourceClass = options.sourceClass;
     this.targetClass = options.targetClass;
     this.nodeClass = options.nodeClass;
@@ -11,6 +12,7 @@ class ConnectModal extends Modal {
     this.otherNodeClass = options.otherNodeClass;
     this.nodeAttribute = null;
     this.edgeAttribute = null;
+    this.otherAttribute = null;
   }
   setup () {
     this.d3el.html(`
@@ -40,11 +42,29 @@ class ConnectModal extends Modal {
   drawCell (element, attribute, item) {
     element.text(attribute.name === null ? item.index : item.row[attribute.name]);
   }
-  drawColumnHeader (element, attribute) {
+  drawColumnHeader (element, attribute, classObj) {
     // Override handsontable's click handler
     element.on('mousedown', () => {
       d3.event.stopPropagation();
+      if (classObj === this.nodeClass) {
+        this.nodeAttribute = attribute.name;
+      } else if (classObj === this.edgeClass) {
+        this.edgeAttribute = attribute.name;
+      } else if (classObj === this.otherNodeClass) {
+        this.otherAttribute = attribute.name;
+      }
+      this.render();
     });
+
+    const thElement = d3.select(element.node().parentNode.parentNode);
+
+    if (classObj === this.nodeClass) {
+      thElement.classed('selected', this.nodeAttribute === attribute.name);
+    } else if (classObj === this.edgeClass) {
+      thElement.classed('selected', this.edgeAttribute === attribute.name);
+    } else if (classObj === this.otherNodeClass) {
+      thElement.classed('selected', this.otherAttribute === attribute.name);
+    }
   }
   initColumns (data, attrs) {
     const self = this;
@@ -109,7 +129,9 @@ class ConnectModal extends Modal {
       }
       element.selectAll('.ht_clone_top .colHeader .text')
         .each(function () {
-          self.drawColumnHeader(d3.select(this.parentNode), attrs[this.dataset.columnIndex]);
+          self.drawColumnHeader(d3.select(this.parentNode),
+            attrs[this.dataset.columnIndex],
+            classObj);
         });
     });
     return renderer;
@@ -126,7 +148,7 @@ class ConnectModal extends Modal {
       resolve(this.nodeClass.connectToNodeClass({
         otherNodeClass: this.otherNodeClass,
         attribute: this.nodeAttribute,
-        otherAttribute: this.edgeAttribute
+        otherAttribute: this.otherAttribute
       }));
     }
   }

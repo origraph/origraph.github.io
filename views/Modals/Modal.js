@@ -68,7 +68,7 @@ class Modal extends View {
   }
   handleButton (response) {
     if (typeof response === 'function') {
-      response(this.resolve);
+      response.call(this, this.resolve);
     } else {
       this.resolve(response);
     }
