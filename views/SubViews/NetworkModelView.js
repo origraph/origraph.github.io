@@ -1,6 +1,7 @@
 /* globals mure, d3 */
 import GoldenLayoutView from './GoldenLayoutView.js';
 import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
+import ConnectModal from '../Modals/ConnectModal.js';
 
 const NODE_SIZE = 30;
 const CURVE_OFFSET = NODE_SIZE * 2;
@@ -102,9 +103,18 @@ class Handle {
   }
 
   get classObj () {
-    return this.connection.source.handles &&
-      this === this.connection.source.handles[this.connection.id]
-      ? this.connection.source.classObj : this.connection.target.classObj;
+    if (this.connection.source.handles &&
+      this === this.connection.source.handles[this.connection.id]) {
+      // this is the source handle; return the source class
+      return this.connection.source.classObj;
+    } else if (this.connection.target.dummy) {
+      // this is a target handle, but for a dummy connection that will not have
+      // an associated class, so still return the source class
+      return this.connection.source.classObj;
+    } else {
+      // this is the target handle
+      return this.connection.target.classObj;
+    }
   }
 }
 
@@ -731,70 +741,8 @@ L${offset + this.emSize},${this.emSize}`;
           options.side = 'target';
         }
       }
-      this.connect(options);
+      window.mainView.showOverlay(new ConnectModal(options));
     }
-  }
-
-  async connect (options) {
-    return new Promise((resolve, reject) => {
-      let nodeAttribute = null;
-      let edgeAttribute = null;
-
-      window.mainView.showOverlay({
-        content: container => {
-          // These select menus are a temporary patch until we draw and connect table headers
-          container.html('');
-          const sourceAttrs = Object.values(options.sourceClass.table.getAttributeDetails());
-          sourceAttrs.unshift({ name: 'ID', useId: true });
-          const sourceSelect = container.append('select');
-          const sourceOptions = sourceSelect.selectAll('option').data(sourceAttrs);
-          sourceOptions.enter().append('option')
-            .property('value', d => d.useId ? null : d.name)
-            .text(d => d.name);
-          sourceSelect.on('change', function () {
-            if (options.sourceClass === options.nodeClass) {
-              nodeAttribute = this.value;
-            } else {
-              edgeAttribute = this.value;
-            }
-          });
-
-          const targetAttrs = Object.values(options.targetClass.table.getAttributeDetails());
-          targetAttrs.unshift({ name: 'ID', useId: true });
-          const targetSelect = container.append('select');
-          const targetOptions = targetSelect.selectAll('option').data(targetAttrs);
-          targetOptions.enter().append('option')
-            .property('value', d => d.useId ? null : d.name)
-            .text(d => d.name);
-          targetSelect.on('change', function () {
-            if (options.targetClass === options.nodeClass) {
-              nodeAttribute = this.value;
-            } else {
-              edgeAttribute = this.value;
-            }
-          });
-        },
-        ok: async () => {
-          if (options.edgeClass) {
-            await options.edgeClass.connectToNodeClass({
-              nodeClass: options.nodeClass,
-              side: options.side,
-              nodeAttribute,
-              edgeAttribute
-            });
-          } else {
-            await options.nodeClass.connectToNodeClass({
-              otherNodeClass: options.otherNodeClass,
-              attribute: nodeAttribute,
-              otherAttribute: edgeAttribute
-            });
-          }
-          window.mainView.hideOverlay();
-          resolve();
-        },
-        cancel: () => { window.mainView.hideOverlay(); resolve(); }
-      });
-    });
   }
 }
 NetworkModelView.icon = 'img/networkModel.svg';

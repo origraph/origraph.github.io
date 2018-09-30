@@ -1,14 +1,6 @@
 /* globals d3, mure, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
 
-function itemProxy (index) {
-  // Handsontable doesn't have a good way to pass the actual, wrapped data items
-  // in naturally (circular references result in stack overflow errors).
-  // Instead, we give it a "dataset" just containing the indexes, that we use to
-  // look up the original data items in columns functions
-  return { index };
-}
-
 class TableView extends GoldenLayoutView {
   constructor ({ container, state = {} }) {
     super({
@@ -33,9 +25,10 @@ class TableView extends GoldenLayoutView {
   setup () {
     super.setup();
     this.tableDiv = this.content.append('div');
-    this.renderer = new Handsontable(this.content.append('div').node(), {
+    this.renderer = new Handsontable(this.tableDiv.node(), {
       data: [],
-      dataSchema: itemProxy,
+      dataSchema: index => { return { index }; }, // Fake "dataset"
+      // (Handsontable can't handle our actual Wrapper objects, because they have cycles)
       colHeaders: [],
       columns: [],
       manualColumnResize: true,

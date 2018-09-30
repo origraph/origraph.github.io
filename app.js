@@ -1,9 +1,7 @@
 /* globals d3 */
 import MainView from './views/MainView.js';
-import * as MODALS from './views/Modals/Modals.js';
 import * as SUBVIEW_CLASSES from './views/SubViews/SubViews.js';
 
-window.MODALS = MODALS;
 window.SUBVIEW_CLASSES = SUBVIEW_CLASSES;
 
 window.DEFAULT_LAYOUT = {
