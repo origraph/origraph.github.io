@@ -1,6 +1,6 @@
 OriGraph
 ========
-App for folding graphs (better description / readme coming eventually...)
+App for folding graphs (better description + readme coming eventually...)
 
 # Simple Installation
 ```bash
@@ -10,15 +10,14 @@ npm install
 ```
 
 # Running
-=========
 
 ```bash
 npm run serve
 # Hit Ctrl+c to quit
 ```
 
-# Hard Core Development
-To work with /on un-published versions / branches of mure.js in tandem with origraph:
+# Developing
+To work with / on un-published versions / branches of mure.js in tandem with origraph:
 
 ```bash
 # Clone and link the mure.js library
