@@ -14,28 +14,28 @@ class MainView extends View {
     this.subViews = {};
 
     this.tableCounts = {};
+    this.tableAttributes = {};
 
     this.instances = null;
     this.instanceGraph = new InstanceGraph();
-
     this.networkModelGraph = new NetworkModelGraph();
 
     mure.on('tableUpdate', () => {
       this.render();
     });
     mure.on('classUpdate', async () => {
-      this.updateSamples();
       this.updateLayout();
+      await this.updateSamplesAndAttributes();
       await Promise.all([
         this.networkModelGraph.update(),
         this.instanceGraph.update()
       ]);
       this.render();
     });
+    this.updateSamplesAndAttributes();
 
     // Initialize the layout and subviews
     this.initSubViews(this.d3el.select('#contents'));
-    this.updateSamples();
     this.render();
   }
   setup () {
@@ -78,7 +78,7 @@ class MainView extends View {
       window.localStorage.setItem('layout', JSON.stringify(config));
     }
   }
-  async updateSamples () {
+  async updateSamplesAndAttributes () {
     this.sampling = true;
     const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(mure.classes)) {
@@ -90,10 +90,12 @@ class MainView extends View {
         });
     }
     await Promise.all(Object.values(tableCountPromises));
+    this.tableAttributes = {};
+    for (const [classId, classObj] of Object.entries(mure.classes)) {
+      this.tableAttributes[classId] = Object.values(classObj.table.getAttributeDetails());
+      this.tableAttributes[classId].unshift(classObj.table.getIndexDetails());
+    }
     this.sampling = false;
-  }
-  getAttributes (classId) {
-    return mure.classes[classId].table.attributes;
   }
   updateLayout () {
     const getDefaultContainer = () => {

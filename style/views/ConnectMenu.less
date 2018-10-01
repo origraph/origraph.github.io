@@ -57,16 +57,26 @@
     left: 0;
     top: 0;
     right: 0;
-    bottom: calc(50% + 1.5em);
+    bottom: calc(50% + 2.5em);
   }
   .connections {
     position: absolute;
-    top: calc(50% - 1.5em);
+    top: calc(50% - 2.5em);
     left: 0px;
+
+    path {
+      fill: none;
+      stroke: fade(@separatorColor, 10%);
+      stroke-width: 2px;
+
+      &.selected {
+        stroke: @selectionColor;
+      }
+    }
   }
   .targetTable {
     position: absolute;
-    top: calc(50% + 1.5em);
+    top: calc(50% + 2.5em);
     left: 0;
     right: 0;
     bottom: 0;
