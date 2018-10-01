@@ -45,10 +45,68 @@ class TableView extends GoldenLayoutView {
           self.drawColumnHeader(d3.select(this.parentNode), self.attributes[this.dataset.columnIndex]);
         });
     });
+    this.setupIcons();
+  }
+  setupIcons () {
+    const self = this;
+    const hiddenClassMenuEntries = {};
+    const numHiddenClasses = Object.keys(hiddenClassMenuEntries).length;
+    const buttons = [
+      {
+        title: 'Class Options',
+        icon: 'img/hamburger.svg',
+        onClick: (button) => {
+          if (self.classId !== null) {
+            window.mainView.showClassContextMenu({
+              classId: self.classId,
+              targetBounds: button.getBoundingClientRect()
+            });
+          }
+        },
+        disabled: self.classId === null
+      },
+      {
+        title: 'Show Hidden Attributes',
+        icon: 'img/show.svg',
+        onClick: (button) => {
+          if (numHiddenClasses > 0) {
+            window.mainView.showContextMenu({
+              menuEntries: hiddenClassMenuEntries,
+              targetBounds: button.getBoundingClientRect()
+            });
+          }
+        },
+        disabled: numHiddenClasses === 0
+      },
+      {
+        title: 'Derive Additional Attributes...',
+        icon: 'img/add.svg',
+        onClick: (button) => {
+          window.mainView.alert(`Sorry, not implemented yet...`);
+        },
+        disabled: self.classId === null
+      }
+    ];
+
+    let tableButtons = this.d3el.append('div')
+      .classed('tableButtons', true)
+      .selectAll('.button').data(buttons);
+    const tableButtonsEnter = tableButtons.enter().append('div')
+      .classed('button', true)
+      .classed('small', true)
+      .classed('disabled', d => d.disabled);
+    tableButtonsEnter.append('a').append('img')
+      .attr('src', d => d.icon);
+    tableButtonsEnter.on('click', function (d) { d.onClick(this); })
+      .on('mouseenter', function (d) {
+        window.mainView.showTooltip({
+          content: d.title,
+          targetBounds: this.getBoundingClientRect()
+        });
+      });
   }
   setupTab () {
     super.setupTab();
-    const self = this;
     if (!this.isEmpty()) {
       const classObj = mure.classes[this.classId];
       const titleElement = this.tabElement.select('.lm_title')
@@ -71,16 +129,6 @@ class TableView extends GoldenLayoutView {
           } else {
             window.mainView.render();
           }
-        });
-      this.tabElement.append('div')
-        .classed('lm_tab_icon', true)
-        .classed('hoverable', true)
-        .style('background-image', 'url(img/hamburger.svg)')
-        .on('click', function () {
-          window.mainView.showClassContextMenu({
-            classId: self.classId,
-            targetBounds: this.getBoundingClientRect()
-          });
         });
     }
   }
@@ -170,6 +218,13 @@ class TableView extends GoldenLayoutView {
 
     // Attach menu event
     element.select('.menu')
+      .on('mouseenter', function () {
+        window.mainView.showTooltip({
+          content: 'Attribute Options',
+          targetBounds: this.getBoundingClientRect()
+        });
+      })
+      .on('mouseleave', () => { window.mainView.hideTooltip(); })
       .on('click', function () {
         self.showAttributeMenu(this.getBoundingClientRect(), attribute);
       });
@@ -218,7 +273,7 @@ class TableView extends GoldenLayoutView {
 
     if (attribute.name === null) {
       // Add Transpose to the ID column
-      menuEntries.Transpose = {
+      menuEntries['Rows to Tables'] = {
         icon: 'img/transpose.svg',
         onClick: () => {
           this.collectNewClasses(classObj.openTranspose());

@@ -5,6 +5,7 @@
   /* Stuff that is pertinent to / overrides handsontable: */
   .scrollArea {
     overflow: hidden;
+    left: @smallButtonSize + @smallButtonPadding;
   }
   .colHeader.columnSorting::after {
     display: none;
@@ -88,6 +89,20 @@
       &.removeSeed {
         background-image: data-uri('../img/removeSeed.svg');
       }
+    }
+  }
+
+  .tableButtons {
+    position: absolute;
+    left: 0px;
+    top: @smallButtonPadding;
+    padding: @smallButtonPadding;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .button {
+      margin-bottom: @smallButtonPadding;
     }
   }
 }
