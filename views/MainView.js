@@ -3,6 +3,7 @@ import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './MainMenu/MainMenu.js';
 import InstanceGraph from '../models/InstanceGraph.js';
 import NetworkModelGraph from '../models/NetworkModelGraph.js';
+import Modal from './Modals/Modal.js';
 
 class MainView extends View {
   constructor (d3el) {
@@ -13,28 +14,28 @@ class MainView extends View {
     this.subViews = {};
 
     this.tableCounts = {};
+    this.tableAttributes = {};
 
     this.instances = null;
     this.instanceGraph = new InstanceGraph();
-
     this.networkModelGraph = new NetworkModelGraph();
 
     mure.on('tableUpdate', () => {
       this.render();
     });
     mure.on('classUpdate', async () => {
-      this.updateSamples();
       this.updateLayout();
+      await this.updateSamplesAndAttributes();
       await Promise.all([
         this.networkModelGraph.update(),
         this.instanceGraph.update()
       ]);
       this.render();
     });
+    this.updateSamplesAndAttributes();
 
     // Initialize the layout and subviews
     this.initSubViews(this.d3el.select('#contents'));
-    this.updateSamples();
     this.render();
   }
   setup () {
@@ -77,7 +78,7 @@ class MainView extends View {
       window.localStorage.setItem('layout', JSON.stringify(config));
     }
   }
-  async updateSamples () {
+  async updateSamplesAndAttributes () {
     this.sampling = true;
     const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(mure.classes)) {
@@ -89,10 +90,12 @@ class MainView extends View {
         });
     }
     await Promise.all(Object.values(tableCountPromises));
+    this.tableAttributes = {};
+    for (const [classId, classObj] of Object.entries(mure.classes)) {
+      this.tableAttributes[classId] = Object.values(classObj.table.getAttributeDetails());
+      this.tableAttributes[classId].unshift(classObj.table.getIndexDetails());
+    }
     this.sampling = false;
-  }
-  getAttributes (classId) {
-    return mure.classes[classId].table.attributes;
   }
   updateLayout () {
     const getDefaultContainer = () => {
@@ -248,58 +251,29 @@ sites in your browser settings.`);
       this.goldenLayout.updateSize();
     }
   }
-  showOverlay ({
-    content = '',
-    spinner = false,
-    ok = null,
-    cancel = null,
-    prompt = null
-  } = {}) {
+  async showOverlay (options) {
     const overlay = this.d3el.select('#overlay');
-    const overlayContent = overlay.select('.center');
-    if (content === null) {
+    if (!options) {
       overlay.style('display', 'none');
-      return;
-    } else if (typeof content === 'function') {
-      content(overlayContent);
+    } else if (options instanceof Modal) {
+      overlay.style('display', null);
+      if (options !== this._currentModal) {
+        overlay.html('');
+        this._currentModal = options;
+      }
+      this._currentModal.render(overlay);
+      return this._currentModal.response;
     } else {
-      overlayContent.html(content);
-    }
-    overlay.style('display', null);
-
-    if (spinner) {
-      overlayContent.append('img')
-        .classed('spinner', true)
-        .attr('src', 'img/spinner.gif');
-    }
-    if (prompt !== null) {
-      overlayContent.append('input')
-        .classed('prompt', true)
-        .property('value', prompt);
-    }
-    if (ok || cancel) {
-      const dialogButtons = overlayContent.append('div')
-        .classed('dialogButtons', true);
-      if (cancel) {
-        const cancelButton = dialogButtons.append('div')
-          .classed('cancel', true)
-          .classed('button', true)
-          .on('click', cancel);
-        cancelButton.append('a');
-        cancelButton.append('span').text('Cancel');
-      }
-      if (ok) {
-        const okButton = dialogButtons.append('div')
-          .classed('ok', true)
-          .classed('button', true)
-          .on('click', ok);
-        okButton.append('a');
-        okButton.append('span').text('OK');
-      }
+      overlay.style('display', null);
+      delete this._currentModal;
+      overlay.html('');
+      const modal = new Modal(options);
+      modal.render(overlay);
+      return modal.response;
     }
   }
   hideOverlay () {
-    this.showOverlay({ content: null });
+    this.showOverlay(null);
   }
   /**
    * @param  {String} [content='']
@@ -489,25 +463,20 @@ sites in your browser settings.`);
     });
   }
   async alert (message) {
-    return new Promise((resolve, reject) => {
-      this.showOverlay({
-        content: `<h2>${message}</h2>`,
-        ok: () => { this.hideOverlay(); resolve(); }
-      });
+    return this.showOverlay({
+      content: `<h2>${message}</h2>`,
+      ok: true
     });
   }
   async prompt (message, defaultValue = '') {
-    return new Promise((resolve, reject) => {
-      this.showOverlay({
-        content: `<h2>${message}</h2>`,
-        ok: () => {
-          const value = d3.select('#overlay .prompt').property('value');
-          this.hideOverlay();
-          resolve(value);
-        },
-        cancel: () => { this.hideOverlay(); resolve(null); },
-        prompt: defaultValue
-      });
+    return this.showOverlay({
+      content: `<h2>${message}</h2>`,
+      ok: resolve => {
+        const value = d3.select('#overlay .prompt').property('value');
+        resolve(value);
+      },
+      cancel: resolve => { resolve(null); },
+      prompt: defaultValue
     });
   }
 }

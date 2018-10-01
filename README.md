@@ -3,8 +3,6 @@ OriGraph
 App for folding graphs (better description / readme coming eventually...)
 
 # Simple Installation
-=====================
-
 ```bash
 git clone https://github.com/mure-apps/origraph.git
 cd origraph
@@ -20,8 +18,7 @@ npm run serve
 ```
 
 # Hard Core Development
-=======================
-To work with/on un-published versions / branches of mure.js in tandem with origraph:
+To work with /on un-published versions / branches of mure.js in tandem with origraph:
 
 ```bash
 # Clone and link the mure.js library
