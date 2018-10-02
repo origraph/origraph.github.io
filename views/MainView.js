@@ -53,8 +53,6 @@ class MainView extends View {
   }
   draw () {
     this.mainMenu.render();
-    this.d3el.select(':scope > .emptyState')
-      .style('display', this.goldenLayout.root.contentItems.length === 0 ? null : 'none');
     Object.values(this.subViews).forEach(subView => {
       subView.render();
     });

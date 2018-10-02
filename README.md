@@ -2,7 +2,7 @@ OriGraph
 ========
 App for folding graphs (better description + readme coming eventually...)
 
-# Simple Installation
+# Installing
 ```bash
 git clone https://github.com/mure-apps/origraph.git
 cd origraph
@@ -10,7 +10,6 @@ npm install
 ```
 
 # Running
-
 ```bash
 npm run serve
 # Hit Ctrl+c to quit

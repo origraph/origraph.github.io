@@ -11,7 +11,7 @@ class GoldenLayoutView extends View {
     super(null, resources);
     this.container = container;
     this._icon = icon;
-    this.container.setTitle(label);
+    this._title = label;
     this.container.on('tab', tab => {
       this.tabElement = d3.select(tab.element[0]);
       this.setupTab();
@@ -28,6 +28,9 @@ class GoldenLayoutView extends View {
   get icon () {
     return this._icon;
   }
+  get title () {
+    return this._title;
+  }
   setup () {
     this.d3el.classed(this.constructor.name, true);
     this.emptyStateDiv = this.d3el.append('div')
@@ -43,7 +46,10 @@ class GoldenLayoutView extends View {
       .style('background-image', `url(${this.icon})`);
   }
   drawTab () {
-    // Should be overridden
+    this.tabElement.select('.viewIcon')
+      .style('background-image', `url(${this.icon})`);
+    this.tabElement.select(':scope > .lm_title')
+      .text(this.title);
   }
   setupContentElement () {
     // Default setup is a scrollable div; SvgViewMixin overrides this

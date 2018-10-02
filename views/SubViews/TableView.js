@@ -19,6 +19,9 @@ class TableView extends GoldenLayoutView {
     }
     return `img/${mure.classes[this.classId].lowerCamelCaseType}.svg`;
   }
+  get title () {
+    return this.classId === null ? 'No active classes' : mure.classes[this.classId].className;
+  }
   isEmpty () {
     return this.classId === null;
   }
@@ -131,14 +134,6 @@ class TableView extends GoldenLayoutView {
           }
         });
     }
-  }
-  drawTab () {
-    const classObj = this.classId === null ? null : mure.classes[this.classId];
-    const classLabel = classObj === null ? 'No active classes' : classObj.className;
-    this.tabElement.select('.viewIcon')
-      .style('background-image', `url(${this.icon})`);
-    this.tabElement.select(':scope > .lm_title')
-      .text(classLabel);
   }
   drawCell (element, attribute, dataValue) {
     element.classed('idColumn', attribute.name === null)
@@ -325,10 +320,7 @@ class TableView extends GoldenLayoutView {
     window.mainView.hideOverlay();
   }
   draw () {
-    if (this.tabElement) {
-      this.drawTab();
-    }
-
+    super.draw();
     const self = this;
 
     if (this.classId === null) {

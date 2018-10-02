@@ -160,6 +160,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   }
 
   draw () {
+    super.draw();
     this.simulation.nodes(window.mainView.networkModelGraph.nodes);
 
     if (this.simulation.force('link')) {

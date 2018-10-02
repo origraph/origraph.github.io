@@ -33,6 +33,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     });
   }
   draw () {
+    super.draw();
     const bounds = this.getContentBounds(this.content);
 
     let nodes = this.content.select('.nodeLayer')
