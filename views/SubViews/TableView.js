@@ -219,7 +219,6 @@ class TableView extends GoldenLayoutView {
           targetBounds: this.getBoundingClientRect()
         });
       })
-      .on('mouseleave', () => { window.mainView.hideTooltip(); })
       .on('click', function () {
         self.showAttributeMenu(this.getBoundingClientRect(), attribute);
       });

@@ -20,10 +20,9 @@ To work with / on un-published versions / branches of origraph.js in tandem with
 
 ```bash
 # Clone and link the origraph.js library
-git clone https://github.com/origraph-apps/origraph-library.git
-cd origraph-library
+git clone https://github.com/origraph-apps/origraph.js.git
+cd origraph.js
 npm install
-npm run watchumd
 npm link # <-- might need sudo privileges if you're not using nvm
 
 # Replace the installed origraph library with a symlink to your local copy
@@ -35,4 +34,4 @@ npm link origraph
 cp dev/* .git/hooks/
 ```
 
-At this point you should be able to edit the library and the app together
+At this point you should be able to edit the library and the app together. To avoid having to rebuild the library for each change, you can run `npm run watchumd` in the `origraph.js` directory to auto-build any changes.
