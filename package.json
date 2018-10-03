@@ -1,5 +1,5 @@
 {
-  "name": "origraph",
+  "name": "origraph.github.io",
   "version": "0.0.1",
   "description": "Graph folding",
   "scripts": {
@@ -20,7 +20,7 @@
     "handsontable": "^5.0.2",
     "jquery": "^3.3.1",
     "less": "^3.8.1",
-    "mure": "^0.5.10",
+    "origraph": "^0.1.1",
     "serve": "^10.0.2",
     "uki": "^0.2.4"
   }

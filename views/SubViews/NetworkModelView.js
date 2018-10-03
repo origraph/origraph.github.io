@@ -1,4 +1,4 @@
-/* globals mure, d3 */
+/* globals origraph, d3 */
 import GoldenLayoutView from './GoldenLayoutView.js';
 import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 import ConnectModal from '../Modals/ConnectModal.js';
@@ -130,7 +130,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     });
   }
   isEmpty () {
-    return Object.keys(mure.classes).length === 0;
+    return Object.keys(origraph.classes).length === 0;
   }
   setup () {
     super.setup();
@@ -154,7 +154,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     this.container.on('resize', () => {
       this.simulation.alpha(0.3);
     });
-    mure.on('classUpdate', () => {
+    origraph.on('classUpdate', () => {
       this.simulation.alpha(0.3).restart();
     });
   }

@@ -1,4 +1,4 @@
-/* globals mure */
+/* globals origraph */
 import ModalMenuOption from '../Common/ModalMenuOption.js';
 
 class UploadOption extends ModalMenuOption {
@@ -55,7 +55,7 @@ class UploadOption extends ModalMenuOption {
     this.render();
 
     await Promise.all(this.lastFiles.map(async fileObj => {
-      await mure.addFileAsStaticTable({ fileObj });
+      await origraph.addFileAsStaticTable({ fileObj });
       this.loadedFiles[fileObj.name] = true;
       window.mainView.render();
     }));

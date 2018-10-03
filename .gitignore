@@ -6,11 +6,11 @@ package-lock.json
 !node_modules/
 node_modules/*
 
-!node_modules/mure/
-node_modules/mure/*
-!node_modules/mure/dist/
-node_modules/mure/dist/*
-!node_modules/mure/dist/mure.umd.js
+!node_modules/origraph/
+node_modules/origraph/*
+!node_modules/origraph/dist/
+node_modules/origraph/dist/*
+!node_modules/origraph/dist/origraph.umd.js
 
 !node_modules/uki/
 node_modules/uki/*

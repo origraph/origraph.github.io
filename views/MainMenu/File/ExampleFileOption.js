@@ -1,4 +1,4 @@
-/* globals d3, mure */
+/* globals d3, origraph */
 import ModalMenuOption from '../Common/ModalMenuOption.js';
 
 const EXAMPLE_FILES = [
@@ -33,9 +33,9 @@ class ExampleFileOption extends ModalMenuOption {
       } catch (err) {
         window.mainView.alert(err.message);
       }
-      await mure.addStringAsStaticTable({
+      await origraph.addStringAsStaticTable({
         key: this.value,
-        extension: mure.mime.extension(mure.mime.lookup(this.value)),
+        extension: origraph.mime.extension(origraph.mime.lookup(this.value)),
         name: this.value,
         text
       });

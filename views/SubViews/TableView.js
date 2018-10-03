@@ -1,4 +1,4 @@
-/* globals d3, mure, Handsontable */
+/* globals d3, origraph, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
 
 class TableView extends GoldenLayoutView {
@@ -17,10 +17,10 @@ class TableView extends GoldenLayoutView {
     if (this.classId === null) {
       return 'img/null.svg';
     }
-    return `img/${mure.classes[this.classId].lowerCamelCaseType}.svg`;
+    return `img/${origraph.classes[this.classId].lowerCamelCaseType}.svg`;
   }
   get title () {
-    return this.classId === null ? 'No active classes' : mure.classes[this.classId].className;
+    return this.classId === null ? 'No active classes' : origraph.classes[this.classId].className;
   }
   isEmpty () {
     return this.classId === null;
@@ -111,7 +111,7 @@ class TableView extends GoldenLayoutView {
   setupTab () {
     super.setupTab();
     if (!this.isEmpty()) {
-      const classObj = mure.classes[this.classId];
+      const classObj = origraph.classes[this.classId];
       const titleElement = this.tabElement.select('.lm_title')
         .attr('contenteditable', 'true')
         .style('cursor', 'text')
@@ -225,7 +225,7 @@ class TableView extends GoldenLayoutView {
       });
   }
   showAttributeMenu (targetBounds, attribute) {
-    const classObj = mure.classes[this.classId];
+    const classObj = origraph.classes[this.classId];
 
     let menuEntries = {};
 
@@ -326,14 +326,14 @@ class TableView extends GoldenLayoutView {
     if (this.classId === null) {
       // TODO: show some kind of empty state content
     } else {
-      const classObj = mure.classes[this.classId];
+      const classObj = origraph.classes[this.classId];
       const currentTable = classObj.table.currentData;
       const data = Object.keys(currentTable.data);
       this.attributes = Object.values(classObj.table.getAttributeDetails());
       if (classObj.type === 'Node') {
         // Degree columns:
         for (const edgeId of Object.keys(classObj.edgeClassIds)) {
-          const edgeClass = mure.classes[edgeId];
+          const edgeClass = origraph.classes[edgeId];
           this.attributes.unshift({
             name: `${edgeClass.className} Degree`,
             edgeId,

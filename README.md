@@ -4,7 +4,7 @@ App for folding graphs (better description + readme coming eventually...)
 
 # Installing
 ```bash
-git clone https://github.com/mure-apps/origraph.git
+git clone https://github.com/origraph-apps/origraph.git
 cd origraph
 npm install
 ```
@@ -16,19 +16,19 @@ npm run serve
 ```
 
 # Developing
-To work with / on un-published versions / branches of mure.js in tandem with origraph:
+To work with / on un-published versions / branches of origraph.js in tandem with origraph:
 
 ```bash
-# Clone and link the mure.js library
-git clone https://github.com/mure-apps/mure-library.git
-cd mure-library
+# Clone and link the origraph.js library
+git clone https://github.com/origraph-apps/origraph-library.git
+cd origraph-library
 npm install
 npm run watchumd
 npm link # <-- might need sudo privileges if you're not using nvm
 
-# Replace the installed mure library with a symlink to your local copy
+# Replace the installed origraph library with a symlink to your local copy
 cd wherever/you/installed/origraph
-npm link mure
+npm link origraph
 
 # Copy hooks so any commits will always include the current version of the
 # library, instead of the published one (so you never have broken deployments)

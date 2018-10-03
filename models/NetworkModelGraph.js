@@ -1,4 +1,4 @@
-/* globals mure */
+/* globals origraph */
 import PersistentGraph from './PersistentGraph.js';
 
 class NetworkModelGraph extends PersistentGraph {
@@ -13,7 +13,7 @@ class NetworkModelGraph extends PersistentGraph {
       edges: []
     };
 
-    Object.entries(mure.classes).forEach(([selector, classObj]) => {
+    Object.entries(origraph.classes).forEach(([selector, classObj]) => {
       // Add and index the class as a node
       nodeLookup[classObj.classId] = graph.nodes.length;
       graph.nodes.push({ classObj });

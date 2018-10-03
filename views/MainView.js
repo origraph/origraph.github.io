@@ -1,4 +1,4 @@
-/* globals GoldenLayout, mure, d3 */
+/* globals GoldenLayout, origraph, d3 */
 import { View } from '../node_modules/uki/dist/uki.esm.js';
 import MainMenu from './MainMenu/MainMenu.js';
 import InstanceGraph from '../models/InstanceGraph.js';
@@ -20,10 +20,10 @@ class MainView extends View {
     this.instanceGraph = new InstanceGraph();
     this.networkModelGraph = new NetworkModelGraph();
 
-    mure.on('tableUpdate', () => {
+    origraph.on('tableUpdate', () => {
       this.render();
     });
-    mure.on('classUpdate', async () => {
+    origraph.on('classUpdate', async () => {
       this.updateLayout();
       await this.updateSamplesAndAttributes();
       await Promise.all([
@@ -79,7 +79,7 @@ class MainView extends View {
   async updateSamplesAndAttributes () {
     this.sampling = true;
     const tableCountPromises = {};
-    for (const [ classId, classObj ] of Object.entries(mure.classes)) {
+    for (const [ classId, classObj ] of Object.entries(origraph.classes)) {
       this.tableCounts[classId] = null;
       tableCountPromises[classId] = classObj.table.countRows()
         .then(count => {
@@ -89,7 +89,7 @@ class MainView extends View {
     }
     await Promise.all(Object.values(tableCountPromises));
     this.tableAttributes = {};
-    for (const [classId, classObj] of Object.entries(mure.classes)) {
+    for (const [classId, classObj] of Object.entries(origraph.classes)) {
       this.tableAttributes[classId] = Object.values(classObj.table.getAttributeDetails());
       this.tableAttributes[classId].unshift(classObj.table.getIndexDetails());
     }
@@ -146,7 +146,7 @@ class MainView extends View {
 
     // Make sure there's a TableView for each of the classes, or an empty one
     // if there are no classes
-    const classIds = Object.keys(mure.classes);
+    const classIds = Object.keys(origraph.classes);
     const existingIds = {};
     let nullComponent;
     let tableParent;
@@ -156,7 +156,7 @@ class MainView extends View {
       const classId = component.instance.classId;
       if (classId === null) {
         nullComponent = component;
-      } else if (!mure.classes[component.instance.classId]) {
+      } else if (!origraph.classes[component.instance.classId]) {
         component.remove();
       } else {
         existingIds[classId] = true;
@@ -422,36 +422,36 @@ sites in your browser settings.`);
         icon: 'img/pencil.svg',
         onClick: async () => {
           const newName = await window.mainView
-            .prompt('Enter a new name for the class', mure.classes[classId].className);
+            .prompt('Enter a new name for the class', origraph.classes[classId].className);
           if (newName) {
-            mure.classes[classId].setClassName(newName);
+            origraph.classes[classId].setClassName(newName);
           }
         }
       },
       'Interpret as Node': {
         icon: 'img/node.svg',
         onClick: () => {
-          mure.classes[classId].interpretAsNodes();
+          origraph.classes[classId].interpretAsNodes();
         }
       },
       'Interpret as Edge': {
         icon: 'img/edge.svg',
         onClick: () => {
-          mure.classes[classId].interpretAsEdges();
+          origraph.classes[classId].interpretAsEdges();
         }
       },
       'Delete': {
         icon: 'img/delete.svg',
         onClick: () => {
-          mure.classes[classId].delete();
+          origraph.classes[classId].delete();
         }
       }
     };
-    if (mure.classes[classId].type === 'Edge') {
+    if (origraph.classes[classId].type === 'Edge') {
       menuEntries['Toggle Direction'] = {
         icon: 'img/toggleDirection.svg',
         onClick: () => {
-          mure.classes[classId].toggleDirection();
+          origraph.classes[classId].toggleDirection();
         }
       };
     }
