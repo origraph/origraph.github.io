@@ -2,7 +2,7 @@
 import GoldenLayoutView from './GoldenLayoutView.js';
 import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 
-const NODE_SIZE = 5;
+const NODE_SIZE = 7;
 
 class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   constructor ({ container, state }) {
@@ -46,10 +46,12 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     nodesEnter.append('circle')
       .attr('r', NODE_SIZE);
     nodes.select('circle')
-      .style('fill', d => {
-        return d.nodeTableInstance && d.nodeTableInstance.classObj.annotations.color
-          ? '#' + d.nodeTableInstance.classObj.annotations.color : null;
-      });
+      .attr('fill', d => d.nodeTableInstance && d.nodeTableInstance.classObj.annotations.color
+        ? '#' + d.nodeTableInstance.classObj.annotations.color : '#BDBDBD');
+    nodes.classed('highlighted', d => d.nodeTableInstance &&
+      window.mainView.highlightedInstance &&
+      window.mainView.highlightedInstance.classObj.classId === d.nodeTableInstance.classObj.classId &&
+      window.mainView.highlightedInstance.index === d.nodeTableInstance.index);
     nodes.classed('dummy', d => d.dummy)
       .call(d3.drag()
         .on('start', d => {
@@ -58,6 +60,12 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           }
           d.fx = d.x;
           d.fy = d.y;
+          // Initiate linked highlighting
+          if (d.nodeTableInstance) {
+            window.mainView.highlightInstance(d.nodeTableInstance);
+          } else {
+            window.mainView.clearHighlightInstance();
+          }
         }).on('drag', d => {
           d.fx = d3.event.x;
           d.fy = d3.event.y;
@@ -67,6 +75,8 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           }
           delete d.fx;
           delete d.fy;
+          // Clear the highlighted row in the table
+          window.mainView.clearHighlightInstance();
         }));
 
     let edges = this.content.select('.edgeLayer')
@@ -79,10 +89,15 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     edgesEnter.append('path')
       .classed('line', true);
     edges.select('.line')
-      .style('stroke', d => {
-        return d.edgeTableInstance.classObj.annotations.color
-          ? '#' + d.edgeTableInstance.classObj.annotations.color : null;
-      });
+      .attr('stroke', d => d.edgeTableInstance.classObj.annotations.color
+        ? '#' + d.edgeTableInstance.classObj.annotations.color : '#BDBDBD');
+    edges.on('click', d => {
+      window.mainView.highlightInstance(d.edgeTableInstance);
+    });
+
+    edges.classed('highlighted', d => window.mainView.highlightedInstance &&
+      window.mainView.highlightedInstance.classObj.classId === d.edgeTableInstance.classObj.classId &&
+      window.mainView.highlightedInstance.index === d.edgeTableInstance.index);
 
     this.simulation.on('tick', () => {
       edges.select('.line')

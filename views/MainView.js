@@ -266,6 +266,16 @@ sites in your browser settings.`);
       this.goldenLayout.updateSize();
     }
   }
+  highlightInstance (instance) {
+    this.highlightedInstance = instance;
+    const tableView = this.subViews[instance.classObj.classId + 'TableView'];
+    tableView.raise();
+    this.render();
+    tableView.renderer.scrollViewportTo(instance.index, 0);
+  }
+  clearHighlightInstance () {
+    delete this.highlightedInstance;
+  }
   async showOverlay (options) {
     const overlay = this.d3el.select('#overlay');
     if (!options) {

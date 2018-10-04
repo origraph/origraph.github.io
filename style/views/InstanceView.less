@@ -10,9 +10,12 @@
       }
 
       circle {
-        fill: @textColor;
         stroke-width: 2px;
-        stroke: @invertedTextColor;
+        stroke: @lightBackgroundColor;
+      }
+      &.highlighted circle {
+        stroke-width: 4px;
+        stroke: @textColor;
       }
       &.dummy {
         cursor: default;
@@ -26,9 +29,14 @@
   }
 
   .edgeLayer {
-    .edge .line {
-      stroke-width: 2px;
-      stroke: @textColor;
+    .edge {
+      .line {
+        stroke-width: 2px;
+      }
+      &.highlighted {
+        stroke-width: 4px;
+        stroke: @textColor;
+      }
     }
   }
 }
