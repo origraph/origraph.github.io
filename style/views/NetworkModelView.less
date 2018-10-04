@@ -26,25 +26,15 @@
       &:active {
         cursor: grabbing;
       }
-      .objectShape {
-        fill: @darkBackgroundColor;
-      }
 
       &:hover .objectShape,
       &.connecting .objectShape {
-        fill: @darkestBackgroundColor;
+        stroke: @darkTextColor;
+        stroke-width: 3px;
       }
-      &.Edge .objectShape {
-        fill: none;
-        stroke-width: 0.5em;
-        stroke: @darkBackgroundColor;
-      }
-      &.Edge:hover .objectShape,
-      &.Edge.connecting .objectShape {
-        stroke: @darkestBackgroundColor;
-      }
-      &.Edge:hover.cantConnect .objectShape {
-        stroke: @darkBackgroundColor;
+      &:hover.cantConnect .objectShape {
+        stroke: none;
+        stroke-width: 0px;
       }
 
       .textGroup {

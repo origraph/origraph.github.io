@@ -295,14 +295,16 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         } else {
           // Round the offset up to avoid gaps with connection paths
           const offset = Math.ceil(d.labelWidth / 2);
-          return `\
-M${-offset - this.emSize},${this.emSize}\
-L${offset + this.emSize},${this.emSize}`;
+          const x0 = -offset - this.emSize;
+          const x1 = offset + this.emSize;
+          const y0 = 0.75 * this.emSize;
+          const y1 = 1.25 * this.emSize;
+          return `M${x0},${y0}L${x1},${y0}L${x1},${y1}L${x0},${y1}Z`;
         }
       } else {
         return OBJECT_PATHS[d.classObj.type];
       }
-    });
+    }).attr('fill', d => '#' + (d.classObj.annotations.color || 'BDBDBD'));
 
     // Icons
     const iconGroupEnter = objectsEnter.append('g').classed('icons', true);
@@ -315,6 +317,7 @@ L${offset + this.emSize},${this.emSize}`;
       .attr('y', -this.emSize / 2);
     objects.select('.typeIcon')
       .attr('xlink:href', d => `img/${d.classObj.type.toLowerCase()}.svg`)
+      // .style('filter', d => `url(#recolorImageTo${d.classObj.annotations.color})`)
       .attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 - 2 * this.emSize : -this.emSize);
     objects.select('.menuIcon')
       .attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 - this.emSize : 0)

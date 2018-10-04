@@ -112,9 +112,14 @@ class TableView extends GoldenLayoutView {
     super.setupTab();
     if (!this.isEmpty()) {
       const classObj = origraph.classes[this.classId];
+      const imageFilter = classObj.annotations.color
+        ? `url(#recolorImageTo${classObj.annotations.color})` : null;
+      this.tabElement.select('.viewIcon')
+        .style('filter', imageFilter);
       const titleElement = this.tabElement.select('.lm_title')
         .attr('contenteditable', 'true')
         .style('cursor', 'text')
+        .style('color', classObj.annotations.color ? '#' + classObj.annotations.color : null)
         .style('font-style', classObj !== null && classObj.hasCustomName ? null : 'italic')
         .on('click', function () {
           // Hack to get contenteditable to actually work

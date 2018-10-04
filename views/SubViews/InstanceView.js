@@ -45,6 +45,11 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
 
     nodesEnter.append('circle')
       .attr('r', NODE_SIZE);
+    nodes.select('circle')
+      .style('fill', d => {
+        return d.nodeTableInstance && d.nodeTableInstance.classObj.annotations.color
+          ? '#' + d.nodeTableInstance.classObj.annotations.color : null;
+      });
     nodes.classed('dummy', d => d.dummy)
       .call(d3.drag()
         .on('start', d => {
@@ -73,6 +78,11 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
 
     edgesEnter.append('path')
       .classed('line', true);
+    edges.select('.line')
+      .style('stroke', d => {
+        return d.edgeTableInstance.classObj.annotations.color
+          ? '#' + d.edgeTableInstance.classObj.annotations.color : null;
+      });
 
     this.simulation.on('tick', () => {
       edges.select('.line')

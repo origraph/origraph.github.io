@@ -20,19 +20,22 @@ class MainView extends View {
     this.instanceGraph = new InstanceGraph();
     this.networkModelGraph = new NetworkModelGraph();
 
+    this.classColors = {};
+    window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
+
     origraph.on('tableUpdate', () => {
       this.render();
     });
     origraph.on('classUpdate', async () => {
       this.updateLayout();
-      await this.updateSamplesAndAttributes();
+      await this.handleClassUpdate();
       await Promise.all([
         this.networkModelGraph.update(),
         this.instanceGraph.update()
       ]);
       this.render();
     });
-    this.updateSamplesAndAttributes();
+    this.handleClassUpdate();
 
     // Initialize the layout and subviews
     this.initSubViews(this.d3el.select('#contents'));
@@ -76,10 +79,22 @@ class MainView extends View {
       window.localStorage.setItem('layout', JSON.stringify(config));
     }
   }
-  async updateSamplesAndAttributes () {
+  async handleClassUpdate () {
     this.sampling = true;
     const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(origraph.classes)) {
+      // Assign colors where necessary
+      if (!classObj.annotations.color) {
+        const availableColors = Object.entries(this.classColors)
+          .filter(([color, assignedClassId]) => !assignedClassId);
+        if (availableColors.length > 0) {
+          const color = availableColors[0][0];
+          classObj.annotations.color = color;
+          this.classColors[color] = classId;
+        }
+      }
+
+      // Count the rows in each table (todo: compute histograms)
       this.tableCounts[classId] = null;
       tableCountPromises[classId] = classObj.table.countRows()
         .then(count => {
@@ -88,6 +103,8 @@ class MainView extends View {
         });
     }
     await Promise.all(Object.values(tableCountPromises));
+
+    // Update ordered lists of each attribute (todo: compute histograms)
     this.tableAttributes = {};
     for (const [classId, classObj] of Object.entries(origraph.classes)) {
       this.tableAttributes[classId] = Object.values(classObj.table.getAttributeDetails());
