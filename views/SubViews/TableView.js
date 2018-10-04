@@ -50,6 +50,17 @@ class TableView extends GoldenLayoutView {
     });
     this.setupIcons();
   }
+  raise () {
+    let container = this.container;
+    let stack = container.parent;
+    while (stack.type !== 'stack' && stack.type !== null) {
+      stack = stack.parent;
+      container = container.parent;
+    }
+    if (stack.type === 'stack') {
+      stack.setActiveContentItem(container);
+    }
+  }
   setupIcons () {
     const self = this;
     const hiddenClassMenuEntries = {};

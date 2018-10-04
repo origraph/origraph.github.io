@@ -227,6 +227,8 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         }
         d.fx = d.x;
         d.fy = d.y;
+        // Activate the corresponding table
+        window.mainView.subViews[d.classObj.classId + 'TableView'].raise();
       }).on('drag', d => {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
