@@ -62,43 +62,59 @@ class TableView extends GoldenLayoutView {
     }
   }
   setupIcons () {
-    const self = this;
     const hiddenClassMenuEntries = {};
-    const numHiddenClasses = Object.keys(hiddenClassMenuEntries).length;
+    const numHiddenAttrs = Object.keys(hiddenClassMenuEntries).length;
     const buttons = [
       {
         title: 'Class Options',
         icon: 'img/hamburger.svg',
         onClick: (button) => {
-          if (self.classId !== null) {
+          if (this.classId !== null) {
             window.mainView.showClassContextMenu({
-              classId: self.classId,
+              classId: this.classId,
               targetBounds: button.getBoundingClientRect()
             });
           }
         },
-        disabled: self.classId === null
+        disabled: this.classId === null
       },
       {
         title: 'Show Hidden Attributes',
         icon: 'img/show.svg',
         onClick: (button) => {
-          if (numHiddenClasses > 0) {
+          if (numHiddenAttrs > 0) {
             window.mainView.showContextMenu({
               menuEntries: hiddenClassMenuEntries,
               targetBounds: button.getBoundingClientRect()
             });
           }
         },
-        disabled: numHiddenClasses === 0
+        disabled: numHiddenAttrs === 0
       },
       {
-        title: 'Derive Additional Attributes...',
-        icon: 'img/add.svg',
+        title: 'Seed All Rows',
+        icon: 'img/addSeed.svg',
+        onClick: (button) => {
+          window.mainView.instanceGraph.seed(Object.values(
+            origraph.classes[this.classId].table.currentData.data));
+        },
+        disabled: this.classId === null
+      },
+      {
+        title: 'New Adjacent Attribute...',
+        icon: 'img/deriveAttribute.svg',
         onClick: (button) => {
           window.mainView.alert(`Sorry, not implemented yet...`);
         },
-        disabled: self.classId === null
+        disabled: this.classId === null
+      },
+      {
+        title: 'New Reduced Attribute...',
+        icon: 'img/reduceAttribute.svg',
+        onClick: (button) => {
+          window.mainView.alert(`Sorry, not implemented yet...`);
+        },
+        disabled: this.classId === null
       }
     ];
 
@@ -205,6 +221,12 @@ class TableView extends GoldenLayoutView {
       d3.event.stopPropagation();
     });
 
+    // Leave the seed column empty
+    if (attribute.seed) {
+      element.html('');
+      return;
+    }
+
     const indicatorList = ['filtered', 'derived', 'copied', 'reduced']
       .filter(d => attribute[d]);
     if (element.classed('ascending')) {
@@ -248,49 +270,43 @@ class TableView extends GoldenLayoutView {
   showAttributeMenu (targetBounds, attribute) {
     const classObj = origraph.classes[this.classId];
 
+    if (attribute.seed) {
+      throw new Error(`You shouldn't be able to open the seed attribute menu`);
+    }
+
     let menuEntries = {};
 
-    if (attribute.seed) {
-      // Only one menu entry for the seed column (to seed everything)
-      menuEntries['Seed All Rows'] = {
-        icon: 'img/addSeed.svg',
-        onClick: async () => {
-          window.mainView.instanceGraph.seed(Object.values(classObj.table.currentData.data));
-        }
-      };
-    } else {
-      // Add sort, filter, and hide to all other columns
-      const sortState = this.renderer.getPlugin('ColumnSorting')
-        .getNextOrderState(attribute.columnIndex);
-      const sortIcon = sortState === 'asc' ? 'img/ascending.svg'
-        : sortState === 'desc' ? 'img/descending.svg' : 'img/null.svg';
-      const sortLabel = sortState === 'none' ? 'Clear Sorting' : 'Sort';
-      menuEntries[sortLabel] = {
-        icon: sortIcon,
-        onClick: () => {
-          this.sortAttribute(attribute);
-        }
-      };
+    // Add sort, filter, and hide to everything
+    const sortState = this.renderer.getPlugin('ColumnSorting')
+      .getNextOrderState(attribute.columnIndex);
+    const sortIcon = sortState === 'asc' ? 'img/ascending.svg'
+      : sortState === 'desc' ? 'img/descending.svg' : 'img/null.svg';
+    const sortLabel = sortState === 'none' ? 'Clear Sorting' : 'Sort';
+    menuEntries[sortLabel] = {
+      icon: sortIcon,
+      onClick: () => {
+        this.sortAttribute(attribute);
+      }
+    };
 
-      menuEntries['Filter...'] = {
-        icon: 'img/filter.svg',
-        onClick: async () => {
-          window.mainView.alert(`Sorry, not implemented yet...`);
-        }
-      };
+    menuEntries['Filter...'] = {
+      icon: 'img/filter.svg',
+      onClick: async () => {
+        window.mainView.alert(`Sorry, not implemented yet...`);
+      }
+    };
 
-      menuEntries['Hide'] = {
-        icon: 'img/hide.svg',
-        onClick: async () => {
-          window.mainView.alert(`Sorry, not implemented yet...`);
-        }
-      };
-    }
+    menuEntries['Hide'] = {
+      icon: 'img/hide.svg',
+      onClick: async () => {
+        window.mainView.alert(`Sorry, not implemented yet...`);
+      }
+    };
 
     if (attribute.name === null) {
       // Add Transpose to the ID column
-      menuEntries['Rows to Tables'] = {
-        icon: 'img/transpose.svg',
+      menuEntries['Expand Rows as Tables'] = {
+        icon: 'img/expand.svg',
         onClick: () => {
           this.collectNewClasses(classObj.openTranspose());
         }
@@ -300,11 +316,13 @@ class TableView extends GoldenLayoutView {
     } else {
       // Add options specific to regular attributes
       menuEntries.Aggregate = {
+        icon: 'img/aggregate.svg',
         onClick: () => {
           classObj.aggregate(attribute.name);
         }
       };
-      menuEntries['Expand...'] = {
+      menuEntries['Separate Delimited...'] = {
+        icon: 'img/separate.svg',
         onClick: async () => {
           const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
           if (delimiter !== null) {
@@ -313,6 +331,7 @@ class TableView extends GoldenLayoutView {
         }
       };
       menuEntries.Facet = {
+        icon: 'img/facet.svg',
         onClick: () => {
           this.collectNewClasses(classObj.openFacet(attribute.name));
         }
@@ -375,10 +394,9 @@ class TableView extends GoldenLayoutView {
       // ID column:
       this.attributes.unshift(classObj.table.getIndexDetails());
       // Instance seed column:
-      this.attributes.push({
+      this.attributes.unshift({
         name: 'Seed',
-        seed: true,
-        meta: true
+        seed: true
       });
       this.attributes.forEach((attr, index) => {
         attr.columnIndex = index;

@@ -3,15 +3,15 @@
 
 #tooltip {
   .vertical-menu {
-    width: 200px;
-    display:inline-block;
-    vertical-align: top;
-
     a .icon {
       width: @smallButtonImageSize;
       height: @smallButtonImageSize;
       filter: @textColorImageFilter;
       padding-right: @smallButtonImageSize / 2;
+    }
+
+    a label {
+      white-space: nowrap;
     }
 
     a.active {

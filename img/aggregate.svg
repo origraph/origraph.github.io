@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 21.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   id="Layer_1"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="aggregate.svg"
+   x="0px"
+   y="0px"
+   viewBox="0 0 512 512"
+   style="enable-background:new 0 0 512 512;"
+   xml:space="preserve"><metadata
+   id="metadata78"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title /></cc:Work></rdf:RDF></metadata><defs
+   id="defs76"><marker
+     inkscape:stockid="Arrow2Send"
+     orient="auto"
+     refY="0.0"
+     refX="0.0"
+     id="Arrow2Send"
+     style="overflow:visible;"
+     inkscape:isstock="true"><path
+       id="path3546"
+       style="fill-rule:evenodd;stroke-width:0.625;stroke-linejoin:round;stroke:#000000;stroke-opacity:1;fill:#000000;fill-opacity:1"
+       d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+       transform="scale(0.3) rotate(180) translate(-2.3,0)" /></marker></defs>
+<style
+   type="text/css"
+   id="style64">
+	.st0{display:none;fill:#EFEAEA;}
+	.st1{fill:none;stroke:#000000;stroke-width:49;stroke-miterlimit:10;}
+	.st2{fill:#262626;}
+</style>
+<path
+   style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:32;stroke-linecap:square;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+   d="m 432.75781,506 c -40.45054,0 -73.24219,-32.79164 -73.24219,-73.24219 0,-40.45054 32.79165,-73.24218 73.24219,-73.24218 40.45054,0 73.24219,32.79164 73.24219,73.24218 C 506,473.20836 473.20835,506 432.75781,506 Z m -188.0188,-40.44533 c 5.12047,-7.13436 8.63656,-15.03655 10.54382,-23.21052 -13.79193,-0.71842 -25.49056,-1.86773 -35.59112,-3.61443 -20.46305,-3.5387 -33.93769,-12.03804 -43.45784,-24.65739 -9.52015,-12.61936 -10.82815,-25.61151 -10.83755,-41.52379 -0.005,-7.82351 -0.0729,-15.62839 -1.30192,-25.39253 C 74.989615,340.4614 6.0838719,266.25432 6,176.89844 5.9999172,82.5138 82.513804,5.99992 176.89844,6 c 94.38463,-8e-5 170.89851,76.51381 170.89843,170.89844 -0.10375,87.1417 -65.75673,160.2496 -152.38571,169.68918 -2.52899,11.61539 -2.76911,18.72811 -2.76484,25.94375 0.008,13.80494 1.71723,22.98519 4.53567,26.72115 2.81844,3.73596 11.00251,11.77409 27.83504,14.68496 9.22655,1.35739 22.26788,1.53275 31.73175,1.03269 -1.99338,-7.33689 -7.32351,-18.3778 -12.00977,-24.74623 l 59.52454,21.88682 c 0.22438,10e-5 0.4252,0.004 0.65041,0.004 v 0.23652 l 42.2554,15.53726 z M 127.84334,286.55 h 98.1102 v -98.1102 h -98.1102 z m 0,-121.19483 h 98.1102 V 67.24496 h -98.1102 z"
+   id="path3478"
+   inkscape:connector-curvature="0"
+   sodipodi:nodetypes="sssssccsscccccccscccccccccccccccccc" /><path
+   class="st0"
+   d="M420,500.3H91.1c-48.3,0-87.8-39.5-87.8-87.8V99c0-48.3,39.5-87.8,87.8-87.8H420c48.3,0,87.8,39.5,87.8,87.8  v313.5C507.8,460.8,468.3,500.3,420,500.3z"
+   id="path66" />
+<sodipodi:namedview
+   bordercolor="#666666"
+   borderopacity="1"
+   gridtolerance="10"
+   guidetolerance="10"
+   id="namedview4578"
+   inkscape:current-layer="Layer_1"
+   inkscape:cx="1521.1635"
+   inkscape:cy="-120.68633"
+   inkscape:pagecheckerboard="true"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:snap-intersection-paths="true"
+   inkscape:snap-object-midpoints="true"
+   inkscape:window-height="1049"
+   inkscape:window-maximized="0"
+   inkscape:window-width="1918"
+   inkscape:window-x="1920"
+   inkscape:window-y="0"
+   inkscape:zoom="0.31764563"
+   objecttolerance="10"
+   pagecolor="#ffffff"
+   showgrid="false">
+	</sodipodi:namedview>
+
+
+
+</svg>
