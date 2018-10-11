@@ -15,23 +15,9 @@ npm run serve
 # Hit Ctrl+c to quit
 ```
 
-# Developing
-To work with / on un-published versions / branches of origraph.js in tandem with origraph:
+# Developing the library or plugins
+Much of the functionality of this app is independent; we rely on the [origraph.js](https://github.com/origraph/origraph.js) library and plugins, and this repository is mostly focused on the general visual interface.
 
-```bash
-# Clone and link the origraph.js library
-git clone https://github.com/origraph-apps/origraph.js.git
-cd origraph.js
-npm install
-npm link # <-- might need sudo privileges if you're not using nvm
+If you're creating a new plugin, you should add it to `package.json` in this repository, and run `npm install`. You should also follow the pattern in `.gitignore` to ensure your plugin's bundled file(s) are committed, and make sure to link to your files from `index.html`;
 
-# Replace the installed origraph library with a symlink to your local copy
-cd wherever/you/installed/origraph
-npm link origraph
-
-# Copy hooks so any commits will always include the current version of the
-# library, instead of the published one (so you never have broken deployments)
-cp dev/* .git/hooks/
-```
-
-At this point you should be able to edit the library and the app together. To avoid having to rebuild the library for each change, you can run `npm run watchumd` in the `origraph.js` directory to auto-build any changes.
+Each plugin should have a `hooks` directory—to work on a plugin or the library in conjunction with this repository, follow the directions in `hooks/README.md` for a more seamless development experience.

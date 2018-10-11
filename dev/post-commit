@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-# A hook script that restores the `npm link origraph` symlink post-commit
-
-rm -rf node_modules/origraph
-npm link origraph

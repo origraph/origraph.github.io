@@ -16,6 +16,7 @@
   },
   "homepage": "https://github.com/alex-r-bigelow/origraph#readme",
   "dependencies": {
+    "@origraph/twitter-import": "^0.1.0",
     "d3": "^5.7.0",
     "handsontable": "^5.0.2",
     "jquery": "^3.3.1",
