@@ -144,14 +144,10 @@ class TableView extends GoldenLayoutView {
       this.tabElement.select('.viewIcon')
         .style('filter', imageFilter);
       const titleElement = this.tabElement.select('.lm_title')
-        .attr('contenteditable', 'true')
         .style('cursor', 'text')
         .style('color', classObj.annotations.color ? '#' + classObj.annotations.color : null)
         .style('font-style', classObj !== null && classObj.hasCustomName ? null : 'italic')
-        .on('click', function () {
-          // Hack to get contenteditable to actually work
-          this.focus();
-        }).on('keyup', function () {
+        .on('keyup', function () {
           if (d3.event.keyCode === 13) { // return key
             this.blur();
           } else if (d3.event.keyCode === 27) { // esc key
