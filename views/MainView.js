@@ -316,6 +316,7 @@ sites in your browser settings.`);
     targetBounds = null,
     anchor = null
   } = {}) {
+    window.clearTimeout(this._tooltipTimeout);
     const showEvent = d3.event;
     d3.select('body').on('click.tooltip', () => {
       if (showEvent !== d3.event) {
@@ -400,6 +401,10 @@ sites in your browser settings.`);
       }
       tooltip.style('left', left + 'px')
         .style('top', top + 'px');
+
+      this._tooltipTimeout = window.setTimeout(() => {
+        this.hideTooltip();
+      }, 1500);
     }
   }
   hideTooltip () {
