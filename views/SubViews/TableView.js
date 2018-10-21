@@ -171,7 +171,7 @@ class TableView extends GoldenLayoutView {
         window.mainView.highlightedInstance.classObj.classId === this.classId &&
         window.mainView.highlightedInstance.index === dataValue.index);
     element.on('click', () => {
-      window.mainView.highlightInstance(dataValue);
+      window.mainView.highlightInstance(dataValue, this);
     });
     if (attribute.seed) {
       const isSeeded = window.mainView.instanceGraph.contains(dataValue);

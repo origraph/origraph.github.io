@@ -258,6 +258,24 @@ sites in your browser settings.`);
     }
     this.updateLayout();
   }
+  viewsShareStack (viewA, viewB) {
+    const aStacks = [];
+    let parent = viewA.container.parent;
+    while (parent !== null) {
+      if (parent.isStack) {
+        aStacks.push(parent);
+      }
+      parent = parent.parent;
+    }
+    parent = viewB.container.parent;
+    while (parent !== null) {
+      if (parent.isStack && aStacks.indexOf(parent) !== -1) {
+        return true;
+      }
+      parent = parent.parent;
+    }
+    return false;
+  }
   resize () {
     if (this.mainMenu) {
       this.mainMenu.render();
@@ -266,12 +284,16 @@ sites in your browser settings.`);
       this.goldenLayout.updateSize();
     }
   }
-  highlightInstance (instance) {
+  highlightInstance (instance, sourceSubView) {
     this.highlightedInstance = instance;
     const tableView = this.subViews[instance.classObj.classId + 'TableView'];
-    tableView.raise();
+    if (!this.viewsShareStack(tableView, sourceSubView)) {
+      tableView.raise();
+    }
     this.render();
-    tableView.renderer.scrollViewportTo(instance.index, 0);
+    if (tableView !== sourceSubView) {
+      tableView.renderer.scrollViewportTo(instance.index, 0);
+    }
   }
   clearHighlightInstance () {
     delete this.highlightedInstance;

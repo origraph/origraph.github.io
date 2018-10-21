@@ -62,7 +62,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           d.fy = d.y;
           // Initiate linked highlighting
           if (d.nodeTableInstance) {
-            window.mainView.highlightInstance(d.nodeTableInstance);
+            window.mainView.highlightInstance(d.nodeTableInstance, this);
           } else {
             window.mainView.clearHighlightInstance();
           }
@@ -92,7 +92,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       .attr('stroke', d => d.edgeTableInstance.classObj.annotations.color
         ? '#' + d.edgeTableInstance.classObj.annotations.color : '#BDBDBD');
     edges.on('click', d => {
-      window.mainView.highlightInstance(d.edgeTableInstance);
+      window.mainView.highlightInstance(d.edgeTableInstance, this);
     });
 
     edges.classed('highlighted', d => window.mainView.highlightedInstance &&
