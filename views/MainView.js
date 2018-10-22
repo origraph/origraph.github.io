@@ -426,7 +426,7 @@ sites in your browser settings.`);
 
       this._tooltipTimeout = window.setTimeout(() => {
         this.hideTooltip();
-      }, 1500);
+      }, 1000);
     }
   }
   hideTooltip () {

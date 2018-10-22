@@ -71,28 +71,46 @@
   }
 
   .handsontable {
-    .metaColumn,
-    .idColumn {
+    .metaColumn {
       background-color: @darkBackgroundColor;
       color: @textColor;
+    }
+    .idColumn,
+    .idColumn:first-child {
+      position: relative;
+      /* The ID column should blend in with the background */
+      border-left: 1px solid @lightBackgroundColor;
+      border-top: 1px solid @lightBackgroundColor;
+      border-bottom: 1px solid @lightBackgroundColor;
+      background-color: @lightBackgroundColor;
+      color: @lightTextColor;
+      text-align: right;
+      .colHeader {
+        justify-content: flex-end;
+        .menu.icon {
+          padding: 0px;
+        }
+      }
+      &.addSeed::after,
+      &.removeSeed::after {
+        position: absolute;
+        left: @smallButtonPadding;
+        top: @smallButtonPadding;
+        width: @smallButtonImageSize;
+        height: @smallButtonImageSize;
+        filter: @lightTextColorImageFilter;
+        cursor: pointer;
+      }
+      &.addSeed::after {
+        content: url('../img/addSeed.svg');
+      }
+      &.removeSeed::after {
+        content: url('../img/removeSeed.svg');
+      }
     }
     .highlighted {
       background-color: @invertedBackgroundColor;
       color: @invertedTextColor;
-    }
-
-    .seedColumn {
-      background-size: @tableHeaderButtonSize;
-      background-position: center center;
-      background-repeat: no-repeat;
-      cursor: pointer;
-
-      &.addSeed {
-        background-image: data-uri('../img/addSeed.svg');
-      }
-      &.removeSeed {
-        background-image: data-uri('../img/removeSeed.svg');
-      }
     }
   }
 

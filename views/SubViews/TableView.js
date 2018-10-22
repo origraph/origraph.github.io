@@ -92,11 +92,12 @@ class TableView extends GoldenLayoutView {
         disabled: numHiddenAttrs === 0
       },
       {
-        title: 'Seed All Rows',
+        title: 'Sample All Rows',
         icon: 'img/addSeed.svg',
         onClick: (button) => {
           window.mainView.instanceGraph.seed(Object.values(
             origraph.classes[this.classId].table.currentData.data));
+          this.render();
         },
         disabled: this.classId === null
       },
@@ -164,29 +165,25 @@ class TableView extends GoldenLayoutView {
     }
   }
   drawCell (element, attribute, dataValue) {
+    const isSeeded = window.mainView.instanceGraph.contains(dataValue);
     element.classed('idColumn', attribute.name === null)
+      .classed('addSeed', attribute.name === null && !isSeeded)
+      .classed('removeSeed', attribute.name === null && isSeeded)
       .classed('metaColumn', attribute.meta)
-      .classed('seedColumn', attribute.seed)
       .classed('highlighted', window.mainView.highlightedInstance &&
         window.mainView.highlightedInstance.classObj.classId === this.classId &&
         window.mainView.highlightedInstance.index === dataValue.index);
-    element.on('click', () => {
+    element.on('click', async () => {
       window.mainView.highlightInstance(dataValue, this);
+      if (attribute.name === null) {
+        if (isSeeded) {
+          await window.mainView.instanceGraph.unseed(dataValue);
+        } else {
+          await window.mainView.instanceGraph.seed(dataValue);
+        }
+      }
     });
-    if (attribute.seed) {
-      const isSeeded = window.mainView.instanceGraph.contains(dataValue);
-      element.text('')
-        .classed('addSeed', !isSeeded)
-        .classed('removeSeed', isSeeded)
-        .on('click', async () => {
-          if (isSeeded) {
-            await window.mainView.instanceGraph.unseed(dataValue);
-          } else {
-            await window.mainView.instanceGraph.seed(dataValue);
-          }
-          this.render();
-        });
-    } else if (attribute.meta) {
+    if (attribute.meta) {
       (async () => {
         let count = 0;
         if (attribute.edgeId) {
@@ -211,17 +208,14 @@ class TableView extends GoldenLayoutView {
   drawColumnHeader (element, attribute) {
     const self = this;
 
-    // Remove handsontable's click handler (in the future, we want to use dragging
-    // the column header for connection, not clicking for sorting)
+    // Remove handsontable's click handler (we sort via the menu)
     element.on('mousedown', () => {
       d3.event.stopPropagation();
     });
 
-    // Leave the seed column empty
-    if (attribute.seed) {
-      element.html('');
-      return;
-    }
+    // Little hack to customize the ID column header
+    d3.select(element.node().parentNode.parentNode)
+      .classed('idColumn', attribute.name === null);
 
     const indicatorList = ['filtered', 'derived', 'copied', 'reduced']
       .filter(d => attribute[d]);
@@ -247,9 +241,6 @@ class TableView extends GoldenLayoutView {
           window.mainView.alert(`Sorry, clicking the ${d} indicator isn't implemented yet`);
         }
       });
-
-    // Update the text label (maybe unnecessary?)
-    element.select('.text').text(attribute.name === null ? 'ID' : attribute.name);
 
     // Attach menu event
     element.select('.menu')
@@ -389,11 +380,6 @@ class TableView extends GoldenLayoutView {
       }
       // ID column:
       this.attributes.unshift(classObj.table.getIndexDetails());
-      // Instance seed column:
-      this.attributes.unshift({
-        name: 'Seed',
-        seed: true
-      });
       this.attributes.forEach((attr, index) => {
         attr.columnIndex = index;
       });
@@ -426,7 +412,7 @@ class TableView extends GoldenLayoutView {
       });
       const colHeaders = (columnIndex) => {
         const attribute = this.attributes[columnIndex];
-        const name = attribute.name === null ? 'ID' : attribute.name;
+        const name = attribute.name === null ? '&nbsp;' : attribute.name;
         return `<div class="indicatorIcons"></div>
           <div class="text" data-column-index=${columnIndex}>${name}</div>
           <div class="menu icon"></div>`;
