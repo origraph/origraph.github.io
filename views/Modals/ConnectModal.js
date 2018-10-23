@@ -32,12 +32,13 @@ class ConnectModal extends Modal {
   }
   setup () {
     this.d3el.html(`
-      <h2>Match values between these attributes to create connections:</h2>
+      <h2 class="sourceTableLabel">${this.sourceClass.className}</h2>
       <div class="ConnectMenu">
         <div class="sourceTable"></div>
         <svg class="connections" height="5em"></svg>
         <div class="targetTable"></div>
       </div>
+      <h2 class="targetTableLabel">${this.targetClass.className}</h2>
     `);
     this.sourceRenderer = this.initTable(this.d3el.select('.sourceTable'), this.sourceClass, true);
     this.targetRenderer = this.initTable(this.d3el.select('.targetTable'), this.targetClass);
@@ -176,7 +177,7 @@ C${coords.scx},${coords.scy}\
       const attribute = attrs[columnIndex];
       let name = attribute.name;
       if (attribute.name === null) {
-        name = 'ID';
+        name = '';
       }
       return `<div class="text" data-column-index=${columnIndex}>${name}</div>`;
     };

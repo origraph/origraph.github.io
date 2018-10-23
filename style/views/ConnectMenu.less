@@ -1,3 +1,7 @@
+.targetTableLabel {
+  position: absolute;
+  bottom: 0.5em;
+}
 .ConnectMenu {
   position: absolute;
   top: 4em;
@@ -26,7 +30,12 @@
     }
     .ht_clone_top tr > th:first-child,
     .ht_master tr > td:first-child {
-      border-left: 1px solid @separatorColor;
+      /* blend the ID column in with the background*/
+      border-left: 1px solid @lightBackgroundColor;
+      border-top: 1px solid @lightBackgroundColor;
+      border-bottom: 1px solid @lightBackgroundColor;
+      color: @lightTextColor;
+      text-align: right;
     }
     .ht_master tr > td {
       border-bottom: 1px solid @separatorColor;

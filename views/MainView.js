@@ -336,7 +336,8 @@ sites in your browser settings.`);
   showTooltip ({
     content = '',
     targetBounds = null,
-    anchor = null
+    anchor = null,
+    hideAfterMs = 1000
   } = {}) {
     window.clearTimeout(this._tooltipTimeout);
     const showEvent = d3.event;
@@ -424,9 +425,11 @@ sites in your browser settings.`);
       tooltip.style('left', left + 'px')
         .style('top', top + 'px');
 
-      this._tooltipTimeout = window.setTimeout(() => {
-        this.hideTooltip();
-      }, 1000);
+      if (hideAfterMs > 0) {
+        this._tooltipTimeout = window.setTimeout(() => {
+          this.hideTooltip();
+        }, hideAfterMs);
+      }
     }
   }
   hideTooltip () {
@@ -440,6 +443,7 @@ sites in your browser settings.`);
     this.showTooltip({
       targetBounds,
       anchor,
+      hideAfterMs: 0,
       content: (tooltip) => {
         tooltip.html('');
         const verticalMenu = tooltip.append('div')

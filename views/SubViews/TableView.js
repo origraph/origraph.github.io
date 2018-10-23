@@ -417,10 +417,15 @@ class TableView extends GoldenLayoutView {
           <div class="text" data-column-index=${columnIndex}>${name}</div>
           <div class="menu icon"></div>`;
       };
+      const sortSpec = this.renderer.getPlugin('ColumnSorting');
       const spec = {
         data,
         colHeaders,
-        columns
+        columns,
+        columnSorting: {
+          column: sortSpec.sortColumn,
+          sortOrder: sortSpec.sortOrder
+        }
       };
       this.renderer.updateSettings(spec);
       this.renderer.render();
