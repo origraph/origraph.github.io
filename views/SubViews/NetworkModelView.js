@@ -1,6 +1,6 @@
 /* globals origraph, d3 */
 import GoldenLayoutView from './GoldenLayoutView.js';
-import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
+import SvgViewMixin from './SvgViewMixin.js';
 import ConnectModal from '../Modals/ConnectModal.js';
 
 const NODE_SIZE = 30;
@@ -118,7 +118,7 @@ class Handle {
   }
 }
 
-class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
+class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   constructor ({
     container,
     state
@@ -278,9 +278,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     // Patch labelWidth onto the data, so it's available elsewhere
     objects.each(function (d) {
       const bounds = this.querySelector('text').getBoundingClientRect();
-      const left = self.currentZoom.invertX(bounds.left);
-      const right = self.currentZoom.invertX(bounds.right);
-      d.labelWidth = right - left;
+      d.labelWidth = bounds.right - bounds.left;
     });
     // Size the label background
     objects.select('.textGroup rect')
