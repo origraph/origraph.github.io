@@ -355,7 +355,7 @@ class TableView extends GoldenLayoutView {
     } else {
       const classObj = origraph.classes[this.classId];
       const currentTable = classObj.table.currentData;
-      const data = Object.keys(currentTable.data);
+      this.currentKeys = Object.keys(currentTable.data);
       this.attributes = Object.values(classObj.table.getAttributeDetails());
       if (classObj.type === 'Node') {
         // Degree columns:
@@ -387,7 +387,7 @@ class TableView extends GoldenLayoutView {
         return {
           renderer: function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
-            const index = instance.getSourceDataAtRow(row);
+            const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
             self.drawCell(d3.select(td), attribute, currentTable.data[index]);
           },
           data: (index, newValue) => {
@@ -419,7 +419,7 @@ class TableView extends GoldenLayoutView {
       };
       const sortSpec = this.renderer.getPlugin('ColumnSorting');
       const spec = {
-        data,
+        data: this.currentKeys,
         colHeaders,
         columns,
         columnSorting: {
@@ -436,6 +436,13 @@ class TableView extends GoldenLayoutView {
     columnSorting.sort(attribute.columnIndex, columnSorting.getNextOrderState(attribute.columnIndex));
     const autoColumnSize = this.renderer.getPlugin('AutoColumnSize');
     autoColumnSize.recalculateAllColumnsWidth();
+  }
+  scrollToInstance (instance) {
+    let rowNumber = this.currentKeys.indexOf(instance.index);
+    if (this.renderer.getPlugin('ColumnSorting').sortOrder !== 'none') {
+      rowNumber = this.renderer.toVisualRow(rowNumber);
+    }
+    this.renderer.scrollViewportTo(rowNumber, 0);
   }
 }
 TableView.icon = 'img/table.svg';

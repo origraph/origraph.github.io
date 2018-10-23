@@ -292,7 +292,7 @@ sites in your browser settings.`);
     }
     this.render();
     if (tableView !== sourceSubView) {
-      tableView.renderer.scrollViewportTo(instance.index, 0);
+      tableView.scrollToInstance(instance);
     }
   }
   clearHighlightInstance () {
