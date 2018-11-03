@@ -4,8 +4,8 @@ App for folding graphs (better description + readme coming eventually...)
 
 # Installing
 ```bash
-git clone https://github.com/origraph-apps/origraph.git
-cd origraph
+git clone https://github.com/origraph/origraph.github.io.git
+cd origraph.github.io
 npm install
 ```
 
