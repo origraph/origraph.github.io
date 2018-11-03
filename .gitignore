@@ -14,11 +14,16 @@ node_modules/origraph/dist/*
 
 !node_modules/@origraph/
 node_modules/@origraph/*
+
 !node_modules/@origraph/twitter-import/
 node_modules/@origraph/twitter-import/*
 !node_modules/@origraph/twitter-import/dist/
 node_modules/@origraph/twitter-import/dist/*
 !node_modules/@origraph/twitter-import/dist/origraphTwitterImport.umd.js
+
+!node_modules/@origraph/origraph-js-dri/
+node_modules/@origraph/origraph-js-dri/*
+!node_modules/@origraph/origraph-js-dri/index.js
 
 !node_modules/uki/
 node_modules/uki/*
