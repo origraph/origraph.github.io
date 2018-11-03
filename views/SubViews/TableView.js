@@ -1,5 +1,6 @@
 /* globals d3, origraph, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
+import DeriveReduceInterface from '../../node_modules/@origraph/origraph-js-dri/DeriveReduceInterface.js';
 
 class TableView extends GoldenLayoutView {
   constructor ({ container, state = {} }) {
@@ -102,18 +103,10 @@ class TableView extends GoldenLayoutView {
         disabled: this.classId === null
       },
       {
-        title: 'New Adjacent Attribute...',
+        title: 'New Attribute...',
         icon: 'img/deriveAttribute.svg',
         onClick: (button) => {
-          window.mainView.alert(`Sorry, not implemented yet...`);
-        },
-        disabled: this.classId === null
-      },
-      {
-        title: 'New Reduced Attribute...',
-        icon: 'img/reduceAttribute.svg',
-        onClick: (button) => {
-          window.mainView.alert(`Sorry, not implemented yet...`);
+          window.mainView.showOverlay(new DeriveReduceInterface(window.origraph.classes[this.classId]));
         },
         disabled: this.classId === null
       }
