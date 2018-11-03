@@ -23,7 +23,7 @@ node_modules/@origraph/twitter-import/dist/*
 
 !node_modules/@origraph/origraph-js-dri/
 node_modules/@origraph/origraph-js-dri/*
-!node_modules/@origraph/origraph-js-dri/index.js
+!node_modules/@origraph/origraph-js-dri/DeriveReduceInterface.js
 
 !node_modules/uki/
 node_modules/uki/*

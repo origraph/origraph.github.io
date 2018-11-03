@@ -84,7 +84,7 @@ class ConnectModal extends Modal {
         (this.targetClass === this.edgeClass &&
          this.edgeAttribute === d.targetAttr.name) ||
         (this.targetClass === this.otherNodeClass &&
-         this.otherAttribute === this.targetAttr.name);
+         this.otherAttribute === d.targetAttr.name);
       return sourceSelected && targetSelected;
     });
 
