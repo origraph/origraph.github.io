@@ -33,9 +33,8 @@ class ExampleFileOption extends ModalMenuOption {
       } catch (err) {
         window.mainView.alert(err.message);
       }
-      await origraph.addStringAsStaticTable({
+      await origraph.currentModel.addStringAsStaticTable({
         key: this.value,
-        extension: origraph.mime.extension(origraph.mime.lookup(this.value)),
         name: this.value,
         text
       });

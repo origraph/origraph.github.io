@@ -23,17 +23,16 @@ class MainView extends View {
     this.classColors = {};
     window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
 
-    origraph.on('tableUpdate', () => {
-      this.render();
-    });
-    origraph.on('classUpdate', async () => {
-      this.updateLayout();
-      await this.handleClassUpdate();
-      await Promise.all([
-        this.networkModelGraph.update(),
-        this.instanceGraph.update()
-      ]);
-      this.render();
+    origraph.on('changeCurrentModel', () => {
+      origraph.currentModel.on('update', async () => {
+        this.updateLayout();
+        await this.handleClassUpdate();
+        await Promise.all([
+          this.networkModelGraph.update(),
+          this.instanceGraph.update()
+        ]);
+        this.render();
+      });
     });
     this.handleClassUpdate();
 
@@ -82,7 +81,7 @@ class MainView extends View {
   async handleClassUpdate () {
     this.sampling = true;
     const tableCountPromises = {};
-    for (const [ classId, classObj ] of Object.entries(origraph.classes)) {
+    for (const [ classId, classObj ] of Object.entries(origraph.currentModel.classes)) {
       // Assign colors where necessary
       if (!classObj.annotations.color) {
         const availableColors = Object.entries(this.classColors)
@@ -106,7 +105,7 @@ class MainView extends View {
 
     // Update ordered lists of each attribute (todo: compute histograms)
     this.tableAttributes = {};
-    for (const [classId, classObj] of Object.entries(origraph.classes)) {
+    for (const [classId, classObj] of Object.entries(origraph.currentModel.classes)) {
       this.tableAttributes[classId] = Object.values(classObj.table.getAttributeDetails());
       this.tableAttributes[classId].unshift(classObj.table.getIndexDetails());
     }
@@ -163,7 +162,7 @@ class MainView extends View {
 
     // Make sure there's a TableView for each of the classes, or an empty one
     // if there are no classes
-    const classIds = Object.keys(origraph.classes);
+    const classIds = Object.keys(origraph.currentModel.classes);
     const existingIds = {};
     let nullComponent;
     let tableParent;
@@ -173,7 +172,7 @@ class MainView extends View {
       const classId = component.instance.classId;
       if (classId === null) {
         nullComponent = component;
-      } else if (!origraph.classes[component.instance.classId]) {
+      } else if (!origraph.currentModel.classes[component.instance.classId]) {
         component.remove();
       } else {
         existingIds[classId] = true;
@@ -480,36 +479,36 @@ sites in your browser settings.`);
         icon: 'img/pencil.svg',
         onClick: async () => {
           const newName = await window.mainView
-            .prompt('Enter a new name for the class', origraph.classes[classId].className);
+            .prompt('Enter a new name for the class', origraph.currentModel.classes[classId].className);
           if (newName) {
-            origraph.classes[classId].setClassName(newName);
+            origraph.currentModel.classes[classId].setClassName(newName);
           }
         }
       },
       'Interpret as Node': {
         icon: 'img/node.svg',
         onClick: () => {
-          origraph.classes[classId].interpretAsNodes();
+          origraph.currentModel.classes[classId].interpretAsNodes();
         }
       },
       'Interpret as Edge': {
         icon: 'img/edge.svg',
         onClick: () => {
-          origraph.classes[classId].interpretAsEdges();
+          origraph.currentModel.classes[classId].interpretAsEdges();
         }
       },
       'Delete': {
         icon: 'img/delete.svg',
         onClick: () => {
-          origraph.classes[classId].delete();
+          origraph.currentModel.classes[classId].delete();
         }
       }
     };
-    if (origraph.classes[classId].type === 'Edge') {
+    if (origraph.currentModel.classes[classId].type === 'Edge') {
       menuEntries['Toggle Direction'] = {
         icon: 'img/toggleDirection.svg',
         onClick: () => {
-          origraph.classes[classId].toggleDirection();
+          origraph.currentModel.classes[classId].toggleDirection();
         }
       };
     }

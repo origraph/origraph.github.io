@@ -1,6 +1,5 @@
 /* globals d3, origraph, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
-import DeriveReduceInterface from '../../node_modules/@origraph/origraph-js-dri/DeriveReduceInterface.js';
 
 class TableView extends GoldenLayoutView {
   constructor ({ container, state = {} }) {
@@ -18,10 +17,10 @@ class TableView extends GoldenLayoutView {
     if (this.classId === null) {
       return 'img/null.svg';
     }
-    return `img/${origraph.classes[this.classId].lowerCamelCaseType}.svg`;
+    return `img/${origraph.currentModel.classes[this.classId].lowerCamelCaseType}.svg`;
   }
   get title () {
-    return this.classId === null ? 'No active classes' : origraph.classes[this.classId].className;
+    return this.classId === null ? 'No active classes' : origraph.currentModel.classes[this.classId].className;
   }
   isEmpty () {
     return this.classId === null;
@@ -97,7 +96,7 @@ class TableView extends GoldenLayoutView {
         icon: 'img/addSeed.svg',
         onClick: (button) => {
           window.mainView.instanceGraph.seed(Object.values(
-            origraph.classes[this.classId].table.currentData.data));
+            origraph.currentModel.classes[this.classId].table.currentData.data));
           this.render();
         },
         disabled: this.classId === null
@@ -106,7 +105,7 @@ class TableView extends GoldenLayoutView {
         title: 'New Attribute...',
         icon: 'img/deriveAttribute.svg',
         onClick: (button) => {
-          window.mainView.showOverlay(new DeriveReduceInterface(window.origraph.classes[this.classId]));
+          window.mainView.showOverlay(`Sorry, not implemented yet...`);
         },
         disabled: this.classId === null
       }
@@ -132,7 +131,7 @@ class TableView extends GoldenLayoutView {
   setupTab () {
     super.setupTab();
     if (!this.isEmpty()) {
-      const classObj = origraph.classes[this.classId];
+      const classObj = origraph.currentModel.classes[this.classId];
       const imageFilter = classObj.annotations.color
         ? `url(#recolorImageTo${classObj.annotations.color})` : null;
       this.tabElement.select('.viewIcon')
@@ -248,7 +247,7 @@ class TableView extends GoldenLayoutView {
       });
   }
   showAttributeMenu (targetBounds, attribute) {
-    const classObj = origraph.classes[this.classId];
+    const classObj = origraph.curentModel.classes[this.classId];
 
     if (attribute.seed) {
       throw new Error(`You shouldn't be able to open the seed attribute menu`);
@@ -346,14 +345,14 @@ class TableView extends GoldenLayoutView {
     if (this.classId === null) {
       // TODO: show some kind of empty state content
     } else {
-      const classObj = origraph.classes[this.classId];
+      const classObj = origraph.currentModel.classes[this.classId];
       const currentTable = classObj.table.currentData;
       this.currentKeys = Object.keys(currentTable.data);
       this.attributes = Object.values(classObj.table.getAttributeDetails());
       if (classObj.type === 'Node') {
         // Degree columns:
         for (const edgeId of Object.keys(classObj.edgeClassIds)) {
-          const edgeClass = origraph.classes[edgeId];
+          const edgeClass = origraph.currentModel.classes[edgeId];
           this.attributes.unshift({
             name: `${edgeClass.className} Degree`,
             edgeId,

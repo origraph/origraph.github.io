@@ -3,37 +3,36 @@ window.autoLoadMovies = async () => {
   const files = ['people.csv', 'movies.csv', 'movieEdges.csv'];
   const classes = await Promise.all(files.map(async filename => {
     const text = await d3.text(`docs/exampleDatasets/${filename}`);
-    return origraph.addStringAsStaticTable({
+    return origraph.currentModel.addStringAsStaticTable({
       name: filename,
-      extension: origraph.mime.extension(origraph.mime.lookup(filename)),
       text
     });
   }));
 
   const [ peopleId, moviesId, movieEdgesId ] = classes.map(classObj => classObj.classId);
 
-  origraph.classes[peopleId].interpretAsNodes();
-  origraph.classes[moviesId].interpretAsNodes();
-  origraph.classes[movieEdgesId].interpretAsEdges();
+  origraph.currentModel.classes[peopleId].interpretAsNodes();
+  origraph.currentModel.classes[moviesId].interpretAsNodes();
+  origraph.currentModel.classes[movieEdgesId].interpretAsEdges();
 
-  origraph.classes[peopleId].connectToEdgeClass({
-    edgeClass: origraph.classes[movieEdgesId],
+  origraph.currentModel.classes[peopleId].connectToEdgeClass({
+    edgeClass: origraph.currentModel.classes[movieEdgesId],
     side: 'source',
     nodeAttribute: 'id',
     edgeAttribute: 'sourceID'
   });
-  origraph.classes[movieEdgesId].connectToNodeClass({
-    nodeClass: origraph.classes[moviesId],
+  origraph.currentModel.classes[movieEdgesId].connectToNodeClass({
+    nodeClass: origraph.currentModel.classes[moviesId],
     side: 'target',
     nodeAttribute: 'id',
     edgeAttribute: 'targetID'
   });
-  origraph.classes[movieEdgesId].toggleDirection();
+  origraph.currentModel.classes[movieEdgesId].toggleDirection();
 };
 
 window.autoLoadLesMiserables = async () => {
   const data = await d3.json('docs/exampleDatasets/miserables.json');
-  const baseClassObj = origraph.addStaticTable({
+  const baseClassObj = origraph.currentModel.addStaticTable({
     name: 'miserables.json',
     data
   });

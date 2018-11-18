@@ -130,7 +130,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     });
   }
   isEmpty () {
-    return Object.keys(origraph.classes).length === 0;
+    return Object.keys(origraph.currentModel.classes).length === 0;
   }
   setup () {
     super.setup();
@@ -153,9 +153,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
     this.container.on('resize', () => {
       this.simulation.alpha(0.3);
-    });
-    origraph.on('classUpdate', () => {
-      this.simulation.alpha(0.3).restart();
     });
   }
 
