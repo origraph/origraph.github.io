@@ -6,7 +6,10 @@ class NetworkModelGraph extends PersistentGraph {
     return node.classId;
   }
   async deriveGraph () {
-    const graph = origraph.currentModel.getNetworkModelGraph(true);
+    const graph = origraph.currentModel.getNetworkModelGraph({
+      raw: false,
+      includeDummies: true
+    });
     return {
       nodes: graph.classes,
       nodeLookup: graph.classLookup,

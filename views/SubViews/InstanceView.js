@@ -89,15 +89,15 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     edgesEnter.append('path')
       .classed('line', true);
     edges.select('.line')
-      .attr('stroke', d => d.edgeTableInstance.classObj.annotations.color
-        ? '#' + d.edgeTableInstance.classObj.annotations.color : '#BDBDBD');
+      .attr('stroke', d => d.edgeInstance.classObj.annotations.color
+        ? '#' + d.edgeInstance.classObj.annotations.color : '#BDBDBD');
     edges.on('click', d => {
-      window.mainView.highlightInstance(d.edgeTableInstance, this);
+      window.mainView.highlightInstance(d.edgeInstance, this);
     });
 
     edges.classed('highlighted', d => window.mainView.highlightedInstance &&
-      window.mainView.highlightedInstance.classObj.classId === d.edgeTableInstance.classObj.classId &&
-      window.mainView.highlightedInstance.index === d.edgeTableInstance.index);
+      window.mainView.highlightedInstance.classObj.classId === d.edgeInstance.classObj.classId &&
+      window.mainView.highlightedInstance.index === d.edgeInstance.index);
 
     this.simulation.on('tick', () => {
       edges.select('.line')

@@ -5,8 +5,8 @@ class InstanceGraph extends PersistentGraph {
     super();
     this._instances = null;
   }
-  keyFunction ({ node, dummy }) {
-    return dummy ? null : node.instanceId;
+  keyFunction ({ nodeInstance, dummy }) {
+    return dummy ? null : nodeInstance.instanceId;
   }
   contains (instance) {
     return this._instances && !!this._instances[instance.instanceId];

@@ -10,21 +10,22 @@ class TableView extends GoldenLayoutView {
     });
     this.classId = state.classId || null;
   }
+  get classObj () {
+    return (this.classId && origraph.currentModel.classes[this.classId]) || null;
+  }
   get id () {
     return (this.classId && this.classId + 'TableView') || 'EmptyTableView';
   }
   get icon () {
-    if (this.classId === null) {
-      return 'img/null.svg';
-    }
-    return `img/${origraph.currentModel.classes[this.classId].lowerCamelCaseType}.svg`;
+    return this.classObj ? `img/${this.classObj.lowerCamelCaseType}.svg`
+      : 'img/null.svg';
   }
   get title () {
-    return this.classId === null ? `${origraph.currentModel.name} has no classes`
-      : origraph.currentModel.classes[this.classId].className;
+    return this.classObj ? this.classObj.className
+      : `${origraph.currentModel.name} has no classes`;
   }
   isEmpty () {
-    return this.classId === null;
+    return this.classObj === null;
   }
   setup () {
     super.setup();
@@ -70,14 +71,14 @@ class TableView extends GoldenLayoutView {
         title: 'Class Options',
         icon: 'img/hamburger.svg',
         onClick: (button) => {
-          if (this.classId !== null) {
+          if (this.classObj) {
             window.mainView.showClassContextMenu({
               classId: this.classId,
               targetBounds: button.getBoundingClientRect()
             });
           }
         },
-        disabled: this.classId === null
+        disabled: this.classObj === null
       },
       {
         title: 'Show Hidden Attributes',
@@ -96,11 +97,11 @@ class TableView extends GoldenLayoutView {
         title: 'Sample All Rows',
         icon: 'img/addSeed.svg',
         onClick: (button) => {
-          window.mainView.instanceGraph.seed(Object.values(
-            origraph.currentModel.classes[this.classId].table.currentData.data));
+          window.mainView.instanceGraph.seed(
+            Object.values(this.classObj.table.currentData.data));
           this.render();
         },
-        disabled: this.classId === null
+        disabled: this.classObj === null
       },
       {
         title: 'New Attribute...',
@@ -108,7 +109,7 @@ class TableView extends GoldenLayoutView {
         onClick: (button) => {
           window.mainView.showOverlay(`Sorry, not implemented yet...`);
         },
-        disabled: this.classId === null
+        disabled: this.classObj === null
       }
     ];
 
@@ -132,15 +133,14 @@ class TableView extends GoldenLayoutView {
   setupTab () {
     super.setupTab();
     if (!this.isEmpty()) {
-      const classObj = origraph.currentModel.classes[this.classId];
-      const imageFilter = classObj.annotations.color
-        ? `url(#recolorImageTo${classObj.annotations.color})` : null;
+      const imageFilter = this.classObj.annotations.color
+        ? `url(#recolorImageTo${this.classObj.annotations.color})` : null;
       this.tabElement.select('.viewIcon')
         .style('filter', imageFilter);
       const titleElement = this.tabElement.select('.lm_title')
         .style('cursor', 'text')
-        .style('color', classObj.annotations.color ? '#' + classObj.annotations.color : null)
-        .style('font-style', classObj !== null && classObj.hasCustomName ? null : 'italic')
+        .style('color', this.classObj.annotations.color ? '#' + this.classObj.annotations.color : null)
+        .style('font-style', this.classObj !== null && this.classObj.hasCustomName ? null : 'italic')
         .on('keyup', function () {
           if (d3.event.keyCode === 13) { // return key
             this.blur();
@@ -149,8 +149,8 @@ class TableView extends GoldenLayoutView {
           }
         }).on('blur', () => {
           const newName = titleElement.text();
-          if (classObj !== null && newName) {
-            classObj.setClassName(newName);
+          if (this.classObj !== null && newName) {
+            this.classObj.setClassName(newName);
           } else {
             window.mainView.render();
           }
@@ -248,8 +248,6 @@ class TableView extends GoldenLayoutView {
       });
   }
   showAttributeMenu (targetBounds, attribute) {
-    const classObj = origraph.currentModel.classes[this.classId];
-
     if (attribute.seed) {
       throw new Error(`You shouldn't be able to open the seed attribute menu`);
     }
@@ -288,7 +286,7 @@ class TableView extends GoldenLayoutView {
       menuEntries['Expand Rows as Tables'] = {
         icon: 'img/expand.svg',
         onClick: () => {
-          this.collectNewClasses(classObj.openTranspose());
+          this.collectNewClasses(this.classObj.openTranspose());
         }
       };
     } else if (attribute.meta) {
@@ -298,7 +296,7 @@ class TableView extends GoldenLayoutView {
       menuEntries.Aggregate = {
         icon: 'img/aggregate.svg',
         onClick: () => {
-          classObj.aggregate(attribute.name);
+          this.classObj.aggregate(attribute.name);
         }
       };
       menuEntries['Separate Delimited...'] = {
@@ -306,14 +304,14 @@ class TableView extends GoldenLayoutView {
         onClick: async () => {
           const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
           if (delimiter !== null) {
-            classObj.expand(attribute.name, delimiter);
+            this.classObj.expand(attribute.name, delimiter);
           }
         }
       };
       menuEntries.Facet = {
         icon: 'img/facet.svg',
         onClick: () => {
-          this.collectNewClasses(classObj.openFacet(attribute.name));
+          this.collectNewClasses(this.classObj.openFacet(attribute.name));
         }
       };
     }
@@ -343,16 +341,15 @@ class TableView extends GoldenLayoutView {
     super.draw();
     const self = this;
 
-    if (this.classId === null) {
+    if (this.classObj === null) {
       // TODO: show some kind of empty state content
     } else {
-      const classObj = origraph.currentModel.classes[this.classId];
-      const currentTable = classObj.table.currentData;
+      const currentTable = this.classObj.table.currentData;
       this.currentKeys = Object.keys(currentTable.data);
-      this.attributes = Object.values(classObj.table.getAttributeDetails());
-      if (classObj.type === 'Node') {
+      this.attributes = Object.values(this.classObj.table.getAttributeDetails());
+      if (this.classObj.type === 'Node') {
         // Degree columns:
-        for (const edgeId of Object.keys(classObj.edgeClassIds)) {
+        for (const edgeId of Object.keys(this.classObj.edgeClassIds)) {
           const edgeClass = origraph.currentModel.classes[edgeId];
           this.attributes.unshift({
             name: `${edgeClass.className} Degree`,
@@ -360,7 +357,7 @@ class TableView extends GoldenLayoutView {
             meta: true
           });
         }
-      } else if (classObj.type === 'Edge') {
+      } else if (this.classObj.type === 'Edge') {
         // Sources and Targets columns:
         this.attributes.unshift({
           name: 'Sources',
@@ -372,7 +369,7 @@ class TableView extends GoldenLayoutView {
         });
       }
       // ID column:
-      this.attributes.unshift(classObj.table.getIndexDetails());
+      this.attributes.unshift(this.classObj.table.getIndexDetails());
       this.attributes.forEach((attr, index) => {
         attr.columnIndex = index;
       });
@@ -391,7 +388,7 @@ class TableView extends GoldenLayoutView {
               // Meta values are computed asynchronously
               return '...';
             } else {
-              const value = classObj.table.currentData.data[index].row[attribute.name];
+              const value = this.classObj.table.currentData.data[index].row[attribute.name];
               if (value === undefined) {
                 return '';
               } else if (typeof value === 'object') {
