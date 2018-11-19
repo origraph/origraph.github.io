@@ -248,7 +248,7 @@ class TableView extends GoldenLayoutView {
       });
   }
   showAttributeMenu (targetBounds, attribute) {
-    const classObj = origraph.curentModel.classes[this.classId];
+    const classObj = origraph.currentModel.classes[this.classId];
 
     if (attribute.seed) {
       throw new Error(`You shouldn't be able to open the seed attribute menu`);
