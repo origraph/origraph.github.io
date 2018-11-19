@@ -20,7 +20,8 @@ class TableView extends GoldenLayoutView {
     return `img/${origraph.currentModel.classes[this.classId].lowerCamelCaseType}.svg`;
   }
   get title () {
-    return this.classId === null ? 'No active classes' : origraph.currentModel.classes[this.classId].className;
+    return this.classId === null ? `${origraph.currentModel.name} has no classes`
+      : origraph.currentModel.classes[this.classId].className;
   }
   isEmpty () {
     return this.classId === null;

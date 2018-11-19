@@ -46,7 +46,10 @@ class BaseMenu extends View {
   }
   draw () {
     this.summary.select('.menuLabel')
-      .style('display', this.getRootMenu().expanded ? null : 'none');
+      .style('display', this.getRootMenu().expanded ? null : 'none')
+      .text(this.label);
+    this.summary.select('.button img')
+      .attr('src', this.icon);
   }
 }
 

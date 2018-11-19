@@ -37,26 +37,23 @@
       display: block;
     }
 
-    .lastFiles {
-      .file {
-        min-height: @buttonSize;
-        margin: @buttonPadding 0;
+    &.example {
+      p {
+        margin: @buttonPadding;
+        color: @lightTextColor;
+      }
+      label {
         display: flex;
         align-items: center;
 
-        .filename {
-          max-width: 10em;
-          min-width: 10em;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          text-align: right;
-          margin-right: 0.25em;
-        }
-        .spinner {
+        img {
+          margin: 0 @buttonPadding;
           width: @buttonImageSize;
           height: @buttonImageSize;
-          margin-right: 0.25em;
         }
+      }
+      .button {
+        margin: @buttonTextPadding 0;
       }
     }
 

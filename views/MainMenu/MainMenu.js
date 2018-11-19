@@ -1,17 +1,34 @@
-/* globals d3 */
+/* globals d3, origraph */
 import SubMenu from './Common/SubMenu.js';
 import CollapsibleMenu from './Common/CollapsibleMenu.js';
 
-import FileMenu from './File/FileMenu.js';
+import ModelMenu from './ModelMenu/ModelMenu.js';
+import ExampleModelMenu from './ExampleModelMenu/ExampleModelMenu.js';
+import NewModelMenu from './NewModelMenu.js';
 
 class MainMenu extends SubMenu {
   constructor (d3el) {
     super(null, d3el);
     this.icon = 'img/hamburger.svg';
     this.label = 'Menu';
-    this.items = [
-      new FileMenu(this)
-    ];
+    this._modelMenus = {};
+    for (const modelId of Object.keys(origraph.models)) {
+      this._modelMenus[modelId] = new ModelMenu(this, null, modelId);
+    }
+    this._exampleModelMenu = new ExampleModelMenu(this);
+    this._newModelMenu = new NewModelMenu(this);
+  }
+  get items () {
+    const nextModelMenus = {};
+    for (const modelId of Object.keys(origraph.models)) {
+      nextModelMenus[modelId] = this._modelMenus[modelId] ||
+        new ModelMenu(this, null, modelId);
+    }
+    this._modelMenus = nextModelMenus;
+    return [
+      this._exampleModelMenu,
+      this._newModelMenu
+    ].concat(Object.values(this._modelMenus));
   }
   setup () {
     super.setup();

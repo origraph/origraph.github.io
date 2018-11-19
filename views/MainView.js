@@ -24,20 +24,10 @@ class MainView extends View {
     window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
 
     origraph.on('changeCurrentModel', () => {
-      origraph.currentModel.on('update', async () => {
-        this.updateLayout();
-        await this.handleClassUpdate();
-        await Promise.all([
-          this.networkModelGraph.update(),
-          this.instanceGraph.update()
-        ]);
-        this.render();
-      });
+      this.handleClassChange();
     });
-    this.handleClassUpdate();
+    this.handleClassChange();
 
-    // Initialize the layout and subviews
-    this.initSubViews(this.d3el.select('#contents'));
     this.render();
   }
   setup () {
@@ -48,10 +38,6 @@ class MainView extends View {
     });
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
     this.firstDraw = true;
-    (async () => {
-      await this.networkModelGraph.update();
-      this.render();
-    })();
   }
   draw () {
     this.mainMenu.render();
@@ -63,22 +49,29 @@ class MainView extends View {
       this.hideOverlay();
     }
   }
-  saveLayoutState () {
-    // debounce this call if goldenlayout isn't ready;
-    // see https://github.com/golden-layout/golden-layout/issues/253#issuecomment-361144944
-    clearTimeout(this.saveLayoutStateTimeout);
-    if (!(this.goldenLayout &&
-          this.goldenLayout.isInitialised &&
-          this.goldenLayout.openPopouts.every(p => p.isInitialised))) {
-      this.saveLayoutStateTimeout = setTimeout(() => {
-        this.saveLayoutState();
-      }, 200);
-    } else {
-      const config = this.goldenLayout.toConfig();
-      window.localStorage.setItem('layout', JSON.stringify(config));
+  async handleClassChange () {
+    if (!origraph.currentModel) {
+      const existingModels = Object.values(origraph.models);
+      if (existingModels.length > 0) {
+        origraph.currentModel = existingModels[existingModels.length - 1];
+      } else {
+        origraph.createModel();
+      }
     }
+    origraph.currentModel.on('update:mainView', async () => {
+      this.handleClassUpdate();
+    });
+    this.handleClassUpdate();
   }
   async handleClassUpdate () {
+    this.updateLayout();
+    (async () => {
+      await Promise.all([
+        this.networkModelGraph.update(),
+        this.instanceGraph.update()
+      ]);
+      this.render();
+    })();
     this.sampling = true;
     const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(origraph.currentModel.classes)) {
@@ -111,7 +104,31 @@ class MainView extends View {
     }
     this.sampling = false;
   }
+  initLayout () {
+    const self = this;
+    // TODO: try to save the layout in localStorage? There were lots of weird
+    // bugs when we did...
+    const contentsElement = this.d3el.select('#contents');
+    let config = window.DEFAULT_LAYOUT;
+    this.goldenLayout = new GoldenLayout(config, contentsElement.node());
+    Object.entries(window.SUBVIEW_CLASSES)
+      .forEach(([className, ViewClass]) => {
+        this.goldenLayout.registerComponent(className, function (container, state) {
+          const view = new ViewClass({ container, state });
+          self.subViews[view.id] = view;
+          return view;
+        });
+      });
+    this.goldenLayout.on('windowOpened', () => {
+      this.render();
+    });
+
+    this.goldenLayout.init();
+  }
   updateLayout () {
+    if (!this.goldenLayout) {
+      this.initLayout();
+    }
     const getDefaultContainer = () => {
       if (this.goldenLayout.root.contentItems.length === 0) {
         this.goldenLayout.root.addChild({
@@ -209,53 +226,6 @@ class MainView extends View {
       // can be added next to it first
       nullComponent.remove();
     }
-  }
-  initSubViews (contentsElement) {
-    const self = this;
-    let config = window.localStorage.getItem('layout');
-    config = config ? JSON.parse(config) : window.DEFAULT_LAYOUT;
-    this.goldenLayout = new GoldenLayout(config, contentsElement.node());
-    Object.entries(window.SUBVIEW_CLASSES)
-      .forEach(([className, ViewClass]) => {
-        this.goldenLayout.registerComponent(className, function (container, state) {
-          const view = new ViewClass({ container, state });
-          self.subViews[view.id] = view;
-          return view;
-        });
-      });
-    this.goldenLayout.on('initialised', () => {
-      this.saveLayoutState();
-    });
-    this.goldenLayout.on('stateChanged', event => {
-      this.saveLayoutState();
-    });
-    this.goldenLayout.on('windowOpened', () => {
-      this.render();
-    });
-    this.goldenLayout.on('itemDestroyed', event => {
-      if (event.instance) {
-        delete this.subViews[event.instance.id];
-      }
-    });
-
-    try {
-      this.goldenLayout.init();
-    } catch (error) {
-      if (error.type === 'popoutBlocked') {
-        this.alert(`\
-The last time you used this app, a view was in a popup that your \
-browser just blocked (we've reverted to the default layout instead).
-
-You can prevent this in the future by adding this site to the allowed \
-sites in your browser settings.`);
-        window.localStorage.removeItem('layout');
-        this.initSubViews(contentsElement);
-        return;
-      } else {
-        throw error;
-      }
-    }
-    this.updateLayout();
   }
   viewsShareStack (viewA, viewB) {
     const aStacks = [];
@@ -473,6 +443,20 @@ sites in your browser settings.`);
       }
     });
   }
+  showTableContextMenu ({ modelId, tableId, targetBounds = null } = {}) {
+    const menuEntries = {
+      'Delete Table': {
+        icon: 'img/delete.svg',
+        onClick: () => {
+          origraph.models[modelId].tables[tableId].delete();
+        }
+      }
+    };
+    this.showContextMenu({
+      targetBounds,
+      menuEntries
+    });
+  }
   showClassContextMenu ({ classId, targetBounds = null } = {}) {
     const menuEntries = {
       'Rename': {
@@ -521,6 +505,13 @@ sites in your browser settings.`);
     return this.showOverlay({
       content: `<h2>${message}</h2>`,
       ok: true
+    });
+  }
+  async confirm (message) {
+    return this.showOverlay({
+      content: `<h2>${message}</h2>`,
+      ok: true,
+      cancel: true
     });
   }
   async prompt (message, defaultValue = '') {
