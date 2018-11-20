@@ -9,6 +9,7 @@ class TableView extends GoldenLayoutView {
       label: TableView.label
     });
     this.classId = state.classId || null;
+    this.sortConfig = null;
   }
   get classObj () {
     return (this.classId && origraph.currentModel.classes[this.classId]) || null;
@@ -37,7 +38,9 @@ class TableView extends GoldenLayoutView {
       colHeaders: [],
       columns: [],
       manualColumnResize: true,
-      columnSorting: true,
+      columnSorting: {
+        initialConfig: this.sortConfig || {}
+      },
       sortIndicator: true,
       readOnly: true,
       preventOverflow: 'horizontal',
@@ -255,11 +258,11 @@ class TableView extends GoldenLayoutView {
     let menuEntries = {};
 
     // Add sort, filter, and hide to everything
-    const sortState = this.renderer.getPlugin('ColumnSorting')
-      .getNextOrderState(attribute.columnIndex);
+    let sortState = this.getNextSortConfig(attribute);
+    sortState = sortState && sortState.sortOrder;
     const sortIcon = sortState === 'asc' ? 'img/ascending.svg'
       : sortState === 'desc' ? 'img/descending.svg' : 'img/null.svg';
-    const sortLabel = sortState === 'none' ? 'Clear Sorting' : 'Sort';
+    const sortLabel = sortState === null ? 'Clear Sorting' : 'Sort';
     menuEntries[sortLabel] = {
       icon: sortIcon,
       onClick: () => {
@@ -412,29 +415,49 @@ class TableView extends GoldenLayoutView {
           <div class="text" data-column-index=${columnIndex}>${name}</div>
           <div class="menu icon"></div>`;
       };
-      const sortSpec = this.renderer.getPlugin('ColumnSorting');
       const spec = {
         data: this.currentKeys,
         colHeaders,
         columns,
         columnSorting: {
-          column: sortSpec.sortColumn,
-          sortOrder: sortSpec.sortOrder
+          initialConfig: this.sortConfig || {}
         }
       };
       this.renderer.updateSettings(spec);
       this.renderer.render();
     }
   }
+  getNextSortConfig (attribute) {
+    if (!attribute) {
+      return null;
+    } else if (!this.sortConfig || this.sortConfig.column !== attribute.columnIndex) {
+      return {
+        column: attribute.columnIndex,
+        sortOrder: 'asc'
+      };
+    } else if (this.sortConfig.sortOrder === 'asc') {
+      return {
+        column: attribute.columnIndex,
+        sortOrder: 'desc'
+      };
+    } else {
+      return null;
+    }
+  }
   sortAttribute (attribute) {
     const columnSorting = this.renderer.getPlugin('ColumnSorting');
-    columnSorting.sort(attribute.columnIndex, columnSorting.getNextOrderState(attribute.columnIndex));
+    this.sortConfig = this.getNextSortConfig(attribute);
+    if (this.sortConfig === null) {
+      columnSorting.clearSort();
+    } else {
+      columnSorting.sort(this.sortConfig);
+    }
     const autoColumnSize = this.renderer.getPlugin('AutoColumnSize');
     autoColumnSize.recalculateAllColumnsWidth();
   }
   scrollToInstance (instance) {
     let rowNumber = this.currentKeys.indexOf(instance.index);
-    if (this.renderer.getPlugin('ColumnSorting').sortOrder !== 'none') {
+    if (this.sortConfig) {
       rowNumber = this.renderer.toVisualRow(rowNumber);
     }
     this.renderer.scrollViewportTo(rowNumber, 0);
