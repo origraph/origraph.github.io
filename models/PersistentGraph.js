@@ -19,9 +19,7 @@ class PersistentGraph extends Model {
       if (key !== null) {
         existingStats[this.keyFunction(node)] = {
           x: node.x,
-          y: node.y,
-          fx: node.x,
-          fy: node.y
+          y: node.y
         };
       }
     }

@@ -62,7 +62,7 @@ function bbox (alpha) {
     }
     if (node.y <= NODE_SIZE) {
       node.vy += bbox.strength * alpha;
-    } else if (node.y >= bbox.bounds.height - NODE_SIZE) {
+    } else if (node.y >= bbox.bounds.height - 2 * NODE_SIZE) {
       node.vy -= bbox.strength * alpha;
     }
   }
@@ -183,11 +183,15 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       this.simulation.force('bbox').bounds = bounds;
     }
 
-    // Assign initial positions to nodes that don't have any
+    // Assign initial positions to nodes that don't have any, or
+    // ensure that previous positions are preserved
     for (const node of window.mainView.networkModelGraph.nodes) {
       if (node.x === undefined || node.y === undefined) {
         node.x = Math.random() * bounds.width;
         node.y = Math.random() * bounds.height;
+      } else {
+        node.fx = node.x;
+        node.fy = node.y;
       }
     }
     this.simulation.nodes(window.mainView.networkModelGraph.nodes);
