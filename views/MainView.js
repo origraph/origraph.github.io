@@ -183,14 +183,15 @@ class MainView extends View {
     const existingIds = {};
     let nullComponent;
     let tableParent;
-    // Remove old components
+    // Figure out which old components to remove, but don't toss them yet
+    const componentsToRemove = [];
     for (const component of components.TableView || []) {
       tableParent = component.parent;
       const classId = component.instance.classId;
       if (classId === null) {
         nullComponent = component;
       } else if (!origraph.currentModel.classes[component.instance.classId]) {
-        component.remove();
+        componentsToRemove.push(component);
       } else {
         existingIds[classId] = true;
       }
@@ -225,6 +226,10 @@ class MainView extends View {
       // Wait until the end to remove the null table, so that other tables
       // can be added next to it first
       nullComponent.remove();
+    }
+    // Finally, remove components
+    for (const component of componentsToRemove) {
+      component.remove();
     }
   }
   viewsShareStack (viewA, viewB) {

@@ -46,12 +46,12 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     nodesEnter.append('circle')
       .attr('r', NODE_SIZE);
     nodes.select('circle')
-      .attr('fill', d => d.nodeTableInstance && d.nodeTableInstance.classObj.annotations.color
-        ? '#' + d.nodeTableInstance.classObj.annotations.color : '#BDBDBD');
-    nodes.classed('highlighted', d => d.nodeTableInstance &&
+      .attr('fill', d => d.nodeInstance && d.nodeInstance.classObj.annotations.color
+        ? '#' + d.nodeInstance.classObj.annotations.color : '#BDBDBD');
+    nodes.classed('highlighted', d => d.nodeInstance &&
       window.mainView.highlightedInstance &&
-      window.mainView.highlightedInstance.classObj.classId === d.nodeTableInstance.classObj.classId &&
-      window.mainView.highlightedInstance.index === d.nodeTableInstance.index);
+      window.mainView.highlightedInstance.classObj.classId === d.nodeInstance.classObj.classId &&
+      window.mainView.highlightedInstance.index === d.nodeInstance.index);
     nodes.classed('dummy', d => d.dummy)
       .call(d3.drag()
         .on('start', d => {
@@ -61,8 +61,8 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           d.fx = d.x;
           d.fy = d.y;
           // Initiate linked highlighting
-          if (d.nodeTableInstance) {
-            window.mainView.highlightInstance(d.nodeTableInstance, this);
+          if (d.nodeInstance) {
+            window.mainView.highlightInstance(d.nodeInstance, this);
           } else {
             window.mainView.clearHighlightInstance();
           }

@@ -77,11 +77,26 @@ bbox.initialize = nodes => {
   bbox.nodes = nodes;
 };
 
+function keepFixed (alpha) {
+  for (const node of keepFixed.nodes) {
+    if (node.fx !== undefined) {
+      node.x = node.fx;
+      node.vx = 0;
+    }
+    if (node.fy !== undefined) {
+      node.y = node.fy;
+      node.vy = 0;
+    }
+  }
+}
+keepFixed.nodes = [];
+
 const DEFAULT_FORCES = {
   link: d3.forceLink(),
   center: d3.forceCenter(),
   collide: d3.forceCollide().radius(NODE_SIZE),
-  bbox
+  bbox,
+  keepFixed
 };
 
 class Handle {
@@ -158,12 +173,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
 
   draw () {
     super.draw();
-    this.simulation.nodes(window.mainView.networkModelGraph.nodes);
-
-    if (this.simulation.force('link')) {
-      this.simulation.force('link')
-        .links(window.mainView.networkModelGraph.edges);
-    }
     const bounds = this.getContentBounds(this.content);
     if (this.simulation.force('center')) {
       this.simulation.force('center')
@@ -173,6 +182,23 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     if (this.simulation.force('bbox')) {
       this.simulation.force('bbox').bounds = bounds;
     }
+
+    // Assign initial positions to nodes that don't have any
+    for (const node of window.mainView.networkModelGraph.nodes) {
+      if (node.x === undefined || node.y === undefined) {
+        node.x = Math.random() * bounds.width;
+        node.y = Math.random() * bounds.height;
+      }
+    }
+    this.simulation.nodes(window.mainView.networkModelGraph.nodes);
+
+    if (this.simulation.force('link')) {
+      this.simulation.force('link')
+        .links(window.mainView.networkModelGraph.edges);
+    }
+
+    // Force a redraw whether or not the simulation is running
+    this.tick();
   }
 
   tick () {
@@ -198,7 +224,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     const objectsEnter = objects.enter().append('g');
     objects = objects.merge(objectsEnter);
 
-    // Initialize handles
+    // Initialize handles, and positions if they're not defined
     objects.each(d => {
       d.handles = {};
     });
@@ -217,8 +243,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     objects.call(d3.drag()
       .on('start', d => {
         // disable link and center forces (keep bbox and collision)
-        this.simulation.force('link', null);
-        this.simulation.force('center', null);
+        // this.simulation.force('link', null);
+        // this.simulation.force('center', null);
         if (!d3.event.active && !this.draggingHandle) {
           this.simulation.alpha(0.1).restart();
         }
@@ -231,13 +257,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         d.fy = d3.event.y;
       }).on('end', d => {
         // re-enable link and center forces
-        this.simulation.force('link', DEFAULT_FORCES.link);
-        this.simulation.force('center', DEFAULT_FORCES.center);
+        // this.simulation.force('link', DEFAULT_FORCES.link);
+        // this.simulation.force('center', DEFAULT_FORCES.center);
         if (!d3.event.active) {
           this.simulation.alpha(0);
         }
-        delete d.fx;
-        delete d.fy;
       }));
     // When dragging handles, determine if the connection is valid, and if so,
     // register this.handleTarget

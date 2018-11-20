@@ -3,7 +3,7 @@ import PersistentGraph from './PersistentGraph.js';
 
 class NetworkModelGraph extends PersistentGraph {
   keyFunction (node) {
-    return node.classId;
+    return node.classObj ? node.classObj.classId : Math.random();
   }
   async deriveGraph () {
     const graph = origraph.currentModel.getNetworkModelGraph({
