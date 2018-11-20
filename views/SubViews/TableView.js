@@ -178,23 +178,23 @@ class TableView extends GoldenLayoutView {
     });
     if (attribute.meta) {
       (async () => {
-        let count = 0;
-        if (attribute.edgeId) {
+        let idList = [];
+        if (attribute.edgeClass) {
           const edgeIds = {};
-          edgeIds[attribute.edgeId] = true;
+          edgeIds[attribute.edgeClass.classId] = true;
           for await (const edgeItem of dataValue.edges({ edgeIds })) { // eslint-disable-line no-unused-vars
-            count++;
+            idList.push(edgeItem.index);
           }
-        } else if (attribute.name === 'Sources') {
+        } else if (attribute.sourceClass) {
           for await (const nodeItem of dataValue.sourceNodes()) { // eslint-disable-line no-unused-vars
-            count++;
+            idList.push(nodeItem.index);
           }
         } else if (attribute.name === 'Targets') {
           for await (const nodeItem of dataValue.targetNodes()) { // eslint-disable-line no-unused-vars
-            count++;
+            idList.push(nodeItem.index);
           }
         }
-        element.text(count);
+        element.text(idList.join(','));
       })();
     }
   }
@@ -348,25 +348,30 @@ class TableView extends GoldenLayoutView {
       this.currentKeys = Object.keys(currentTable.data);
       this.attributes = Object.values(this.classObj.table.getAttributeDetails());
       if (this.classObj.type === 'Node') {
-        // Degree columns:
-        for (const edgeId of Object.keys(this.classObj.edgeClassIds)) {
-          const edgeClass = origraph.currentModel.classes[edgeId];
-          this.attributes.unshift({
-            name: `${edgeClass.className} Degree`,
-            edgeId,
+        // Connected ID columns:
+        for (const edgeClass of this.classObj.edgeClasses()) {
+          this.attributes.push({
+            name: `${edgeClass.className}`,
+            edgeClass,
             meta: true
           });
         }
       } else if (this.classObj.type === 'Edge') {
         // Sources and Targets columns:
-        this.attributes.unshift({
-          name: 'Sources',
-          meta: true
-        });
-        this.attributes.push({
-          name: 'Targets',
-          meta: true
-        });
+        if (this.classObj.sourceClass) {
+          this.attributes.push({
+            name: `${this.classObj.sourceClass.className}`,
+            sourceClass: this.classObj.sourceClass,
+            meta: true
+          });
+        }
+        if (this.classObj.targetClass) {
+          this.attributes.push({
+            name: `${this.classObj.targetClass.className}`,
+            targetClass: this.classObj.targetClass,
+            meta: true
+          });
+        }
       }
       // ID column:
       this.attributes.unshift(this.classObj.table.getIndexDetails());
