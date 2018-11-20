@@ -77,26 +77,10 @@ bbox.initialize = nodes => {
   bbox.nodes = nodes;
 };
 
-function keepFixed (alpha) {
-  for (const node of keepFixed.nodes) {
-    if (node.fx !== undefined) {
-      node.x = node.fx;
-      node.vx = 0;
-    }
-    if (node.fy !== undefined) {
-      node.y = node.fy;
-      node.vy = 0;
-    }
-  }
-}
-keepFixed.nodes = [];
-
 const DEFAULT_FORCES = {
   link: d3.forceLink(),
-  center: d3.forceCenter(),
   collide: d3.forceCollide().radius(NODE_SIZE),
-  bbox,
-  keepFixed
+  bbox
 };
 
 class Handle {
@@ -174,11 +158,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   draw () {
     super.draw();
     const bounds = this.getContentBounds(this.content);
-    if (this.simulation.force('center')) {
-      this.simulation.force('center')
-        .x(bounds.width / 2)
-        .y(bounds.height / 2);
-    }
     if (this.simulation.force('bbox')) {
       this.simulation.force('bbox').bounds = bounds;
     }
@@ -246,9 +225,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     // Class dragging behavior (disabled when handles are being dragged)
     objects.call(d3.drag()
       .on('start', d => {
-        // disable link and center forces (keep bbox and collision)
-        // this.simulation.force('link', null);
-        // this.simulation.force('center', null);
         if (!d3.event.active && !this.draggingHandle) {
           this.simulation.alpha(0.1).restart();
         }
@@ -260,9 +236,6 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
       }).on('end', d => {
-        // re-enable link and center forces
-        // this.simulation.force('link', DEFAULT_FORCES.link);
-        // this.simulation.force('center', DEFAULT_FORCES.center);
         if (!d3.event.active) {
           this.simulation.alpha(0);
         }
