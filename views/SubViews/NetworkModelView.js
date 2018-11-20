@@ -79,7 +79,7 @@ bbox.initialize = nodes => {
 
 const DEFAULT_FORCES = {
   link: d3.forceLink(),
-  collide: d3.forceCollide().radius(NODE_SIZE),
+  collide: d3.forceCollide().radius(2 * NODE_SIZE),
   bbox
 };
 
