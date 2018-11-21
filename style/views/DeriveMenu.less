@@ -1,0 +1,28 @@
+#overlay {
+  .DeriveModal {
+    position: absolute;
+    top: 1em;
+    bottom: 5em;
+    left: 1em;
+    right: 1em;
+    display: flex;
+    .classView {
+      flex-grow: 1;
+    }
+    .codeView {
+      position: relative;
+      margin: 0 1em;
+      flex-grow: 1;
+      #code {
+        position: absolute;
+        top: 3em;
+        bottom: 0;
+        width: 100%;
+      }
+    }
+    .docsView {
+      width: 12em;
+      overflow: auto;
+    }
+  }
+}

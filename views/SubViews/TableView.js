@@ -1,5 +1,6 @@
 /* globals d3, origraph, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
+import DeriveModal from '../Modals/DeriveModal.js';
 
 class TableView extends GoldenLayoutView {
   constructor ({ container, state = {} }) {
@@ -110,7 +111,7 @@ class TableView extends GoldenLayoutView {
         title: 'New Attribute...',
         icon: 'img/deriveAttribute.svg',
         onClick: (button) => {
-          window.mainView.showOverlay(`Sorry, not implemented yet...`);
+          window.mainView.showOverlay(new DeriveModal(this.classObj));
         },
         disabled: this.classObj === null
       }

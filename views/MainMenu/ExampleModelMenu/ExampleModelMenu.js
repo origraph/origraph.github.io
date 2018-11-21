@@ -31,7 +31,35 @@ const EXAMPLE_MODELS = [
     'name': 'Movies',
     'icon': 'img/movies.svg',
     'description': 'This is Neo4j\'s example film dataset, connecting people and movies.',
-    'files': ['people.csv', 'movies.csv', 'movieEdges.csv']
+    'files': ['people.csv', 'movies.csv', 'movieEdges.csv'],
+    'prefab': (model, classes) => {
+      let people = classes['people.csv'];
+      let movies = classes['movies.csv'];
+      let movieEdges = classes['movieEdges.csv'];
+
+      // Initial interpretation
+      people = people.interpretAsNodes();
+      people.setClassName('People');
+
+      movies = movies.interpretAsNodes();
+      movies.setClassName('Movies');
+
+      movieEdges = movieEdges.interpretAsEdges();
+
+      // Set up initial connections
+      people.connectToEdgeClass({
+        edgeClass: movieEdges,
+        side: 'source',
+        nodeAttribute: 'id',
+        edgeAttribute: 'personID'
+      });
+      movieEdges.connectToNodeClass({
+        nodeClass: movies,
+        side: 'target',
+        nodeAttribute: 'id',
+        edgeAttribute: 'movieID'
+      });
+    }
   },
   {
     'name': 'Air Travel',
