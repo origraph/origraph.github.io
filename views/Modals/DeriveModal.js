@@ -86,17 +86,6 @@ class DeriveModal extends Modal {
     }
     return result;
   }
-  getAncestralClasses (classId) {
-    const result = [];
-    let { parentSegment } = this.classList[this.classListLookup[classId]];
-    while (parentSegment !== null) {
-      const { parentId } = this.segmentList[parentSegment];
-      const wrapper = this.classList[this.classListLookup[parentId]];
-      result.push(wrapper.classObj);
-      parentSegment = wrapper.parentSegment;
-    }
-    return result;
-  }
   setup () {
     this.d3el.html(`
       <div class="DeriveModal">
@@ -169,7 +158,7 @@ class DeriveModal extends Modal {
     joints.on('mouseover', ({ parentSegment }) => this.hoverSegment(parentSegment));
     joints.on('mouseout', ({ parentSegment }) => this.hoverSegment(null));
     joints.on('click', function ({ attr, classObj, parentSegment }) {
-      self.showReduceMenu({
+      self.showAttrReduceMenu({
         attr,
         classObj,
         parentSegment,
@@ -188,13 +177,16 @@ class DeriveModal extends Modal {
       console.log(this.getAncestralSegments(segmentIndex));
     }
   }
-  showReduceMenu ({ attr, classObj, parentSegment, targetBounds }) {
+  generateCodeBlock (content) {
+    const argName = this.targetClass.lowerCamelCaseType;
+    return `async function (${argName}, otherClasses) {
+  $${content}
+}`;
+  }
+  showAttrReduceMenu ({ attr, classObj, parentSegment, targetBounds }) {
     window.mainView.showContextMenu({
       targetBounds,
       menuEntries: {
-        'Count': {
-          onClick: () => {}
-        },
         'Sum': {
           onClick: () => {}
         },
@@ -283,16 +275,15 @@ class DeriveModal extends Modal {
     this.code = CodeMirror(this.d3el.select('#code').node(), {
       theme: 'material',
       mode: 'javascript',
-      value: `\
-async function (${argName}, otherClasses) {
-  // Replace this function with one of the
-  // templates on your left.
+      value: this.generateCodeBlock(`\
+// Replace this function with one of the
+// templates on your left.
 
-  // Or you can roll your own; see the docs
-  // on your right.
+// Or you can roll your own; see the docs
+// on your right.
 
-  return ${argName}.index;
-}`});
+return ${argName}.index;`)
+    });
     // Don't allow the user to edit the first or last lines
     this.code.on('beforeChange', (cm, change) => {
       if (change.from.line === 0 || change.to.line === cm.lastLine()) {
