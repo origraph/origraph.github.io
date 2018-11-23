@@ -122,6 +122,13 @@ img.emptyState {
   top: 0px;
   bottom: 2px;
   width: calc(100% - (@menuSize + @menuPadding));
+
+  .lm_header {
+    z-index: unset;
+  }
+  .lm_tabdropdown_list {
+    z-index: 120;
+  }
 }
 @media (max-width: @fullMenuSize * 2) {
   #menu.expanded {
