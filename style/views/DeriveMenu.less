@@ -1,3 +1,5 @@
+@import '../colors.less';
+
 #overlay {
   .DeriveModal {
     position: absolute;
@@ -6,22 +8,71 @@
     left: 1em;
     right: 1em;
     display: flex;
-    .classView {
+    align-items: stretch;
+
+    & > div {
       flex-grow: 1;
+      flex-basis: 0;
+      min-width: 12em;
+    }
+
+    .connectionView {
+      overflow-x: auto;
+      overflow-y: hidden; /* We link vertical scrolling with tableView's scroll bar */
+
+      path {
+        stroke-width: 3px;
+      }
+    }
+    .tableView {
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      justify-content: space-around;
+
+      .class {
+        margin: 1em 0;
+        .header {
+          display: flex;
+          flex-wrap: nowrap;
+          .attr {
+            flex-basis: auto;
+            width: auto;
+            height: 1.5em;
+
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+
+            border: 1px solid @separatorColor;
+            background-color: @lightBackgroundColor;
+            color: @textColor;
+
+            .button {
+              margin-left: 0.25em;
+            }
+            .attrName {
+              margin: 0 0.25em;
+            }
+          }
+        }
+      }
     }
     .codeView {
       position: relative;
       margin: 0 1em;
-      flex-grow: 1;
       #code {
         position: absolute;
         top: 3em;
         bottom: 0;
         width: 100%;
+        .readOnly {
+          background-color: @invertedBackgroundColor;
+        }
       }
     }
     .docsView {
-      width: 12em;
       overflow: auto;
     }
   }
