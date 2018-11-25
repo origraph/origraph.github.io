@@ -1,7 +1,25 @@
-/* globals d3, CodeMirror */
+/* globals d3, origraph, CodeMirror */
 import Modal from './Modal.js';
 
-const LINE_SPACING = 40;
+const NODE_RADIUS = 30;
+const NODE_PADDING = 40;
+const LABEL_PADDING = 15;
+
+const EDGE_THICKNESS = NODE_RADIUS / 5;
+const NODE_OUTLINES = {
+  // Circle for node classes
+  'Node': `\
+M0,${-NODE_RADIUS}\
+A${NODE_RADIUS},${NODE_RADIUS},0,1,1,0,${NODE_RADIUS}\
+A${NODE_RADIUS},${NODE_RADIUS},0,1,1,0,${-NODE_RADIUS}`,
+  // Rectangles for edge classes
+  'Edge': `\
+M${-NODE_RADIUS},${-EDGE_THICKNESS}\
+L${NODE_RADIUS},${-EDGE_THICKNESS}\
+L${NODE_RADIUS},${EDGE_THICKNESS}\
+L${-NODE_RADIUS},${EDGE_THICKNESS}\
+Z`
+};
 
 class DeriveModal extends Modal {
   constructor (targetClass) {
@@ -11,92 +29,158 @@ class DeriveModal extends Modal {
       }
     });
     this.targetClass = targetClass;
-    this.computeClassHierarchy();
+    this.computeLayout();
+    this.currentPath = [this.targetClass.classId];
   }
-  computeClassHierarchy () {
-    this.classList = [];
-    this.classListLookup = {};
-    this.segmentList = [];
+  computeLayout () {
+    this.allClasses = [];
+    this.classLookup = {};
+    this.layers = {};
+    this.layerLookup = {};
+    this.connections = [];
 
     const queue = [{
-      parentSegment: null,
+      layerNumber: 0,
       classObj: this.targetClass
     }];
+    const links = {};
 
     while (queue.length > 0) {
-      const wrapper = queue.shift();
-      const index = this.classListLookup[wrapper.classObj.classId];
-      if (index !== undefined) {
+      let { layerNumber, classObj } = queue.shift();
+      if (this.classLookup[classObj.classId] !== undefined) {
         continue;
       }
-      // Sneaky move to only add the segments when we actually add the classes
-      // (parentSegment in the object is just an index, whereas it was an
-      // object before)
-      let parentSegment = wrapper.parentSegment;
-      if (parentSegment !== null) {
-        wrapper.parentSegment = this.segmentList.length;
-        this.segmentList.push(parentSegment);
-      }
-      this.classListLookup[wrapper.classObj.classId] = this.classList.length;
-      this.classList.push(wrapper);
 
-      // Construct the next segment for each (potential) child
-      parentSegment = {
-        parentId: wrapper.classObj.classId
-      };
-      if (wrapper.classObj.type === 'Node') {
-        for (const edgeClass of wrapper.classObj.edgeClasses()) {
-          parentSegment.color = `#${edgeClass.annotations.color}`;
-          parentSegment.childId = edgeClass.classId;
+      this.classLookup[classObj.classId] = this.allClasses.length;
+      this.allClasses.push(classObj);
+      const layer = this.layers[layerNumber] = this.layers[layerNumber] || [];
+      this.layerLookup[classObj.classId] = { layerNumber, index: layer.length };
+      layer.push(classObj.classId);
+
+      layerNumber++;
+      if (classObj.type === 'Node') {
+        for (const edgeClass of classObj.edgeClasses()) {
+          if (!links[edgeClass.classId] || !links[edgeClass.classId][classObj.classId]) {
+            links[classObj.classId] = links[classObj.classId] || {};
+            links[classObj.classId][edgeClass.classId] = true;
+          }
           queue.push({
-            parentSegment,
+            layerNumber,
             classObj: edgeClass
           });
         }
-      } else if (wrapper.classObj.type === 'Edge') {
-        parentSegment.color = `#${wrapper.classObj.annotations.color}`;
-        if (wrapper.classObj.sourceClass) {
-          parentSegment.childId = wrapper.classObj.sourceClass.classId;
+      } else if (classObj.type === 'Edge') {
+        const sourceClass = classObj.sourceClass;
+        if (sourceClass) {
+          if (!links[sourceClass.classId] || !links[sourceClass.classId][classObj.classId]) {
+            links[classObj.classId] = links[classObj.classId] || {};
+            links[classObj.classId][sourceClass.classId] = true;
+          }
           queue.push({
-            parentSegment,
-            classObj: wrapper.classObj.sourceClass
+            layerNumber,
+            classObj: sourceClass
           });
         }
-        if (wrapper.classObj.targetClass) {
-          parentSegment.childId = wrapper.classObj.targetClass.classId;
+        const targetClass = classObj.targetClass;
+        if (targetClass) {
+          if (!links[targetClass.classId] || !links[targetClass.classId][classObj.classId]) {
+            links[classObj.classId] = links[classObj.classId] || {};
+            links[classObj.classId][targetClass.classId] = true;
+          }
           queue.push({
-            parentSegment,
-            classObj: wrapper.classObj.targetClass
+            layerNumber,
+            classObj: targetClass
+          });
+        }
+      }
+
+      for (const [ sourceId, targetIds ] of Object.entries(links)) {
+        for (const targetId of Object.keys(targetIds)) {
+          this.connections.push({
+            source: sourceId,
+            target: targetId
           });
         }
       }
     }
   }
-  getAncestralSegments (segmentIndex) {
-    const result = [];
-    let segment = this.segmentList[segmentIndex];
-    while (true) {
-      const { parentSegment } = this.classList[this.classListLookup[segment.parentId]];
-      if (parentSegment === null) {
-        break;
-      } else {
-        segment = this.segmentList[parentSegment];
-        result.push(segment);
+  shortestPath (sourceId, targetId) {
+    const visited = {};
+    const queue = [[sourceId]];
+    while (queue.length > 0) {
+      const path = queue.shift();
+      const classId = path[path.length - 1];
+      if (classId === targetId) {
+        return path;
+      } else if (visited[classId]) {
+        continue;
+      }
+      visited[classId] = true;
+      const classObj = origraph.currentModel.classes[classId];
+      if (classObj.type === 'Node') {
+        for (const edgeClass of classObj.edgeClasses()) {
+          queue.push(path.concat([edgeClass.classId]));
+        }
+      } else if (classObj.type === 'Edge') {
+        if (classObj.sourceClassId) {
+          queue.push(path.concat([classObj.sourceClassId]));
+        }
+        if (classObj.targetClassId) {
+          queue.push(path.concat([classObj.targetClassId]));
+        }
       }
     }
-    return result;
+    return null;
+  }
+  addClassIdToPath (classId) {
+    const lastId = this.currentPath[this.currentPath.length - 1];
+    const nextSeries = this.shortestPath(lastId, classId);
+    if (nextSeries === null) {
+      throw new Error(`Can't find route to unconnected classId: ${classId}`);
+    }
+    this.currentPath = this.currentPath.concat(nextSeries.slice(1, nextSeries.length));
+    this.render();
+  }
+  generateCodeBlock (content) {
+    const argName = this.targetClass.lowerCamelCaseType;
+    return `async function (${argName}, otherClasses) {
+${content}
+}`;
   }
   setup () {
     this.d3el.html(`
       <div class="DeriveModal">
-        <div class="connectionView">
-          <svg>
-            <g class="classLineLayer"></g>
-            <g class="segmentLayer"></g>
-            <g class="jointLayer"></g>
-          </svg>
-        </div>
-        <div class="tableView">
+        <div class="templateView">
+          <div class="modelView">
+            <svg>
+              <g class="lightLinkLayer"></g>
+              <g class="activeLinkLayer"></g>
+              <g class="classLayer"></g>
+            </svg>
+          </div>
+          <div class="breadcrumb"></div>
+          <div class="selectorView">
+            <select id="functionSelect" size="10">
+              <option disabled>Custom</option>
+              <optgroup label="Internal">
+                <option selected>Duplicate</option>
+              </optgroup>
+              <optgroup label="Summary" disabled>
+                <option>Count</option>
+              </optgroup>
+              <optgroup label="Attribute-based" disabled>
+                <option>Median</option>
+                <option>Mean</option>
+                <option>Mode</option>
+                <option>Concatenate</option>
+              </optgroup>
+            </select>
+            <select id="attrSelect" size="10">
+              <option value="">Index</option>
+              <optgroup label="Attributes">
+              </optgroup>
+            </select>
+          </div>
         </div>
         <div class="codeView">
           <div class="attrNameHeader">
@@ -114,175 +198,22 @@ class DeriveModal extends Modal {
       .classed('center', false)
       .classed('bottom', true);
 
-    this.setupTableView();
-    this.setupConnectionView();
     this.setupCodeView();
-  }
-  setupTableView () {
-    const self = this;
-
-    // Tables
-    let classes = this.d3el.select('.tableView')
-      .selectAll('.class').data(this.classList, ({ classObj }) => classObj.classId);
-    classes.exit().remove();
-    const classesEnter = classes.enter().append('div').classed('class', true);
-    classes = classes.merge(classesEnter);
-
-    // Column headers
-    classesEnter.append('div').classed('header', true);
-    let attrs = classes.select('.header').selectAll('.attr')
-      .data(({ classObj, parentSegment }) => {
-        return Object.values(classObj.table.getAttributeDetails())
-          .map(attr => {
-            return { attr, classObj, parentSegment };
-          });
-      }, d => d.attr.name);
-    attrs.exit().remove();
-    const attrsEnter = attrs.enter().append('div').classed('attr', true);
-    attrs = attrs.merge(attrsEnter);
-
-    // Joint buttons
-    attrsEnter.append('div').classed('joints', true);
-    let joints = attrs.select('.joints')
-      .selectAll('.joint').data(({ attr, classObj, parentSegment }) => {
-        return parentSegment === null ? [] : [{ attr, classObj, parentSegment }];
-      });
-    joints.exit().remove();
-    const jointsEnter = joints.enter().append('div')
-      .classed('joint', true)
-      .classed('button', true)
-      .classed('tiny', true);
-    joints = joints.merge(jointsEnter);
-    jointsEnter.append('a');
-    joints.style('background-color', ({ parentSegment }) => this.segmentList[parentSegment].color);
-    joints.on('mouseover', ({ parentSegment }) => this.hoverSegment(parentSegment));
-    joints.on('mouseout', ({ parentSegment }) => this.hoverSegment(null));
-    joints.on('click', function ({ attr, classObj, parentSegment }) {
-      self.showAttrReduceMenu({
-        attr,
-        classObj,
-        parentSegment,
-        targetBounds: this.getBoundingClientRect()
-      });
-    });
-
-    // Attribute titles
-    attrsEnter.append('div').classed('attrName', true);
-    attrs.select('.attrName').text(({ attr }) => attr.name);
-  }
-  hoverSegment (segmentIndex) {
-    if (segmentIndex === null) {
-
-    } else {
-      console.log(this.getAncestralSegments(segmentIndex));
-    }
-  }
-  generateCodeBlock (content) {
-    const argName = this.targetClass.lowerCamelCaseType;
-    return `async function (${argName}, otherClasses) {
-  $${content}
-}`;
-  }
-  showAttrReduceMenu ({ attr, classObj, parentSegment, targetBounds }) {
-    window.mainView.showContextMenu({
-      targetBounds,
-      menuEntries: {
-        'Sum': {
-          onClick: () => {}
-        },
-        'Concatenate': {
-          onClick: () => {}
-        }
-      }
-    });
-  }
-  setupConnectionView () {
-    // TODO: link to tableView's vertical scrolling
-  }
-  drawConnectionView () {
-    // Where are the class headers in tableView?
-    const headerBounds = {};
-    const width = Math.max(LINE_SPACING * (2 + this.segmentList.length),
-      this.d3el.select('.tableView').node().getBoundingClientRect().width);
-    let height = 0;
-    this.d3el.select('.tableView').selectAll('.class').select('.header')
-      .each(function ({ classObj }) {
-        headerBounds[classObj.classId] = this.getBoundingClientRect();
-        height = Math.max(height, headerBounds[classObj.classId].bottom);
-      });
-
-    // Adjust the SVG accordingly
-    const svg = this.d3el.select('.connectionView svg')
-      .attr('width', width)
-      .attr('height', height);
-
-    // Horizontal class lines
-    let classLines = svg.select('.classLineLayer').selectAll('.classLine')
-      .data(this.classList, ({ classObj }) => classObj.classId);
-    classLines.exit().remove();
-    const classLinesEnter = classLines.enter().append('g')
-      .classed('classLine', true);
-    classLines = classLines.merge(classLinesEnter);
-
-    classLinesEnter.append('path');
-    classLines.select('path')
-      .attr('stroke', ({ classObj }) => `#${classObj.annotations.color}`)
-      .attr('d', ({ classObj }) => {
-        const bounds = headerBounds[classObj.classId];
-        const y = bounds.top;
-        return `M0,${y}L${width},${y}`;
-      });
-
-    // Vertical segment lines
-    let segments = svg.select('.segmentLayer').selectAll('.segment')
-      .data(this.segmentList);
-    segments.exit().remove();
-    const segmentsEnter = segments.enter().append('g').classed('segment', true);
-    segments = segments.merge(segmentsEnter);
-
-    segmentsEnter.append('path');
-    segments.select('path')
-      .style('stroke', ({ color }) => color)
-      .attr('d', ({ parentId, childId }, index) => {
-        const x = (index + 1) * LINE_SPACING;
-        let bounds = headerBounds[parentId];
-        const y0 = bounds.top;
-        bounds = headerBounds[childId];
-        const y1 = bounds.top;
-        return `M${x},${y0}L${x},${y1}`;
-      });
-
-    // Joints
-    const jointedClassList = this.classList
-      .filter(({ parentSegment }) => parentSegment !== null);
-    let joints = svg.select('.jointLayer').selectAll('.joint')
-      .data(jointedClassList, ({ classObj }) => classObj.classId);
-    joints.exit().remove();
-    const jointsEnter = joints.enter().append('g').classed('joint', true);
-    joints = joints.merge(jointsEnter);
-
-    joints.attr('transform', ({ parentSegment, classObj }) => {
-      const x = (parentSegment + 1) * LINE_SPACING;
-      const y = headerBounds[classObj.classId].top;
-      return `translate(${x},${y})`;
-    });
-    jointsEnter.append('circle')
-      .attr('r', 5)
-      .attr('fill', ({ parentSegment }) => this.segmentList[parentSegment].color);
   }
   setupCodeView () {
     const argName = this.targetClass.lowerCamelCaseType;
+    // this.d3el.select('#code').style('bottom', this.scrollBarSize + 'px');
     this.code = CodeMirror(this.d3el.select('#code').node(), {
       theme: 'material',
       mode: 'javascript',
       value: this.generateCodeBlock(`\
-// Replace this function with one of the
-// templates on your left.
+  // Replace this function with one of the
+  // templates on your left.
 
-// Or you can roll your own; see the docs
-// on your right.
+  // Or you can roll your own; see the docs
+  // on your right.
 
-return ${argName}.index;`)
+  return ${argName}.index;`)
     });
     // Don't allow the user to edit the first or last lines
     this.code.on('beforeChange', (cm, change) => {
@@ -291,12 +222,136 @@ return ${argName}.index;`)
       }
     });
   }
-  drawCodeView () {
-    // TODO: Highlight the first and last lines as readOnly
+  drawModelView () {
+    // Compute SVG size
+    const svg = this.d3el.select('.modelView svg');
+    const height = NODE_PADDING + (NODE_PADDING + 2 * NODE_RADIUS) *
+      Math.max(...Object.values(this.layers).map(layer => layer.length));
+    const width = NODE_PADDING + (NODE_PADDING + 2 * NODE_RADIUS) *
+      Object.values(this.layers).length;
+    svg.attr('width', width)
+      .attr('height', height);
+
+    // Helper values / functions
+    const transition = d3.transition().duration(400);
+    const computeClassCenter = classId => {
+      return {
+        x: (NODE_PADDING + 2 * NODE_RADIUS) *
+          this.layerLookup[classId].layerNumber +
+          NODE_PADDING + NODE_RADIUS,
+        y: (NODE_PADDING + 2 * NODE_RADIUS) *
+          this.layerLookup[classId].index +
+          NODE_PADDING + NODE_RADIUS
+      };
+    };
+    const computeClassTransform = classObj => {
+      const { x, y } = computeClassCenter(classObj.classId);
+      return `translate(${x},${y})`;
+    };
+    const computeLinkPath = link => {
+      const source = computeClassCenter(link.source);
+      source.x += NODE_RADIUS;
+      const target = computeClassCenter(link.target);
+      target.x -= NODE_RADIUS;
+      return `M${source.x},${source.y}L${target.x},${target.y}`;
+    };
+
+    // Init classes
+    let classes = svg.select('.classLayer').selectAll('.class')
+      .data(this.allClasses, classObj => classObj.classId);
+    classes.exit().remove();
+    const classesEnter = classes.enter().append('g')
+      .classed('class', true);
+    classes = classesEnter.merge(classes);
+
+    // Set up class interaction
+    classes.on('click', classObj => {
+      this.addClassIdToPath(classObj.classId);
+    });
+
+    // Position classes
+    classesEnter.attr('transform', computeClassTransform);
+    classes.transition(transition).attr('transform', computeClassTransform);
+
+    // Draw classes
+    classes.classed('active', classObj => this.currentPath.indexOf(classObj.classId) !== -1)
+      .classed('focused', classObj => this.currentPath[this.currentPath.length - 1] === classObj.classId);
+
+    classesEnter.append('path');
+    classes.select('path')
+      .attr('d', classObj => NODE_OUTLINES[classObj.type])
+      .attr('fill', classObj => `#${classObj.annotations.color}`);
+
+    classesEnter.append('text');
+    classes.select('text')
+      .attr('y', NODE_RADIUS + LABEL_PADDING)
+      .attr('text-anchor', 'middle')
+      .text(classObj => classObj.className);
+
+    // Init light links
+    let lightLinks = svg.select('.lightLinkLayer').selectAll('.link')
+      .data(this.connections, d => d.source + '>' + d.target);
+    lightLinks.exit().remove();
+    const lightLinksEnter = lightLinks.enter().append('path')
+      .classed('link', true);
+    lightLinks = lightLinksEnter.merge(lightLinks);
+
+    // Position light links
+    lightLinksEnter.attr('d', computeLinkPath);
+    lightLinks.transition(transition).attr('d', computeLinkPath);
+
+    // Init active links
+    const activeLinkList = this.connections.filter(link => {
+      return this.currentPath.indexOf(link.source) !== -1 &&
+        this.currentPath.indexOf(link.target) !== -1;
+    });
+    let activeLinks = svg.select('.activeLinkLayer').selectAll('.link')
+      .data(activeLinkList, d => d.source + '>' + d.target);
+    activeLinks.exit().attr('opacity', 1)
+      .transition(transition)
+      .attr('opacity', 0)
+      .remove();
+    const activeLinksEnter = activeLinks.enter().append('path')
+      .classed('link', true);
+    activeLinksEnter.attr('opacity', 0)
+      .transition(transition)
+      .attr('opacity', 1);
+    activeLinks = activeLinksEnter.merge(activeLinks);
+
+    // Position active links
+    activeLinksEnter.attr('d', computeLinkPath);
+    activeLinks.transition(transition).attr('d', computeLinkPath);
+  }
+  drawCurrentPath () {
+    // Draw class chunks
+    let classes = this.d3el.select('.breadcrumb').selectAll('.class')
+      .data(this.currentPath, classId => classId);
+    classes.exit().remove();
+    const classesEnter = classes.enter().append('div').classed('class', true);
+    classes = classesEnter.merge(classes);
+
+    // Class labels
+    classesEnter.append('div').classed('className', true);
+    classes.select('.className')
+      .text(classId => origraph.currentModel.classes[classId].className)
+      .style('color', classId => {
+        return `#${origraph.currentModel.classes[classId].annotations.color}`;
+      }).on('click', (classId, index) => {
+        this.currentPath.splice(index + 1);
+        this.render();
+      });
+
+    // Breadcrumb separator
+    classesEnter.append('div').classed('separator', true)
+      .text('>');
+  }
+  drawSelectorView () {
+    // TODO: populate / set up the selection views
   }
   draw () {
-    this.drawCodeView();
-    this.drawConnectionView();
+    this.drawModelView();
+    this.drawCurrentPath();
+    this.drawSelectorView();
   }
   ok (resolve) {
     // TODO
