@@ -149,10 +149,85 @@ class DeriveModal extends Modal {
     return this.currentPath[this.currentPath.length - 1];
   }
   generateCodeBlock (content) {
-    const argName = this.targetClass.lowerCamelCaseType;
+    const argName = this.targetClass.variableName;
     return `async function (${argName}, otherClasses) {
-${content}
+${content.split(/\n/g).map(d => '  ' + d).join('\n')}
 }`;
+  }
+  setCodeContents ({ func, attr }) {
+    this.codeTemplate = { func, attr };
+    let codeContent = '';
+    if (func === 'Count' || func === 'Mean') {
+      codeContent = 'let count = 0;\n';
+    } else if (func === 'Concatenate' || func === 'Median') {
+      codeContent = 'let values = [];\n';
+    } else if (func === 'Mode') {
+      codeContent = 'let counts = {};\n';
+    }
+    if (func === 'Mean') {
+      codeContent += 'let total = 0;\n';
+    }
+
+    const addLoopMiddle = (classObj, indent) => {
+      let result = '';
+      if (func === 'Count') {
+        result += `${indent}count++;`;
+      }
+      if (func !== 'Count') {
+        if (attr === null) {
+          result += `${indent}let value = ${classObj.variableName}.index;`;
+        } else {
+          result += `${indent}let value = ${classObj.variableName}.row['${attr}'];`;
+        }
+      }
+      if (func === 'Mean') {
+        result += `
+${indent}if (!isNaN(parseFloat(value))) {
+${indent}  count++;
+${indent}  total += parseFloat(value);
+${indent}}`;
+      }
+      return result;
+    };
+    const addLoop = (pathIndex, indent) => {
+      const classId = this.currentPath[pathIndex];
+      const classObj = origraph.currentModel.classes[classId];
+      const lastClassId = this.currentPath[pathIndex - 1];
+      const lastClassObj = origraph.currentModel.classes[lastClassId];
+      const loopIterator = `\
+${lastClassObj.variableName}.${classObj.type}s({ classes: [class${pathIndex}] })`;
+      const loopContents = pathIndex === this.currentPath.length - 1
+        ? addLoopMiddle(classObj, indent + '  ') : addLoop(pathIndex + 1, indent + '  ');
+      return `\
+${indent}const class${pathIndex} = origraph.currentModel.findClass('${classObj.className}');
+${indent}for await (const ${classObj.variableName} of ${loopIterator}) {
+${loopContents}
+${indent}}`;
+    };
+    if (this.currentPath.length === 1) {
+      codeContent += addLoopMiddle(origraph.currentModel.classes[this.currentPath[0]], '');
+    } else {
+      codeContent += addLoop(1, '  ');
+    }
+    codeContent += '\n';
+
+    if (func === 'Duplicate') {
+      codeContent += 'return value;';
+    } else if (func === 'Count') {
+      codeContent += 'return count;';
+    } else if (func === 'Mean') {
+      codeContent += 'return total / count;';
+    } else if (func === 'Concatenate') {
+      codeContent += `return values.join(',');`;
+    } else if (func === 'Median') {
+      codeContent += `return values[Math.floor(values.length / 2)];`;
+    } else if (func === 'Mode') {
+      codeContent += `return d3.max(d3.entries(counts), d => d.value).key;`;
+    }
+    this._injectingTemplate = true;
+    this.code.setValue(this.generateCodeBlock(codeContent));
+    this._injectingTemplate = false;
+    this.render();
   }
   setup () {
     this.d3el.html(`
@@ -232,24 +307,27 @@ ${content}
       theme: 'material',
       mode: 'javascript',
       value: this.generateCodeBlock(`\
-  // Replace this function with one of the
-  // templates on your left.
+// Replace this function with one of the
+// templates on your left.
 
-  // Or you can collapse that view, and write
-  // your own code here (docs will appear to
-  // your right).
+// Or you can collapse that view, and write
+// your own code here (docs will appear to
+// your right).
 
-  return ${argName}.index;`)
+return ${argName}.index;`)
     });
     // Don't allow the user to edit the first or last lines
     this.code.on('beforeChange', (cm, change) => {
-      if (change.from.line === 0 || change.to.line === cm.lastLine()) {
+      if (!this._injectingTemplate &&
+        (change.from.line === 0 || change.to.line === cm.lastLine())) {
         change.cancel();
       }
     });
     this.code.on('changes', () => {
-      this.codeTemplate = null;
-      this.render();
+      if (!this._injectingTemplate) {
+        this.codeTemplate = null;
+        this.render();
+      }
     });
   }
   drawModelView () {
@@ -407,6 +485,19 @@ ${content}
       this.currentPath.length === 1);
     funcSelect.select('[label="Attribute-based"]').property('disabled',
       this.currentPath.length === 1 && attrSelect.node().value !== null);
+
+    // Apply button
+    this.d3el.select('.selectorView .button')
+      .classed('disabled', funcSelect.node().value === null)
+      .on('click', () => {
+        const func = funcSelect.node().value;
+        if (func) {
+          this.setCodeContents({
+            func,
+            attr: attrSelect.node().value
+          });
+        }
+      });
   }
   draw () {
     this.d3el.selectAll('.docsView,.collapseDocs')
