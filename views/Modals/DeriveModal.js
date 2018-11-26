@@ -31,6 +31,11 @@ class DeriveModal extends Modal {
     this.targetClass = targetClass;
     this.computeLayout();
     this.currentPath = [this.targetClass.classId];
+    this.codeTemplate = {
+      func: 'Duplicate',
+      attr: null
+    };
+    this.showDocs = false;
   }
   computeLayout () {
     this.allClasses = [];
@@ -133,13 +138,15 @@ class DeriveModal extends Modal {
     return null;
   }
   addClassIdToPath (classId) {
-    const lastId = this.currentPath[this.currentPath.length - 1];
-    const nextSeries = this.shortestPath(lastId, classId);
+    const nextSeries = this.shortestPath(this.currentClassId, classId);
     if (nextSeries === null) {
       throw new Error(`Can't find route to unconnected classId: ${classId}`);
     }
     this.currentPath = this.currentPath.concat(nextSeries.slice(1, nextSeries.length));
     this.render();
+  }
+  get currentClassId () {
+    return this.currentPath[this.currentPath.length - 1];
   }
   generateCodeBlock (content) {
     const argName = this.targetClass.lowerCamelCaseType;
@@ -160,8 +167,13 @@ ${content}
           </div>
           <div class="breadcrumb"></div>
           <div class="selectorView">
-            <select id="functionSelect" size="10">
-              <option disabled>Custom</option>
+            <select id="attrSelect" size="10">
+              <option value="" selected>Index</option>
+              <optgroup label="">
+              </optgroup>
+            </select>
+            <select id="funcSelect" size="10">
+              <option disabled id="customFunc">Custom</option>
               <optgroup label="Internal">
                 <option selected>Duplicate</option>
               </optgroup>
@@ -175,11 +187,12 @@ ${content}
                 <option>Concatenate</option>
               </optgroup>
             </select>
-            <select id="attrSelect" size="10">
-              <option value="">Index</option>
-              <optgroup label="Attributes">
-              </optgroup>
-            </select>
+            <div class="button"><a><span>Use Template</span></a></div>
+          </div>
+        </div>
+        <div class="collapseTemplate">
+          <div class="small button">
+            <a><img src="img/collapseLeft.svg"/></a>
           </div>
         </div>
         <div class="codeView">
@@ -189,6 +202,11 @@ ${content}
           </div>
           <div id="code"></div>
         </div>
+        <div class="collapseDocs">
+          <div class="small button">
+            <a><img src="img/collapseRight.svg"/></a>
+          </div>
+        </div>
         <div class="docsView">${this.resources.text}</div>
       </div>
     `);
@@ -197,6 +215,13 @@ ${content}
     this.d3el.select('.center')
       .classed('center', false)
       .classed('bottom', true);
+
+    // Set up toggling the mode
+    this.d3el.selectAll('.collapseDocs>.button,.collapseTemplate>.button')
+      .on('click', () => {
+        this.showDocs = !this.showDocs;
+        this.render();
+      });
 
     this.setupCodeView();
   }
@@ -210,8 +235,9 @@ ${content}
   // Replace this function with one of the
   // templates on your left.
 
-  // Or you can roll your own; see the docs
-  // on your right.
+  // Or you can collapse that view, and write
+  // your own code here (docs will appear to
+  // your right).
 
   return ${argName}.index;`)
     });
@@ -220,6 +246,10 @@ ${content}
       if (change.from.line === 0 || change.to.line === cm.lastLine()) {
         change.cancel();
       }
+    });
+    this.code.on('changes', () => {
+      this.codeTemplate = null;
+      this.render();
     });
   }
   drawModelView () {
@@ -275,7 +305,7 @@ ${content}
 
     // Draw classes
     classes.classed('active', classObj => this.currentPath.indexOf(classObj.classId) !== -1)
-      .classed('focused', classObj => this.currentPath[this.currentPath.length - 1] === classObj.classId);
+      .classed('focused', classObj => this.currentClassId === classObj.classId);
 
     classesEnter.append('path');
     classes.select('path')
@@ -346,12 +376,48 @@ ${content}
       .text('>');
   }
   drawSelectorView () {
-    // TODO: populate / set up the selection views
+    // Attribute select menu
+    const attrSelect = this.d3el.select('#attrSelect');
+
+    // Update the Index option
+    attrSelect.select('[value=""]')
+      .property('selected', this.codeTemplate && this.codeTemplate.attr === null);
+
+    // Update the list of attributes
+    const attrList = d3.entries(origraph.currentModel
+      .classes[this.currentClassId].table.getAttributeDetails());
+    let attrs = attrSelect.select('optgroup').selectAll('option')
+      .data(attrList, ({ key }) => key);
+    attrs.exit().remove();
+    const attrsEnter = attrs.enter().append('option');
+    attrs = attrsEnter.merge(attrs);
+    attrs.text(({ key }) => key)
+      .property('selected', ({ key }) => this.codeTemplate && this.codeTemplate.attr === key);
+
+    // Function select menu
+    const funcSelect = this.d3el.select('#funcSelect');
+    // Set up function value, enable / disable sections based on what
+    // currentPath and codeTemplate are
+    funcSelect.node().value = this.codeTemplate ? this.codeTemplate.func
+      : 'Custom';
+    funcSelect.select('#customFunc').property('disabled', !!this.codeTemplate);
+    funcSelect.select('[label="Internal"]').property('disabled',
+      this.currentPath.length !== 1);
+    funcSelect.select('[label="Summary"]').property('disabled',
+      this.currentPath.length === 1);
+    funcSelect.select('[label="Attribute-based"]').property('disabled',
+      this.currentPath.length === 1 && attrSelect.node().value !== null);
   }
   draw () {
-    this.drawModelView();
-    this.drawCurrentPath();
-    this.drawSelectorView();
+    this.d3el.selectAll('.docsView,.collapseDocs')
+      .style('display', this.showDocs ? null : 'none');
+    this.d3el.selectAll('.templateView,.collapseTemplate')
+      .style('display', this.showDocs ? 'none' : null);
+    if (!this.showDocs) {
+      this.drawModelView();
+      this.drawCurrentPath();
+      this.drawSelectorView();
+    }
   }
   ok (resolve) {
     // TODO

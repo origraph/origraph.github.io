@@ -11,10 +11,22 @@
     display: flex;
     align-items: stretch;
 
-    & > div {
+    .templateView,
+    .codeView,
+    .docsView {
       flex-grow: 1;
       flex-basis: 0;
-      min-width: 12em;
+      max-width: 50%
+    }
+
+    .collapseTemplate,
+    .collapseDocs {
+      width: @smallButtonSize;
+      margin: 0 1em;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
     }
 
     .templateView {
@@ -73,20 +85,28 @@
         }
       }
       .selectorView {
+        height: 12em;
         display: flex;
         justify-content: space-around;
+        align-items: center;
         select {
           width: 12em;
+          max-height: 100%;
+        }
+        // Because flex layout messes with our custom button sizes, we
+        // have to manually specify this one:
+        .button {
+          min-width: 8em;
         }
       }
     }
     .codeView {
       position: relative;
-      margin: 0 1em;
       #code {
-        position: absolute;
-        top: 3em;
-        bottom: 0;
+        margin-top: 1em;
+        position: relative;
+        top: 0px;
+        bottom: 0px;
         width: 100%;
       }
     }
