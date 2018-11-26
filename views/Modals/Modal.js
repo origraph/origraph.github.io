@@ -6,9 +6,10 @@ class Modal extends View {
     spinner = false,
     ok = null,
     cancel = null,
-    prompt = null
+    prompt = null,
+    resources = {}
   } = {}) {
-    super(null);
+    super(null, resources);
     this.content = content;
     this.spinner = spinner;
     if (ok) {

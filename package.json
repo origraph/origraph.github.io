@@ -17,11 +17,12 @@
   "homepage": "https://github.com/alex-r-bigelow/origraph#readme",
   "dependencies": {
     "@origraph/origraph-js-dri": "^0.1.0",
+    "codemirror": "^5.42.0",
     "d3": "^5.7.0",
     "handsontable": "^6.2.0",
     "jquery": "^3.3.1",
     "less": "^3.8.1",
-    "origraph": "^0.1.4",
+    "origraph": "^0.2.0",
     "serve": "^10.1.1",
     "uki": "^0.2.5"
   }

@@ -13,6 +13,7 @@
 @import './views/TableView.less';
 @import './views/InstanceView.less';
 @import './views/ConnectMenu.less';
+@import './views/DeriveMenu.less';
 
 html, body {
   padding: 0;
@@ -49,7 +50,7 @@ img.emptyState {
 
 #overlay {
   position: absolute;
-  z-index: 124;
+  z-index: 123;
   left: 0px;
   top: 0px;
   right: 0px;
@@ -91,7 +92,7 @@ img.emptyState {
 
 #tooltip {
   position: absolute;
-  z-index: 123;
+  z-index: 124;
   padding: 0.5em;
   border-radius: 0.5em;
   background: @darkBackgroundColor;
@@ -121,6 +122,13 @@ img.emptyState {
   top: 0px;
   bottom: 2px;
   width: calc(100% - (@menuSize + @menuPadding));
+
+  .lm_header {
+    z-index: unset;
+  }
+  .lm_tabdropdown_list {
+    z-index: 120;
+  }
 }
 @media (max-width: @fullMenuSize * 2) {
   #menu.expanded {

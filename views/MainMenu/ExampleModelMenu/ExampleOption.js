@@ -35,10 +35,10 @@ class ExampleOption extends ModalMenuOption {
     prefabLabel.append('img')
       .attr('src', 'img/prefab.svg');
     prefabLabel.append('span').text('Pre-assembled');
-    prefab.append('p').text(`Start with the data connected, because
+    /* prefab.append('p').text(`Start with the data connected, because
       Origraph's interface is new and / or confusing (note to
       Eurovis reviewers: we were careful to avoid usability claims
-      in the paper. That's future work!).`);
+      in the paper. That's future work!).`); */
 
     const nofab = this.contentDiv.append('div')
       .classed('fabOption', true);
@@ -52,31 +52,31 @@ class ExampleOption extends ModalMenuOption {
     nofabLabel.append('img')
       .attr('src', 'img/nofab.svg');
     nofabLabel.append('span').text('Some assembly required');
-    nofab.append('p').text(`Just load the data as-is,
-      because you don't need no thought control.`);
+    /* nofab.append('p').text(`Just load the data as-is,
+      because you don't need no thought control.`); */
 
-    this.contentDiv.append('div')
-      .classed('button', true)
-      .append('span').text('Load')
-      .on('click', async () => {
-        const newModel = origraph.createModel({
-          name: this.label,
-          annotations: { description: this.description }
-        });
-        const classes = {};
-        for (const filename of this.files) {
-          const text = await d3.text(`docs/exampleDatasets/${filename}`);
-          const newClass = newModel.addStringAsStaticTable({
-            key: filename,
-            name: filename,
-            text
-          });
-          classes[filename] = newClass;
-        }
-        if (prefabLabel.select('input').property('checked')) {
-          this.prefab(newModel, classes);
-        }
+    const loadButton = this.contentDiv.append('div')
+      .classed('button', true);
+    loadButton.append('span').text('Load');
+    loadButton.on('click', async () => {
+      const newModel = origraph.createModel({
+        name: this.label,
+        annotations: { description: this.description }
       });
+      const classes = {};
+      for (const filename of this.files) {
+        const text = await d3.text(`docs/exampleDatasets/${filename}`);
+        const newClass = newModel.addStringAsStaticTable({
+          key: filename,
+          name: filename,
+          text
+        });
+        classes[filename] = newClass;
+      }
+      if (prefabLabel.select('input').property('checked')) {
+        this.prefab(newModel, classes);
+      }
+    });
   }
 }
 export default ExampleOption;
