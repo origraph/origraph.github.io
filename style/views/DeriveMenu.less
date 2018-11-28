@@ -10,7 +10,7 @@
   display: flex;
   align-items: stretch;
 
-  .pathView,
+  .PathSpecificationView,
   .codeView {
     flex: 1 1 auto;
     max-width: calc(100% - 32em);
@@ -30,70 +30,6 @@
     left: 1em;
     right: 1em;
     height: @buttonSize;
-  }
-
-  .pathView {
-    display: flex;
-    flex-direction: column;
-
-    h3 {
-      flex: 0 1 auto;
-    }
-    .breadcrumb {
-      flex: 0 1 auto;
-      margin: 0.5em 0;
-      .class {
-        display: inline-block;
-        background-color: fade(@invertedBackgroundColor, 90%);
-        &:hover {
-          background-color: fade(@invertedBackgroundColor, 70%);
-        }
-        color: @invertedTextColor;
-        padding: 0.25em 0.25em 0.25em 0.4em;
-        border-radius: 0.5em;
-        & > div {
-          display: inline-block;
-          white-space: nowrap;
-        }
-        .className {
-          cursor: pointer;
-        }
-      }
-    }
-    .modelView {
-      flex: 1 1 auto;
-      overflow: auto;
-
-      .lightLinkLayer path {
-        fill: none;
-        stroke: @separatorColor;
-        stroke-width: 1px;
-        opacity: 0.5;
-      }
-      .activeLinkLayer path {
-        fill: none;
-        stroke: @separatorColor;
-        stroke-width: 5px;
-      }
-      .classLayer {
-        .class {
-          opacity: 0.5;
-          text {
-            fill: @textColor;
-          }
-          &.active,
-          &:hover {
-            opacity: 1;
-            cursor: pointer;
-          }
-          &.focused path,
-          &:hover path {
-            stroke-width: 3px;
-            stroke: @textColor;
-          }
-        }
-      }
-    }
   }
 
   .selectorView {
