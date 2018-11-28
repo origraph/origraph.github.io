@@ -8,9 +8,9 @@ class ExampleOption extends ModalMenuOption {
     this.label = name;
     this.description = description;
     this.files = files;
-    this.prefab = prefab || function () {
-      window.mainView.alert(`Sorry, prefab for ${name} hasn't been implemented yet.`);
-    };
+    this.prefab = prefab;
+    this.loading = false;
+    this.loaded = false;
   }
   setup () {
     super.setup();
@@ -18,12 +18,13 @@ class ExampleOption extends ModalMenuOption {
     this.contentDiv.classed('example', true);
 
     this.contentDiv.append('p').classed('description', true)
-      .text(this.description);
+      .html(this.description);
 
     const idBase = this.label.replace(/[A-Z\s]/g, '');
 
     const prefab = this.contentDiv.append('div')
-      .classed('fabOption', true);
+      .classed('fabOption', true)
+      .classed('disabled', !this.prefab);
     const prefabLabel = prefab.append('label')
       .attr('for', idBase + 'prefab');
     prefabLabel.append('input')
@@ -31,7 +32,8 @@ class ExampleOption extends ModalMenuOption {
       .attr('id', idBase + 'prefab')
       .attr('type', 'radio')
       .attr('value', 'prefab')
-      .property('checked', true);
+      .property('checked', !!this.prefab)
+      .property('disabled', !this.prefab);
     prefabLabel.append('img')
       .attr('src', 'img/prefab.svg');
     prefabLabel.append('span').text('Pre-assembled');
@@ -48,35 +50,54 @@ class ExampleOption extends ModalMenuOption {
       .attr('name', idBase)
       .attr('id', idBase + 'nofab')
       .attr('type', 'radio')
-      .attr('value', 'nofab');
+      .attr('value', 'nofab')
+      .property('checked', !this.prefab);
     nofabLabel.append('img')
       .attr('src', 'img/nofab.svg');
     nofabLabel.append('span').text('Some assembly required');
     /* nofab.append('p').text(`Just load the data as-is,
       because you don't need no thought control.`); */
 
-    const loadButton = this.contentDiv.append('div')
+    const loadButtonContainer = this.contentDiv.append('div')
+      .classed('loadContainer', true);
+
+    this.loadButton = loadButtonContainer.append('div')
       .classed('button', true);
-    loadButton.append('span').text('Load');
-    loadButton.on('click', async () => {
-      const newModel = origraph.createModel({
-        name: this.label,
-        annotations: { description: this.description }
-      });
-      const classes = {};
-      for (const filename of this.files) {
-        const text = await d3.text(`docs/exampleDatasets/${filename}`);
-        const newClass = newModel.addStringAsStaticTable({
-          key: filename,
-          name: filename,
-          text
+    this.spinner = loadButtonContainer.append('img');
+    this.loadButton.append('span').text('Load');
+    this.loadButton.on('click', async () => {
+      if (!this.loaded && !this.loading) {
+        this.loaded = false;
+        this.loading = true;
+        this.render();
+        const newModel = origraph.createModel({
+          name: this.label,
+          annotations: { description: this.description }
         });
-        classes[filename] = newClass;
-      }
-      if (prefabLabel.select('input').property('checked')) {
-        this.prefab(newModel, classes);
+        const classes = {};
+        for (const filename of this.files) {
+          const text = await d3.text(`docs/exampleDatasets/${filename}`);
+          const newClass = newModel.addStringAsStaticTable({
+            key: filename,
+            name: filename,
+            text
+          });
+          classes[filename] = newClass;
+        }
+        if (prefabLabel.select('input').property('checked')) {
+          this.prefab(newModel, classes);
+        }
+        this.loaded = true;
+        this.render();
       }
     });
+  }
+  draw () {
+    super.draw();
+    this.spinner
+      .style('display', this.loading || this.loaded ? null : 'none')
+      .attr('src', this.loaded ? 'img/check.svg' : 'img/spinner.gif');
+    this.loadButton.classed('disabled', this.loaded || this.loading);
   }
 }
 export default ExampleOption;
