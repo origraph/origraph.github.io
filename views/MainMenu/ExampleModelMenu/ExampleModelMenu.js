@@ -5,7 +5,7 @@ const EXAMPLE_MODELS = [
   {
     'name': 'Les Miserables',
     'icon': 'img/lesMiserables.svg',
-    'description': 'Character co-occurrence (<a href="https://gist.github.com/mbostock/f584aa36df54c451c94a9d0798caed35#file-miserables-json">source</a>)',
+    'description': 'Character co-occurrence (<a target="_blank" href="https://gist.github.com/mbostock/f584aa36df54c451c94a9d0798caed35#file-miserables-json">source</a>)',
     'files': ['miserables.json'],
     prefab: (model, classes) => {
       let [ nodeClass, edgeClass ] = classes['miserables.json']
@@ -30,7 +30,7 @@ const EXAMPLE_MODELS = [
   {
     'name': 'Northwind',
     'icon': 'img/northwind.svg',
-    'description': 'Fictional Nortwind Trading Co. dataset (<a href="https://github.com/graphql-compose/graphql-compose-examples/tree/master/examples/northwind/data/csv">source</a>)',
+    'description': 'Fictional Nortwind Trading Co. dataset (<a target="_blank" href="https://github.com/graphql-compose/graphql-compose-examples/tree/master/examples/northwind/data/csv">source</a>)',
     'files': [
       'northwind/categories.csv',
       'northwind/customers.csv',
@@ -142,7 +142,7 @@ const EXAMPLE_MODELS = [
   {
     'name': 'Chinook',
     'icon': 'img/chinook.svg',
-    'description': 'Fictional music store dataset (<a href="https://archive.codeplex.com/?p=chinookdatabase">source</a>)',
+    'description': 'Fictional music store dataset (<a target="_blank" href="https://archive.codeplex.com/?p=chinookdatabase">source</a>)',
     'files': [
       'chinook/albums.csv',
       'chinook/artists.csv',
@@ -161,7 +161,7 @@ const EXAMPLE_MODELS = [
   {
     'name': 'Movies',
     'icon': 'img/movies.svg',
-    'description': '<a href="https://www.themoviedb.org">TMDB</a> movies, roles, companies, actors, and <a href="https://bechdeltest.com/">Bechdel ratings</a>',
+    'description': '<a target="_blank" href="https://www.themoviedb.org">TMDB</a> movies, roles, companies, actors, and <a target="_blank" href="https://bechdeltest.com/">Bechdel ratings</a>',
     'files': [
       'movies/movies.json',
       'movies/credits.json',
@@ -172,7 +172,7 @@ const EXAMPLE_MODELS = [
   {
     'name': 'Panama Papers',
     'icon': 'img/panama.svg',
-    'description': 'Panama papers dataset (<a href="https://offshoreleaks.icij.org/pages/database">source</a>)',
+    'description': 'Panama papers dataset (<a target="_blank" href="https://offshoreleaks.icij.org/pages/database">source</a>)',
     'files': [
       'panama/address.csv',
       'panama/edges.csv',
