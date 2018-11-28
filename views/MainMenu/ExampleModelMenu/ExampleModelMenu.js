@@ -11,7 +11,9 @@ const EXAMPLE_MODELS = [
       let [ nodeClass, edgeClass ] = classes['miserables.json']
         .closedTranspose(['nodes', 'links']);
       nodeClass = nodeClass.interpretAsNodes();
+      nodeClass.setClassName('nodes');
       edgeClass = edgeClass.interpretAsEdges();
+      edgeClass.setClassName('edges');
       edgeClass.connectToNodeClass({
         nodeClass,
         side: 'source',

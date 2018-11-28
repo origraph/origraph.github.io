@@ -2,6 +2,13 @@
 import GoldenLayoutView from './GoldenLayoutView.js';
 import DeriveModal from '../Modals/DeriveModal.js';
 
+const INDICATOR_ICONS = {
+  'filtered': 'img/filter.svg',
+  'derived': 'img/deriveAttribute.svg',
+  'ascending': 'img/ascending.svg',
+  'descending': 'img/descending.svg'
+};
+
 class TableView extends GoldenLayoutView {
   constructor ({ container, state = {} }) {
     super({
@@ -229,12 +236,12 @@ class TableView extends GoldenLayoutView {
       .classed('icon', true);
     indicators = indicators.merge(indicatorsEnter);
 
-    indicators.style('background-image', d => `url(img/${d}.svg)`)
+    indicators.style('background-image', d => `url(${INDICATOR_ICONS[d]})`)
       .on('click', d => {
         if (d === 'ascending' || d === 'descending') {
           this.sortAttribute(attribute);
         } else {
-          window.mainView.alert(`Sorry, clicking the ${d} indicator isn't implemented yet`);
+          window.mainView.alert(`Sorry, clicking the ${d} indicator doesn't do anything yet`);
         }
       });
 

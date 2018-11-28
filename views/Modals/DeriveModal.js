@@ -107,7 +107,8 @@ ${indent}}`;
     } else if (func === 'Median') {
       codeContent += `return values.sort()[Math.floor(values.length / 2)];`;
     } else if (func === 'Mode') {
-      codeContent += `return Object.entries(counts).sort((a, b) => a[1] - b[1]).reverse()[0][0];`;
+      codeContent += `const sortedBins = Object.entries(counts).sort((a, b) => a[1] - b[1]).reverse();
+return (sortedBins[0] || [])[0];`;
     }
     this._injectingTemplate = true;
     this.code.setValue(this.generateCodeBlock(codeContent));
