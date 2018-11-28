@@ -1,117 +1,125 @@
 @import '../colors.less';
 @import '../measurements.less';
 
-#overlay {
-  .DeriveModal {
+#modal.DeriveModal {
+  top: 1em;
+  bottom: 1em;
+  left: 1em;
+  right: 1em;
+  padding-bottom: calc(2em + @buttonSize);
+  display: flex;
+  align-items: stretch;
+
+  .pathView,
+  .codeView {
+    flex: 1 1 auto;
+    max-width: calc(100% - 32em);
+  }
+  .selectorView,
+  .docsView {
+    width: 16em;
+    margin: 0 1em;
+    overflow-y: auto;
+  }
+  .preview {
+    width: 16em;
+  }
+  .dialogButtons {
     position: absolute;
-    top: 1em;
-    bottom: 5em;
+    bottom: 1em;
     left: 1em;
     right: 1em;
+    height: @buttonSize;
+  }
+
+  .pathView {
     display: flex;
-    align-items: stretch;
+    flex-direction: column;
 
-    .templateView,
-    .codeView,
-    .docsView {
-      flex-grow: 1;
-      flex-basis: 0;
-      max-width: 50%
+    h3 {
+      flex: 0 1 auto;
     }
-
-    .collapseTemplate,
-    .collapseDocs {
-      width: @smallButtonSize;
-      margin: 0 1em;
-
-      display: flex;
-      flex-direction: column;
-      justify-content: space-around;
-    }
-
-    .templateView {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-
-      & > div {
-        flex-grow: 1;
-      }
-
-      .modelView {
-        overflow: auto;
-
-        .lightLinkLayer path {
-          fill: none;
-          stroke: @separatorColor;
-          stroke-width: 1px;
-          opacity: 0.5;
-        }
-        .activeLinkLayer path {
-          fill: none;
-          stroke: @invertedTextColor;
-          stroke-width: 5px;
-        }
-        .classLayer {
-          .class {
-            opacity: 0.5;
-            text {
-              fill: @invertedTextColor;
-            }
-            &.active,
-            &:hover {
-              opacity: 1;
-              cursor: pointer;
-            }
-            &.focused path,
-            &:hover path {
-              stroke-width: 3px;
-              stroke: @invertedTextColor;
-            }
-          }
-        }
-      }
-      .breadcrumb {
-        margin: 0.5em 0;
-        .class {
+    .breadcrumb {
+      flex: 0 1 auto;
+      margin: 0.5em 0;
+      .class {
+        display: inline-block;
+        & > div {
           display: inline-block;
-          & > div {
-            display: inline-block;
-            white-space: nowrap;
+          white-space: nowrap;
+        }
+        .className {
+          cursor: pointer;
+        }
+      }
+    }
+    .modelView {
+      flex: 1 1 auto;
+      overflow: auto;
+
+      .lightLinkLayer path {
+        fill: none;
+        stroke: @separatorColor;
+        stroke-width: 1px;
+        opacity: 0.5;
+      }
+      .activeLinkLayer path {
+        fill: none;
+        stroke: @separatorColor;
+        stroke-width: 5px;
+      }
+      .classLayer {
+        .class {
+          opacity: 0.5;
+          text {
+            fill: @textColor;
           }
-          .className {
+          &.active,
+          &:hover {
+            opacity: 1;
             cursor: pointer;
           }
-        }
-      }
-      .selectorView {
-        height: 12em;
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        select {
-          width: 12em;
-          max-height: 100%;
-        }
-        // Because flex layout messes with our custom button sizes, we
-        // have to manually specify this one:
-        .button {
-          min-width: 8em;
+          &.focused path,
+          &:hover path {
+            stroke-width: 3px;
+            stroke: @textColor;
+          }
         }
       }
     }
-    .codeView {
-      position: relative;
-      #code {
-        margin-top: 1em;
-        position: relative;
-        top: 0px;
-        bottom: 0px;
-        width: 100%;
+  }
+
+  .selectorView {
+    position: relative;
+    select {
+      width: calc(100% - 1em);
+    }
+    .button {
+      margin-top: 1em;
+    }
+  }
+
+  .preview {
+    display: flex;
+    flex-direction: column;
+
+    h3 {
+      flex: 0 1 auto;
+    }
+    .TableView {
+      flex: 1 1 auto;
+      width: 100%;
+      max-height: calc(100% - 8em);
+      overflow: hidden;
+
+      .error {
+        cursor: pointer;
+        background-color: @errorColor;
       }
     }
-    .docsView {
-      overflow: auto;
+    input {
+      flex: 0 1 auto;
+      width: 100%;
     }
   }
 }

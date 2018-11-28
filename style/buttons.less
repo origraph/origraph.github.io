@@ -30,11 +30,11 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    // left: -1px;
-    // top: -1px;
-    // border: 1px solid @shadowColor;
+    left: -1px;
+    top: -1px;
+    border: 1px solid @separatorColor;
     border-radius: @borderRadius;
-    // overflow: hidden;
+    overflow: hidden;
 
     background: @interactableGradient;
 
@@ -82,26 +82,31 @@
 
   &:hover {
     a {
+      border-color: @shadowColor;
       background: @interactableHoverGradient;
     }
   }
   &:active {
     a {
+      border-color: @shadowColor;
       background: @interactableActiveGradient;
     }
   }
 
   &.selected {
     a {
+      border-color: @shadowColor;
       background: @selectedButtonGradient;
       img {
         filter: @backgroundImageFilter;
       }
     }
     &:hover a {
+      border-color: @shadowColor;
       background: @selectedButtonHoverGradient;
     }
     &:active a {
+      border-color: @shadowColor;
       background: @selectedButtonActiveGradient;
     }
   }
@@ -111,6 +116,7 @@
   &.disabled:active {
     cursor: default;
     a {
+      border-color: @separatorColor;
       background: @darkBackgroundColor;
       img {
         filter: @separatorImageFilter;

@@ -32,10 +32,6 @@ class MainView extends View {
   }
   setup () {
     this.hideTooltip();
-    this.showOverlay({
-      content: '<h2>Loading page...</h2>',
-      spinner: true
-    });
     this.mainMenu = new MainMenu(this.d3el.select('#menu'));
     this.firstDraw = true;
   }
@@ -46,7 +42,7 @@ class MainView extends View {
     });
     if (this.firstDraw) {
       this.firstDraw = false;
-      this.hideOverlay();
+      this.hideModal();
     }
   }
   async handleClassChange () {
@@ -272,29 +268,27 @@ class MainView extends View {
   clearHighlightInstance () {
     delete this.highlightedInstance;
   }
-  async showOverlay (options) {
+  async showModal (options) {
     const overlay = this.d3el.select('#overlay');
+    const modal = this.d3el.select('#modal');
     if (!options) {
       overlay.style('display', 'none');
-    } else if (options instanceof Modal) {
-      overlay.style('display', null);
-      if (options !== this._currentModal) {
-        overlay.html('');
-        this._currentModal = options;
-      }
-      this._currentModal.render(overlay);
-      return this._currentModal.response;
-    } else {
-      overlay.style('display', null);
-      delete this._currentModal;
-      overlay.html('');
-      const modal = new Modal(options);
-      modal.render(overlay);
-      return modal.response;
+      modal.style('display', 'none');
+      return;
     }
+    if (options !== this._currentModal) {
+      modal.attr('class', null).html('');
+      this._currentModal = options instanceof Modal ? options
+        : new Modal(options);
+    }
+    overlay.style('display', null);
+    modal.style('display', null)
+      .classed('defaultStyling', !options.customStyling);
+    this._currentModal.render(modal);
+    return this._currentModal.response;
   }
-  hideOverlay () {
-    this.showOverlay(null);
+  hideModal () {
+    this.showModal(null);
   }
   /**
    * @param  {String} [content='']
@@ -507,23 +501,23 @@ class MainView extends View {
     });
   }
   async alert (message) {
-    return this.showOverlay({
+    return this.showModal({
       content: `<h2>${message}</h2>`,
       ok: true
     });
   }
   async confirm (message) {
-    return this.showOverlay({
+    return this.showModal({
       content: `<h2>${message}</h2>`,
       ok: true,
       cancel: true
     });
   }
   async prompt (message, defaultValue = '') {
-    return this.showOverlay({
+    return this.showModal({
       content: `<h2>${message}</h2>`,
       ok: resolve => {
-        const value = d3.select('#overlay .prompt').property('value');
+        const value = d3.select('#modal .prompt').property('value');
         resolve(value);
       },
       cancel: resolve => { resolve(null); },

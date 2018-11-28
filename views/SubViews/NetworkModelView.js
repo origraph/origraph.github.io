@@ -743,7 +743,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
           options.side = 'target';
         }
       }
-      window.mainView.showOverlay(new ConnectModal(options));
+      window.mainView.showModal(new ConnectModal(options));
     }
   }
 }

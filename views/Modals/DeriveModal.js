@@ -1,8 +1,8 @@
-/* globals d3, origraph, CodeMirror */
+/* globals d3, origraph, CodeMirror, Handsontable */
 import Modal from './Modal.js';
 
-const NODE_RADIUS = 30;
-const NODE_PADDING = 40;
+const NODE_RADIUS = 20;
+const NODE_PADDING = 50;
 const LABEL_PADDING = 15;
 
 const EDGE_THICKNESS = NODE_RADIUS / 5;
@@ -14,10 +14,10 @@ A${NODE_RADIUS},${NODE_RADIUS},0,1,1,0,${NODE_RADIUS}\
 A${NODE_RADIUS},${NODE_RADIUS},0,1,1,0,${-NODE_RADIUS}`,
   // Rectangles for edge classes
   'Edge': `\
-M${-NODE_RADIUS},${-EDGE_THICKNESS}\
-L${NODE_RADIUS},${-EDGE_THICKNESS}\
-L${NODE_RADIUS},${EDGE_THICKNESS}\
-L${-NODE_RADIUS},${EDGE_THICKNESS}\
+M${-EDGE_THICKNESS},${-NODE_RADIUS}\
+L${-EDGE_THICKNESS},${NODE_RADIUS}\
+L${EDGE_THICKNESS},${NODE_RADIUS}\
+L${EDGE_THICKNESS},${-NODE_RADIUS}\
 Z`
 };
 
@@ -28,6 +28,7 @@ class DeriveModal extends Modal {
         text: 'views/Modals/DeriveModalDocs.html'
       }
     });
+    this.customStyling = true;
     this.targetClass = targetClass;
     this.computeLayout();
     this.currentPath = [this.targetClass.classId];
@@ -35,7 +36,7 @@ class DeriveModal extends Modal {
       func: 'Duplicate',
       attr: null
     };
-    this.showDocs = false;
+    this.advancedMode = false;
   }
   computeLayout () {
     this.allClasses = [];
@@ -45,13 +46,14 @@ class DeriveModal extends Modal {
     this.connections = [];
 
     const queue = [{
+      parentIndex: 0,
       layerNumber: 0,
       classObj: this.targetClass
     }];
     const links = {};
 
     while (queue.length > 0) {
-      let { layerNumber, classObj } = queue.shift();
+      let { parentIndex, layerNumber, classObj } = queue.shift();
       if (this.classLookup[classObj.classId] !== undefined) {
         continue;
       }
@@ -59,10 +61,15 @@ class DeriveModal extends Modal {
       this.classLookup[classObj.classId] = this.allClasses.length;
       this.allClasses.push(classObj);
       const layer = this.layers[layerNumber] = this.layers[layerNumber] || [];
+      while (layer.length < parentIndex - 1) {
+        // dummy nodes to ensure that children always progress from their parent
+        layer.push(null);
+      }
       this.layerLookup[classObj.classId] = { layerNumber, index: layer.length };
       layer.push(classObj.classId);
 
       layerNumber++;
+      parentIndex = layer.length;
       if (classObj.type === 'Node') {
         for (const edgeClass of classObj.edgeClasses()) {
           if (!links[edgeClass.classId] || !links[edgeClass.classId][classObj.classId]) {
@@ -70,6 +77,7 @@ class DeriveModal extends Modal {
             links[classObj.classId][edgeClass.classId] = true;
           }
           queue.push({
+            parentIndex,
             layerNumber,
             classObj: edgeClass
           });
@@ -82,6 +90,7 @@ class DeriveModal extends Modal {
             links[classObj.classId][sourceClass.classId] = true;
           }
           queue.push({
+            parentIndex,
             layerNumber,
             classObj: sourceClass
           });
@@ -93,6 +102,7 @@ class DeriveModal extends Modal {
             links[classObj.classId][targetClass.classId] = true;
           }
           queue.push({
+            parentIndex,
             layerNumber,
             classObj: targetClass
           });
@@ -150,7 +160,7 @@ class DeriveModal extends Modal {
   }
   generateCodeBlock (content) {
     const argName = this.targetClass.variableName;
-    return `async function (${argName}, otherClasses) {
+    return `async function (${argName}) {
 ${content.split(/\n/g).map(d => '  ' + d).join('\n')}
 }`;
   }
@@ -164,7 +174,7 @@ ${content.split(/\n/g).map(d => '  ' + d).join('\n')}
     } else if (func === 'Mode') {
       codeContent = 'let counts = {};\n';
     }
-    if (func === 'Mean') {
+    if (func === 'Mean' || func === 'Sum') {
       codeContent += 'let total = 0;\n';
     }
 
@@ -174,17 +184,21 @@ ${content.split(/\n/g).map(d => '  ' + d).join('\n')}
         result += `${indent}count++;`;
       }
       if (func !== 'Count') {
-        if (attr === null) {
+        if (attr === '') {
           result += `${indent}let value = ${classObj.variableName}.index;`;
         } else {
           result += `${indent}let value = ${classObj.variableName}.row['${attr}'];`;
         }
       }
-      if (func === 'Mean') {
+      if (func === 'Mean' || func === 'Sum') {
         result += `
 ${indent}if (!isNaN(parseFloat(value))) {
-${indent}  count++;
-${indent}  total += parseFloat(value);
+${indent}  total += parseFloat(value);`;
+        if (func === 'Mean') {
+          result += `
+${indent}  count++;`;
+        }
+        result += `
 ${indent}}`;
       }
       return result;
@@ -195,7 +209,7 @@ ${indent}}`;
       const lastClassId = this.currentPath[pathIndex - 1];
       const lastClassObj = origraph.currentModel.classes[lastClassId];
       const loopIterator = `\
-${lastClassObj.variableName}.${classObj.type}s({ classes: [class${pathIndex}] })`;
+${lastClassObj.variableName}.${classObj.type.toLocaleLowerCase()}s({ classes: [class${pathIndex}] })`;
       const loopContents = pathIndex === this.currentPath.length - 1
         ? addLoopMiddle(classObj, indent + '  ') : addLoop(pathIndex + 1, indent + '  ');
       return `\
@@ -217,6 +231,8 @@ ${indent}}`;
       codeContent += 'return count;';
     } else if (func === 'Mean') {
       codeContent += 'return total / count;';
+    } else if (func === 'Sum') {
+      codeContent += 'return total;';
     } else if (func === 'Concatenate') {
       codeContent += `return values.join(',');`;
     } else if (func === 'Median') {
@@ -230,91 +246,113 @@ ${indent}}`;
     this.render();
   }
   setup () {
-    this.d3el.html(`
-      <div class="DeriveModal">
-        <div class="templateView">
-          <div class="modelView">
-            <svg>
-              <g class="lightLinkLayer"></g>
-              <g class="activeLinkLayer"></g>
-              <g class="classLayer"></g>
-            </svg>
-          </div>
-          <div class="breadcrumb"></div>
-          <div class="selectorView">
-            <select id="attrSelect" size="10">
-              <option value="" selected>Index</option>
-              <optgroup label="">
-              </optgroup>
-            </select>
-            <select id="funcSelect" size="10">
-              <option disabled id="customFunc">Custom</option>
-              <optgroup label="Internal">
-                <option selected>Duplicate</option>
-              </optgroup>
-              <optgroup label="Summary" disabled>
-                <option>Count</option>
-              </optgroup>
-              <optgroup label="Attribute-based" disabled>
-                <option>Median</option>
-                <option>Mean</option>
-                <option>Mode</option>
-                <option>Concatenate</option>
-              </optgroup>
-            </select>
-            <div class="button"><a><span>Use Template</span></a></div>
-          </div>
+    this.d3el.classed('DeriveModal', true).html(`
+      <div class="pathView">
+        <h3>Choose a path</h3>
+        <div class="breadcrumb"></div>
+        <div class="modelView">
+          <svg>
+            <g class="lightLinkLayer"></g>
+            <g class="activeLinkLayer"></g>
+            <g class="classLayer"></g>
+          </svg>
         </div>
-        <div class="collapseTemplate">
-          <div class="small button">
-            <a><img src="img/collapseLeft.svg"/></a>
-          </div>
+      </div>
+      <div class="selectorView">
+        <div>
+          <h3>Choose an attribute</h3>
+          <select id="attrSelect" size="10">
+            <option value="" selected>Index</option>
+            <optgroup label="Values:">
+            </optgroup>
+          </select>
         </div>
-        <div class="codeView">
-          <div class="attrNameHeader">
-            <label for="attrName">New Attribute Name:</label>
-            <input type="text" id="attrName"/>
-          </div>
-          <div id="code"></div>
+        <div>
+          <h3>Choose a function</h3>
+          <select id="funcSelect" size="10">
+            <option disabled id="customFunc">Custom</option>
+            <optgroup label="Single Table:">
+              <option selected>Duplicate</option>
+            </optgroup>
+            <optgroup label="Multi-Table:" disabled>
+              <option>Count</option>
+              <option>Sum</option>
+              <option>Mean</option>
+              <option>Median</option>
+              <option>Mode</option>
+              <option>Concatenate</option>
+            </optgroup>
+          </select>
         </div>
-        <div class="collapseDocs">
-          <div class="small button">
-            <a><img src="img/collapseRight.svg"/></a>
-          </div>
-        </div>
-        <div class="docsView">${this.resources.text}</div>
+        <div class="button"><a></a><span>Apply</span></div>
+      </div>
+      <div class="codeView"></div>
+      <div class="docsView">${this.resources.text}</div>
+      <div class="preview">
+        <h3>Preview</h3>
+        <div class="TableView"></div>
+        <h3>Name the new attribute</h3>
+        <input type="text" id="attrName" value="New Attribute"/>
       </div>
     `);
     super.setup();
-    // Align the buttons to the bottom instead of floating in the center
-    this.d3el.select('.center')
-      .classed('center', false)
-      .classed('bottom', true);
-
-    // Set up toggling the mode
-    this.d3el.selectAll('.collapseDocs>.button,.collapseTemplate>.button')
-      .on('click', () => {
-        this.showDocs = !this.showDocs;
-        this.render();
-      });
-
+    this.setupButtons();
     this.setupCodeView();
+    this.setupPreview();
+  }
+  draw () {
+    this.d3el.selectAll('.pathView,.selectorView')
+      .style('display', this.advancedMode ? 'none' : null);
+    this.d3el.selectAll('.codeView,.docsView')
+      .style('display', this.advancedMode ? null : 'none');
+    this.drawPreview();
+    this.drawButtons();
+    if (this.advancedMode) {
+      this.drawCodeView();
+    } else {
+      this.drawModelView();
+      this.drawBreadcrumb();
+      this.drawSelectorView();
+    }
+  }
+  ok (resolve) {
+    // TODO
+    resolve(true);
+  }
+  cancel (resolve) {
+    resolve();
+  }
+  setupButtons () {
+    // Add a button for toggling mode
+    const toggleButton = this.d3el.select('.dialogButtons')
+      .append('div')
+      .classed('button', true)
+      .attr('id', 'modeButton')
+      .lower();
+    toggleButton.append('a');
+    toggleButton.append('span');
+    toggleButton.on('click', () => {
+      this.advancedMode = !this.advancedMode;
+      this.render();
+    });
+  }
+  drawButtons () {
+    this.d3el.select('#modeButton > span')
+      .text(this.advancedMode ? 'Template Mode' : 'Advanced Mode');
   }
   setupCodeView () {
-    const argName = this.targetClass.lowerCamelCaseType;
-    // this.d3el.select('#code').style('bottom', this.scrollBarSize + 'px');
-    this.code = CodeMirror(this.d3el.select('#code').node(), {
+    this.code = CodeMirror(this.d3el.select('.codeView').node(), {
       theme: 'material',
       mode: 'javascript',
+      lineNumbers: true,
       value: this.generateCodeBlock(`\
-// Replace this function with one of the
-// templates on your left.
+// Hint: if you apply a function in Template Mode,
+// it automatically replaces the contents of this
+// function
 
-// Or you can collapse that view, and write
-// your own code here (docs will appear to
-// your right).
-
-return ${argName}.index;`)
+// This is the default behavior (copies the index
+// from the same table):
+return ${this.targetClass.variableName}.index;`)
     });
     // Don't allow the user to edit the first or last lines
     this.code.on('beforeChange', (cm, change) => {
@@ -330,12 +368,107 @@ return ${argName}.index;`)
       }
     });
   }
+  drawCodeView () {
+    this.code.refresh();
+  }
+  setupPreview () {
+    this.tableRenderer = new Handsontable(this.d3el.select('.TableView').node(), {
+      data: [],
+      dataSchema: index => { return { index }; }, // Fake "dataset"
+      // (Handsontable can't handle our actual Wrapper objects, because they have cycles)
+      columns: [],
+      readOnly: true,
+      stretchH: 'last',
+      disableVisualSelection: true
+    });
+
+    this.d3el.select('#attrName').on('change', () => {
+      this.handleNewName();
+    });
+  }
+  handleNewName () {
+    const attrDetails = this.targetClass.table.getAttributeDetails();
+    const el = this.d3el.select('#attrName').node();
+    const base = el.value;
+    let i = '';
+    while (attrDetails[base + i]) {
+      i = i === '' ? 1 : i + 1;
+    }
+    el.value = base + i;
+  }
+  drawPreview () {
+    let error = false;
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    let codeContents = this.code.getValue().split('\n');
+    codeContents = codeContents.slice(1, codeContents.length - 1).join('\n');
+    let func;
+    try {
+      func = new AsyncFunction(this.targetClass.variableName, codeContents);
+    } catch (err) {
+      error = err;
+    }
+    const previewCell = async (element, item) => {
+      if (error) {
+        element.node().__error = error;
+        element.classed('error', true)
+          .text(error.constructor.name);
+      } else {
+        try {
+          const result = await func(item);
+          delete element.node().__error;
+          element.classed('error', false)
+            .text(result);
+        } catch (err) {
+          element.node().__error = err;
+          element.classed('error', true)
+            .text(err.constructor.name);
+        }
+      }
+      element.on('click', function () {
+        if (this.__error) {
+          window.mainView.showTooltip({
+            targetBounds: this.getBoundingClientRect(),
+            hideAfterMs: 20000,
+            content: `<p>${this.__error.message}</p>`
+          });
+        }
+      });
+    };
+
+    const currentTable = this.targetClass.table.currentData;
+    const currentKeys = Object.keys(currentTable.data);
+    const cellRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+      Handsontable.renderers.TextRenderer.apply(this, arguments);
+      const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
+      if (col === 0) {
+        d3.select(td).classed('idColumn', true);
+      } else {
+        previewCell(d3.select(td), currentTable.data[index]);
+      }
+    };
+    const columns = [
+      {
+        renderer: cellRenderer,
+        data: index => index
+      },
+      {
+        renderer: cellRenderer,
+        data: index => '...'
+      }
+    ];
+    const spec = {
+      data: currentKeys,
+      columns
+    };
+    this.tableRenderer.updateSettings(spec);
+    this.tableRenderer.render();
+  }
   drawModelView () {
     // Compute SVG size
     const svg = this.d3el.select('.modelView svg');
-    const height = NODE_PADDING + (NODE_PADDING + 2 * NODE_RADIUS) *
-      Math.max(...Object.values(this.layers).map(layer => layer.length));
     const width = NODE_PADDING + (NODE_PADDING + 2 * NODE_RADIUS) *
+      Math.max(...Object.values(this.layers).map(layer => layer.length));
+    const height = NODE_PADDING + (NODE_PADDING + 2 * NODE_RADIUS) *
       Object.values(this.layers).length;
     svg.attr('width', width)
       .attr('height', height);
@@ -344,10 +477,10 @@ return ${argName}.index;`)
     const transition = d3.transition().duration(400);
     const computeClassCenter = classId => {
       return {
-        x: (NODE_PADDING + 2 * NODE_RADIUS) *
+        y: (NODE_PADDING + 2 * NODE_RADIUS) *
           this.layerLookup[classId].layerNumber +
           NODE_PADDING + NODE_RADIUS,
-        y: (NODE_PADDING + 2 * NODE_RADIUS) *
+        x: (NODE_PADDING + 2 * NODE_RADIUS) *
           this.layerLookup[classId].index +
           NODE_PADDING + NODE_RADIUS
       };
@@ -358,9 +491,9 @@ return ${argName}.index;`)
     };
     const computeLinkPath = link => {
       const source = computeClassCenter(link.source);
-      source.x += NODE_RADIUS;
+      source.y += NODE_RADIUS;
       const target = computeClassCenter(link.target);
-      target.x -= NODE_RADIUS;
+      target.y -= NODE_RADIUS;
       return `M${source.x},${source.y}L${target.x},${target.y}`;
     };
 
@@ -392,7 +525,13 @@ return ${argName}.index;`)
 
     classesEnter.append('text');
     classes.select('text')
-      .attr('y', NODE_RADIUS + LABEL_PADDING)
+      .attr('y', classObj => {
+        if (this.layerLookup[classObj.classId].index % 2 === 0) {
+          return NODE_RADIUS + LABEL_PADDING;
+        } else {
+          return -NODE_RADIUS - LABEL_PADDING / 2;
+        }
+      })
       .attr('text-anchor', 'middle')
       .text(classObj => classObj.className);
 
@@ -430,7 +569,7 @@ return ${argName}.index;`)
     activeLinksEnter.attr('d', computeLinkPath);
     activeLinks.transition(transition).attr('d', computeLinkPath);
   }
-  drawCurrentPath () {
+  drawBreadcrumb () {
     // Draw class chunks
     let classes = this.d3el.select('.breadcrumb').selectAll('.class')
       .data(this.currentPath, classId => classId);
@@ -474,17 +613,20 @@ return ${argName}.index;`)
 
     // Function select menu
     const funcSelect = this.d3el.select('#funcSelect');
-    // Set up function value, enable / disable sections based on what
-    // currentPath and codeTemplate are
+    // Enable / disable sections based on what currentPath and codeTemplate are
+    funcSelect.select('#customFunc')
+      .property('disabled', !!this.codeTemplate);
+    funcSelect.select('[label="Single Table:"]')
+      .property('disabled', this.currentPath.length !== 1);
+    funcSelect.select('[label="Multi-Table:"]')
+      .property('disabled', this.currentPath.length === 1);
+    // Select the appropriate option, or deselect if it's disabled
     funcSelect.node().value = this.codeTemplate ? this.codeTemplate.func
       : 'Custom';
-    funcSelect.select('#customFunc').property('disabled', !!this.codeTemplate);
-    funcSelect.select('[label="Internal"]').property('disabled',
-      this.currentPath.length !== 1);
-    funcSelect.select('[label="Summary"]').property('disabled',
-      this.currentPath.length === 1);
-    funcSelect.select('[label="Attribute-based"]').property('disabled',
-      this.currentPath.length === 1 && attrSelect.node().value !== null);
+    const selectedOption = funcSelect.node().selectedOptions[0];
+    if (selectedOption && (selectedOption.disabled || selectedOption.parentNode.disabled)) {
+      funcSelect.node().value = null;
+    }
 
     // Apply button
     this.d3el.select('.selectorView .button')
@@ -498,24 +640,6 @@ return ${argName}.index;`)
           });
         }
       });
-  }
-  draw () {
-    this.d3el.selectAll('.docsView,.collapseDocs')
-      .style('display', this.showDocs ? null : 'none');
-    this.d3el.selectAll('.templateView,.collapseTemplate')
-      .style('display', this.showDocs ? 'none' : null);
-    if (!this.showDocs) {
-      this.drawModelView();
-      this.drawCurrentPath();
-      this.drawSelectorView();
-    }
-  }
-  ok (resolve) {
-    // TODO
-    resolve(true);
-  }
-  cancel (resolve) {
-    resolve();
   }
 }
 

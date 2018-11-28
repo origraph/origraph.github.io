@@ -6,7 +6,6 @@
 @import './scrollbars.less';
 @import './ui.less';
 
-@import './views/GoldenLayoutView.less';
 @import './views/HelpView.less';
 @import './views/AttributeSummaryView.less';
 @import './views/NetworkModelView.less';
@@ -50,36 +49,36 @@ img.emptyState {
 
 #overlay {
   position: absolute;
-  z-index: 123;
+  z-index: 122;
   left: 0px;
   top: 0px;
   right: 0px;
   bottom: 0px;
   background-color: fade(@invertedBackgroundColor, 90%);
-  color: @invertedTextColor;
+}
+
+#modal {
+  z-index: 123;
+  background-color: @backgroundColor;
+  position: absolute;
+  border-radius: 1em;
   padding: 1em;
 
-  .center {
-    position: absolute;
+  &.defaultStyling {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-
-    .spinner {
-      display: inline-block;
-      width: @buttonSize;
-      height: @buttonSize;
-    }
-    .prompt {
-      margin: 1em auto;
-    }
+    min-width: 30em;
   }
-  .bottom {
-    position: absolute;
-    bottom: 1em;
-    left: 1em;
-    right: 1em;
+
+  .spinner {
+    display: inline-block;
+    width: @buttonSize;
+    height: @buttonSize;
+  }
+  .prompt {
+    margin: 1em auto;
   }
   .dialogButtons {
     display: flex;
@@ -102,7 +101,7 @@ img.emptyState {
 
 #menu {
   position: absolute;
-  z-index: 122;
+  z-index: 121;
   top: 0px;
   bottom: 0px;
   max-width: @fullMenuSize;

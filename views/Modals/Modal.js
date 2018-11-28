@@ -25,22 +25,21 @@ class Modal extends View {
     });
   }
   setup () {
-    const centerContainer = this.d3el.append('div')
-      .classed('center', true);
-    this.contentElement = centerContainer.append('div');
-    this.dialogElement = centerContainer.append('div');
+    if (typeof this.content !== 'function') {
+      this.d3el.append('div').html(this.content);
+    }
     if (this.spinner) {
-      this.dialogElement.append('img')
+      this.d3el.append('img')
         .classed('spinner', true)
         .attr('src', 'img/spinner.gif');
     }
     if (this.prompt !== null) {
-      this.dialogElement.append('input')
+      this.d3el.append('input')
         .classed('prompt', true)
         .property('value', this.prompt);
     }
     if (this.ok || this.cancel) {
-      const dialogButtons = this.dialogElement.append('div')
+      const dialogButtons = this.d3el.append('div')
         .classed('dialogButtons', true);
       if (this.cancel) {
         const cancelButton = dialogButtons.append('div')
@@ -62,9 +61,7 @@ class Modal extends View {
   }
   draw () {
     if (typeof this.content === 'function') {
-      this.content(this.contentElement);
-    } else {
-      this.contentElement.html(this.content);
+      this.content(this.d3el);
     }
   }
   handleButton (response) {
@@ -73,7 +70,7 @@ class Modal extends View {
     } else {
       this.resolve(response);
     }
-    this.d3el.style('display', 'none');
+    window.mainView.hideModal();
   }
 }
 export default Modal;

@@ -111,7 +111,7 @@ class TableView extends GoldenLayoutView {
         title: 'New Attribute...',
         icon: 'img/deriveAttribute.svg',
         onClick: (button) => {
-          window.mainView.showOverlay(new DeriveModal(this.classObj));
+          window.mainView.showModal(new DeriveModal(this.classObj));
         },
         disabled: this.classObj === null
       }
@@ -322,16 +322,16 @@ class TableView extends GoldenLayoutView {
     window.mainView.showContextMenu({ targetBounds, menuEntries });
   }
   async collectNewClasses (iterator) {
-    window.mainView.showOverlay({
+    window.mainView.showModal({
       content: `<div class="newClassNames"></div>`,
       spinner: true
     });
     const newClasses = [];
     for await (const newClass of iterator) {
       newClasses.push(newClass);
-      window.mainView.showOverlay({
-        content: overlay => {
-          let names = overlay.select('.newClassNames').selectAll('h3')
+      window.mainView.showModal({
+        content: modal => {
+          let names = modal.select('.newClassNames').selectAll('h3')
             .data(newClasses);
           const namesEnter = names.enter().append('h3');
           names = names.merge(namesEnter);
@@ -339,7 +339,7 @@ class TableView extends GoldenLayoutView {
         }
       });
     }
-    window.mainView.hideOverlay();
+    window.mainView.hideModal();
   }
   draw () {
     super.draw();
