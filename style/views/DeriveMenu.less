@@ -44,6 +44,13 @@
       margin: 0.5em 0;
       .class {
         display: inline-block;
+        background-color: fade(@invertedBackgroundColor, 90%);
+        &:hover {
+          background-color: fade(@invertedBackgroundColor, 70%);
+        }
+        color: @invertedTextColor;
+        padding: 0.25em 0.25em 0.25em 0.4em;
+        border-radius: 0.5em;
         & > div {
           display: inline-block;
           white-space: nowrap;
