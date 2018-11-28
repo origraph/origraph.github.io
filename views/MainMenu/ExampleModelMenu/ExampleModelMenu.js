@@ -185,7 +185,10 @@ const EXAMPLE_MODELS = [
     'name': 'Air Travel',
     'icon': 'img/airplane.svg',
     'description': 'Airports and flights (todo: source?)',
-    'files': ['airports.csv', 'flights-airport.csv']
+    'files': [
+      'flights/airports.csv',
+      'flights/flights-airport.csv'
+    ]
   }
 ];
 

@@ -142,7 +142,6 @@ class TableView extends GoldenLayoutView {
       this.tabElement.select('.viewIcon')
         .style('filter', imageFilter);
       const titleElement = this.tabElement.select('.lm_title')
-        .style('cursor', 'text')
         .style('color', this.classObj.annotations.color ? '#' + this.classObj.annotations.color : null)
         .style('font-style', this.classObj !== null && this.classObj.hasCustomName ? null : 'italic')
         .on('keyup', function () {
