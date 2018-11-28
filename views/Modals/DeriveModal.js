@@ -316,7 +316,9 @@ ${indent}}`;
     }
   }
   ok (resolve) {
-    // TODO
+    this.targetClass.table.deriveAttribute(
+      this.d3el.select('#attrName').node().value,
+      this.evalFunction());
     resolve(true);
   }
   cancel (resolve) {
@@ -396,22 +398,23 @@ return ${this.targetClass.variableName}.index;`)
     }
     el.value = base + i;
   }
-  drawPreview () {
-    let error = false;
+  evalFunction () {
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
     let codeContents = this.code.getValue().split('\n');
     codeContents = codeContents.slice(1, codeContents.length - 1).join('\n');
-    let func;
     try {
-      func = new AsyncFunction(this.targetClass.variableName, codeContents);
+      return new AsyncFunction(this.targetClass.variableName, codeContents);
     } catch (err) {
-      error = err;
+      return err;
     }
+  }
+  drawPreview () {
+    const func = this.evalFunction();
     const previewCell = async (element, item) => {
-      if (error) {
-        element.node().__error = error;
+      if (func instanceof Error) {
+        element.node().__error = func;
         element.classed('error', true)
-          .text(error.constructor.name);
+          .text(func.constructor.name);
       } else {
         try {
           const result = await func(item);

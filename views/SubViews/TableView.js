@@ -214,7 +214,7 @@ class TableView extends GoldenLayoutView {
     d3.select(element.node().parentNode.parentNode)
       .classed('idColumn', attribute.name === null);
 
-    const indicatorList = ['filtered', 'derived', 'copied', 'reduced']
+    const indicatorList = ['filtered', 'derived']
       .filter(d => attribute[d]);
     if (element.classed('ascending')) {
       indicatorList.push('ascending');
