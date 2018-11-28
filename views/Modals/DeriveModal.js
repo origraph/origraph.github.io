@@ -63,6 +63,12 @@ ${indent}  count++;`;
         }
         result += `
 ${indent}}`;
+      } else if (func === 'Median' || func === 'Concatenate') {
+        result += `
+${indent}values.push(value);`;
+      } else if (func === 'Mode') {
+        result += `
+${indent}counts[value] = (counts[value] || 0) + 1;`;
       }
       return result;
     };
@@ -99,9 +105,9 @@ ${indent}}`;
     } else if (func === 'Concatenate') {
       codeContent += `return values.join(',');`;
     } else if (func === 'Median') {
-      codeContent += `return values[Math.floor(values.length / 2)];`;
+      codeContent += `return values.sort()[Math.floor(values.length / 2)];`;
     } else if (func === 'Mode') {
-      codeContent += `return d3.max(d3.entries(counts), d => d.value).key;`;
+      codeContent += `return Object.entries(counts).sort((a, b) => a[1] - b[1]).reverse()[0][0];`;
     }
     this._injectingTemplate = true;
     this.code.setValue(this.generateCodeBlock(codeContent));
