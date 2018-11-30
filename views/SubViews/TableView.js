@@ -18,6 +18,11 @@ class TableView extends GoldenLayoutView {
     });
     this.classId = state.classId || null;
     this.sortConfig = null;
+    if (this.classObj) {
+      this.classObj.table.on('cacheBuilt', () => {
+        this.render();
+      });
+    }
   }
   get classObj () {
     return (this.classId && origraph.currentModel.classes[this.classId]) || null;
@@ -204,7 +209,12 @@ class TableView extends GoldenLayoutView {
             idList.push(nodeItem.index);
           }
         }
-        element.text(idList.join(','));
+        element.select('.cellWrapper').text(idList.join(','));
+      })();
+    } else if (attribute.name !== null && dataValue.row[attribute.name] instanceof Promise) {
+      (async () => {
+        const value = await dataValue.row[attribute.name];
+        element.select('.cellWrapper').text(value);
       })();
     }
   }
@@ -391,9 +401,16 @@ class TableView extends GoldenLayoutView {
       const columns = this.attributes.map(attribute => {
         return {
           renderer: function (instance, td, row, col, prop, value, cellProperties) {
-            Handsontable.renderers.TextRenderer.apply(this, arguments);
-            const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
-            self.drawCell(d3.select(td), attribute, currentTable.data[index]);
+            if (!self.classObj.deleted) {
+              Handsontable.renderers.TextRenderer.apply(this, arguments);
+              td = d3.select(td);
+              const temp = td.html();
+              td.html(`<div class="cellWrapper">${temp}</div>`);
+              const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
+              if (currentTable.data[index] !== undefined) {
+                self.drawCell(td, attribute, currentTable.data[index]);
+              }
+            }
           },
           data: (index, newValue) => {
             // TODO: handle newValue if readOnly is false
@@ -404,10 +421,8 @@ class TableView extends GoldenLayoutView {
               return '...';
             } else {
               const value = this.classObj.table.currentData.data[index].row[attribute.name];
-              if (value === undefined) {
-                return '';
-              } else if (typeof value === 'object') {
-                return '{}';
+              if (value instanceof Promise) {
+                return '...';
               } else {
                 return value;
               }
@@ -463,7 +478,7 @@ class TableView extends GoldenLayoutView {
     autoColumnSize.recalculateAllColumnsWidth();
   }
   scrollToInstance (instance) {
-    let rowNumber = this.currentKeys.indexOf(instance.index);
+    let rowNumber = this.currentKeys.indexOf(String(instance.index));
     if (this.sortConfig) {
       rowNumber = this.renderer.toVisualRow(rowNumber);
     }

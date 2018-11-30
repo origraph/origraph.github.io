@@ -10,6 +10,7 @@ class DeleteOption extends ModelSubmenuMixin(ActionMenuOption) {
   async executeAction () {
     const message = `Are you sure you want to delete "${this.model.name}"?`;
     if (await window.mainView.confirm(message) === true) {
+      window.mainView.instanceGraph.purge();
       this.model.delete();
     }
   }

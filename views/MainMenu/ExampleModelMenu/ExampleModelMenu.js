@@ -169,7 +169,70 @@ const EXAMPLE_MODELS = [
       'movies/credits.json',
       'movies/companies.json',
       'movies/people.json'
-    ]
+    ],
+    prefab: (model, classes) => {
+      let movies = classes['movies/movies.json'].interpretAsNodes();
+      movies.setClassName('Movies');
+
+      let [ cast, crew ] = classes['movies/credits.json']
+        .closedTranspose(['cast', 'crew']);
+      classes['movies/credits.json'].delete();
+
+      cast = cast.interpretAsEdges();
+      cast.setClassName('Cast');
+
+      crew = crew.interpretAsEdges();
+      crew.setClassName('Crew');
+
+      let people = classes['movies/people.json'].interpretAsNodes();
+      people.setClassName('People');
+
+      let companies = classes['movies/companies.json'].aggregate('name');
+      companies = companies.interpretAsNodes();
+      companies.setClassName('Companies');
+
+      let produced = classes['movies/companies.json'].interpretAsEdges();
+      produced.setClassName('Produced');
+
+      // let companies = companyLinks
+
+      cast.connectToNodeClass({
+        nodeClass: movies,
+        side: 'target',
+        nodeAttribute: 'id',
+        edgeAttribute: 'movie_id'
+      });
+      cast.connectToNodeClass({
+        nodeClass: people,
+        side: 'source',
+        nodeAttribute: 'id',
+        edgeAttribute: 'id'
+      });
+      crew.connectToNodeClass({
+        nodeClass: movies,
+        side: 'target',
+        nodeAttribute: 'id',
+        edgeAttribute: 'movie_id'
+      });
+      crew.connectToNodeClass({
+        nodeClass: people,
+        side: 'source',
+        nodeAttribute: 'id',
+        edgeAttribute: 'id'
+      });
+      produced.connectToNodeClass({
+        nodeClass: companies,
+        side: 'source',
+        nodeAttribute: null,
+        edgeAttribute: 'name'
+      });
+      produced.connectToNodeClass({
+        nodeClass: movies,
+        side: 'target',
+        nodeAttribute: 'id',
+        edgeAttribute: 'movie_id'
+      });
+    }
   },
   {
     'name': 'Panama Papers',

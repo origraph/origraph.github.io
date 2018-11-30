@@ -76,7 +76,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           delete d.fx;
           delete d.fy;
           // Clear the highlighted row in the table
-          window.mainView.clearHighlightInstance();
+          // window.mainView.clearHighlightInstance();
         }));
 
     let edges = this.content.select('.edgeLayer')

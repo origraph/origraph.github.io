@@ -11,6 +11,9 @@ class InstanceGraph extends PersistentGraph {
   contains (instance) {
     return this._instances && !!this._instances[instance.instanceId];
   }
+  purge () {
+    this._instances = null;
+  }
   async unseed (instances) {
     if (!this._instances) {
       return;
