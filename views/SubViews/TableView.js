@@ -324,10 +324,10 @@ class TableView extends GoldenLayoutView {
       // Add options specific to meta columns (currently none)
     } else {
       // Add options specific to regular attributes
-      menuEntries.Aggregate = {
-        icon: 'img/aggregate.svg',
+      menuEntries.Promote = {
+        icon: 'img/promote.svg',
         onClick: () => {
-          this.classObj.aggregate(attribute.name);
+          this.classObj.promote(attribute.name);
         }
       };
       /*

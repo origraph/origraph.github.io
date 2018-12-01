@@ -220,7 +220,7 @@ const EXAMPLE_MODELS = [
         nodeAttribute: 'id',
         edgeAttribute: 'movie_id'
       });
-      let companies = produced.aggregate('name');
+      let companies = produced.promote('name');
       companies.setClassName('Companies');
     }
   },
