@@ -365,7 +365,7 @@ class TableView extends GoldenLayoutView {
       // TODO: show some kind of empty state content
     } else {
       const currentTable = this.classObj.table.currentData;
-      this.currentKeys = Object.keys(currentTable.data);
+      this.currentKeys = Object.keys(currentTable.lookup);
       this.attributes = Object.values(this.classObj.table.getAttributeDetails());
       if (this.classObj.type === 'Node') {
         // Connected ID columns:
@@ -407,8 +407,9 @@ class TableView extends GoldenLayoutView {
               const temp = td.html();
               td.html(`<div class="cellWrapper">${temp}</div>`);
               const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
-              if (currentTable.data[index] !== undefined) {
-                self.drawCell(td, attribute, currentTable.data[index]);
+              const dataValue = currentTable.data[currentTable.lookup[index]];
+              if (dataValue !== undefined) {
+                self.drawCell(td, attribute, dataValue);
               }
             }
           },
@@ -419,8 +420,11 @@ class TableView extends GoldenLayoutView {
             } else if (attribute.meta) {
               // Meta values are computed asynchronously
               return '...';
+            } else if (!this.classObj) {
+              return '';
             } else {
-              const value = this.classObj.table.currentData.data[index].row[attribute.name];
+              const rowIndex = this.classObj.table.currentData.lookup[index];
+              const value = this.classObj.table.currentData.data[rowIndex].row[attribute.name];
               if (value instanceof Promise) {
                 return '...';
               } else {
