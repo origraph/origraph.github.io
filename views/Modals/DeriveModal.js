@@ -131,10 +131,10 @@ return (sortedBins[0] || [])[0];`;
           <h3>Choose a function</h3>
           <select id="funcSelect" size="10">
             <option disabled id="customFunc">Custom</option>
-            <optgroup label="Single Table:">
+            <optgroup label="In-class:">
               <option selected>Duplicate</option>
             </optgroup>
-            <optgroup label="Multi-Table:" disabled>
+            <optgroup label="Across Classes:" disabled>
               <option>Count</option>
               <option>Sum</option>
               <option>Mean</option>
@@ -144,7 +144,6 @@ return (sortedBins[0] || [])[0];`;
             </optgroup>
           </select>
         </div>
-        <div class="button"><a></a><span>Apply</span></div>
       </div>
       <div class="codeView"></div>
       <div class="docsView">${this.resources.text}</div>
@@ -351,9 +350,9 @@ return ${this.targetClass.variableName}.index;`)
     // Enable / disable sections based on what currentPath and codeTemplate are
     funcSelect.select('#customFunc')
       .property('disabled', !!this.codeTemplate);
-    funcSelect.select('[label="Single Table:"]')
+    funcSelect.select('[label="In-class:"]')
       .property('disabled', this.currentPath.length !== 1);
-    funcSelect.select('[label="Multi-Table:"]')
+    funcSelect.select('[label="Across Classes:"]')
       .property('disabled', this.currentPath.length === 1);
     // Select the appropriate option, or deselect if it's disabled
     funcSelect.node().value = this.codeTemplate ? this.codeTemplate.func
@@ -363,10 +362,9 @@ return ${this.targetClass.variableName}.index;`)
       funcSelect.node().value = null;
     }
 
-    // Apply button
-    this.d3el.select('.selectorView .button')
-      .classed('disabled', funcSelect.node().value === null)
-      .on('click', () => {
+    // Apply changes whenever either select menu is changed
+    d3.selectAll('#attrSelect, #funcSelect')
+      .on('change', () => {
         const func = funcSelect.node().value;
         if (func) {
           this.setCodeContents({
