@@ -241,7 +241,8 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         }
       }));
     // When dragging handles, determine if the connection is valid, and if so,
-    // register this.handleTarget
+    // register this.handleTarget. Also attach the click listener to bring up
+    // the class menu
     objects.on('mouseenter', function (d) {
       if (self.draggingHandle) {
         const otherHandle = self.draggingHandle.otherHandle;
@@ -261,6 +262,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         d3.select(this).classed('connecting', false);
         d3.select(this).classed('cantConnect', false);
       }
+    }).on('click', function (d) {
+      window.mainView.showClassContextMenu({
+        classId: d.classObj.classId,
+        targetBounds: this.getBoundingClientRect()
+      });
     });
 
     // Add the diamond, circle, or line (updated after labelWidth is calculated)
@@ -304,27 +310,18 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       }
     }).attr('fill', d => '#' + (d.classObj.annotations.color || 'BDBDBD'));
 
-    // Icons
-    const iconGroupEnter = objectsEnter.append('g').classed('icons', true);
-    iconGroupEnter.append('image').classed('typeIcon', true);
-    iconGroupEnter.append('image').classed('menuIcon', true)
-      .attr('xlink:href', `img/hamburger.svg`);
-    objectsEnter.selectAll('.icons image')
-      .attr('width', this.emSize)
-      .attr('height', this.emSize)
-      .attr('y', -this.emSize / 2);
-    objects.select('.typeIcon')
-      .attr('xlink:href', d => `img/${d.classObj.type.toLowerCase()}.svg`)
-      // .style('filter', d => `url(#recolorImageTo${d.classObj.annotations.color})`)
-      .attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 - 2 * this.emSize : -this.emSize);
-    objects.select('.menuIcon')
-      .attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 - this.emSize : 0)
-      .on('click', function (d) {
-        window.mainView.showClassContextMenu({
-          classId: d.classObj.classId,
-          targetBounds: this.getBoundingClientRect()
-        });
-      });
+    // Count
+    objectsEnter.append('text').classed('count', true);
+    objects.select('.count').text(function (d) {
+      let count = '...';
+      (async () => {
+        count = await d.classObj.table.countRows();
+        d3.select(this).text(count);
+      })();
+      return count;
+    }).attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 : 0)
+      .attr('y', '0.35em')
+      .attr('text-anchor', d => d.classObj.type === 'Edge' ? 'end' : 'middle');
   }
 
   updateEdgeDummyHandle ({
