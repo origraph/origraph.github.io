@@ -26,51 +26,60 @@
     overflow: auto;
   }
 
-  .sourceTable,
-  .targetTable {
-    overflow: hidden;
-
-    .ht_clone_top tr > th {
-      cursor: pointer;
+  .matchView {
+    display: flex;
+    flex-direction: column;
+    .sourceTableLabel,
+    .targetTableLabel {
+      margin: 0;
     }
-    .ht_clone_top tr > th.selected {
-      background-color: @selectionColor;
-      border: 1px solid @selectionColor;
-      color: @invertedTextColor;
-    }
-  }
 
-  .sourceTable {
-    position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: calc(50% + 2.5em);
-  }
-  .connections {
-    position: absolute;
-    top: calc(50% - 2.5em);
-    left: 0px;
+    .ConnectMenu {
+      position: relative;
+      flex: 1 1 auto;
+      .sourceTable,
+      .targetTable {
+        position: absolute;
+        overflow: hidden;
+        left: 0;
+        right: 0;
 
-    path {
-      fill: none;
-      stroke: fade(@separatorColor, 10%);
-      stroke-width: 2px;
+        .ht_clone_top thead tr th {
+          border-bottom-width: 1px;
+        }
+        .ht_clone_top tr > th {
+          cursor: pointer;
+        }
+        .ht_clone_top tr > th.selected {
+          background-color: @invertedBackgroundColor;
+          border: 1px solid @invertedBackgroundColor;
+          color: @invertedTextColor;
+        }
+      }
+      .sourceTable {
+        top: 0;
+        bottom: calc(50% + 2.5em);
+      }
+      .connections {
+        position: absolute;
+        top: calc(50% - 2.5em);
+        left: 0px;
 
-      &.selected {
-        stroke: @selectionColor;
+        path {
+          fill: none;
+          stroke: @separatorColor;
+          stroke-width: 1px;
+
+          &.selected {
+            stroke-width: 3px;
+            stroke: @invertedBackgroundColor;
+          }
+        }
+      }
+      .targetTable {
+        top: calc(50% + 2.5em);
+        bottom: 0;
       }
     }
-  }
-  .targetTableLabel {
-    position: absolute;
-    bottom: 0.5em;
-  }
-  .targetTable {
-    position: absolute;
-    top: calc(50% + 2.5em);
-    left: 0;
-    right: 0;
-    bottom: 0;
   }
 }

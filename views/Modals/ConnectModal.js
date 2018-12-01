@@ -37,13 +37,13 @@ class ConnectModal extends Modal {
     this.d3el.classed('ConnectModal', true).html(`
       <div class="shortcutView PathSpecificationView"></div>
       <div class="matchView">
-        <h2 class="sourceTableLabel">${this.sourceClass.className}</h2>
+        <h3 class="sourceTableLabel">${this.sourceClass.className}</h3>
         <div class="ConnectMenu">
           <div class="sourceTable TableView"></div>
           <svg class="connections" height="5em"></svg>
           <div class="targetTable TableView"></div>
         </div>
-        <h2 class="targetTableLabel">${this.targetClass.className}</h2>
+        <h3 class="targetTableLabel">${this.targetClass.className}</h3>
       </div>
     `);
     super.setup();
@@ -136,6 +136,7 @@ class ConnectModal extends Modal {
          this.edgeAttribute === d.sourceAttr.name);
       const targetSelected =
         (this.targetClass === this.nodeClass &&
+         this.sourceClass !== this.otherNodeClass &&
          this.nodeAttribute === d.targetAttr.name) ||
         (this.targetClass === this.edgeClass &&
          this.edgeAttribute === d.targetAttr.name) ||
@@ -175,6 +176,7 @@ C${coords.scx},${coords.scy}\
     });
   }
   drawCell (element, attribute, item) {
+    element.classed('idColumn', attribute.name === null);
     if (attribute.name !== null && item.row[attribute.name] instanceof Promise) {
       (async () => {
         const value = await item.row[attribute.name];
@@ -182,28 +184,49 @@ C${coords.scx},${coords.scy}\
       })();
     }
   }
-  drawColumnHeader (element, attribute, classObj) {
+  drawColumnHeader (element, attribute, classObj, isSource) {
+    if (attribute.name === null) {
+      element.html('&nbsp;');
+    }
+
     // Override handsontable's click handler
     element.on('mousedown', () => {
       d3.event.stopPropagation();
-      if (classObj === this.nodeClass) {
-        this.nodeAttribute = attribute.name;
-      } else if (classObj === this.edgeClass) {
-        this.edgeAttribute = attribute.name;
-      } else if (classObj === this.otherNodeClass) {
-        this.otherAttribute = attribute.name;
+      if (isSource) {
+        if (classObj === this.nodeClass && this.nodeClass === this.sourceClass) {
+          this.nodeAttribute = attribute.name;
+        } else if (classObj === this.edgeClass && this.edgeClass === this.sourceClass) {
+          this.edgeAttribute = attribute.name;
+        }
+      } else {
+        if (classObj === this.otherNodeClass && this.otherNodeClass === this.targetClass) {
+          this.otherAttribute = attribute.name;
+        } else if (classObj === this.nodeClass && this.nodeClass === this.targetClass) {
+          this.nodeAttribute = attribute.name;
+        } else if (classObj === this.edgeClass && this.edgeClass === this.targetClass) {
+          this.edgeAttribute = attribute.name;
+        }
       }
       this.render();
     });
 
-    const thElement = d3.select(element.node().parentNode.parentNode);
+    const thElement = d3.select(element.node().parentNode.parentNode)
+      .classed('idColumn', attribute.name === null);
 
-    if (classObj === this.nodeClass) {
-      thElement.classed('selected', this.nodeAttribute === attribute.name);
-    } else if (classObj === this.edgeClass) {
-      thElement.classed('selected', this.edgeAttribute === attribute.name);
-    } else if (classObj === this.otherNodeClass) {
-      thElement.classed('selected', this.otherAttribute === attribute.name);
+    if (isSource) {
+      if (classObj === this.nodeClass && this.nodeClass === this.sourceClass) {
+        thElement.classed('selected', this.nodeAttribute === attribute.name);
+      } else if (classObj === this.edgeClass && this.edgeClass === this.sourceClass) {
+        thElement.classed('selected', this.edgeAttribute === attribute.name);
+      }
+    } else {
+      if (classObj === this.otherNodeClass && this.otherNodeClass === this.targetClass) {
+        thElement.classed('selected', this.otherAttribute === attribute.name);
+      } else if (classObj === this.nodeClass && this.nodeClass === this.targetClass) {
+        thElement.classed('selected', this.nodeAttribute === attribute.name);
+      } else if (classObj === this.edgeClass && this.edgeClass === this.targetClass) {
+        thElement.classed('selected', this.edgeAttribute === attribute.name);
+      }
     }
   }
   initColumns (classObj, attrs) {
@@ -270,15 +293,16 @@ C${coords.scx},${coords.scy}\
         if (element.select('.ht_master .htCore .bottomHeaderGap').size() === 0) {
           element.select('.ht_master .htCore').append('div')
             .classed('bottomHeaderGap', true)
-            .style('height', '26px');
+            .style('height', '25px');
         }
-        element.select('.ht_clone_top').style('top', null).style('bottom', '-4px');
+        element.select('.ht_clone_top').style('top', null).style('bottom', '-6px');
       }
       element.selectAll('.ht_clone_top .colHeader .text')
         .each(function () {
           self.drawColumnHeader(d3.select(this.parentNode),
             attrs[this.dataset.columnIndex],
-            classObj);
+            classObj,
+            headersOnBottom);
         });
     });
     renderer.addHook('afterColumnResize', () => {
