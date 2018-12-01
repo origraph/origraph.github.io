@@ -187,15 +187,9 @@ const EXAMPLE_MODELS = [
       let people = classes['movies/people.json'].interpretAsNodes();
       people.setClassName('People');
 
-      let companies = classes['movies/companies.json'].aggregate('name');
-      companies = companies.interpretAsNodes();
-      companies.setClassName('Companies');
-
       let produced = classes['movies/companies.json'].interpretAsEdges();
       produced.setClassName('Produced');
 
-      // let companies = companyLinks
-
       cast.connectToNodeClass({
         nodeClass: movies,
         side: 'target',
@@ -221,17 +215,13 @@ const EXAMPLE_MODELS = [
         edgeAttribute: 'id'
       });
       produced.connectToNodeClass({
-        nodeClass: companies,
-        side: 'source',
-        nodeAttribute: null,
-        edgeAttribute: 'name'
-      });
-      produced.connectToNodeClass({
         nodeClass: movies,
         side: 'target',
         nodeAttribute: 'id',
         edgeAttribute: 'movie_id'
       });
+      let companies = produced.aggregate('name');
+      companies.setClassName('Companies');
     }
   },
   {

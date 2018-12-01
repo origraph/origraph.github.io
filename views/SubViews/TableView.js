@@ -82,7 +82,7 @@ class TableView extends GoldenLayoutView {
   setupIcons () {
     const hiddenClassMenuEntries = {};
     const numHiddenAttrs = Object.keys(hiddenClassMenuEntries).length;
-    const buttons = [
+    this.iconButtons = [
       {
         title: 'Class Options',
         icon: 'img/hamburger.svg',
@@ -94,7 +94,7 @@ class TableView extends GoldenLayoutView {
             });
           }
         },
-        disabled: this.classObj === null
+        disabled: () => this.classObj === null
       },
       {
         title: 'Show Hidden Attributes',
@@ -107,17 +107,19 @@ class TableView extends GoldenLayoutView {
             });
           }
         },
-        disabled: numHiddenAttrs === 0
+        disabled: () => numHiddenAttrs === 0
       },
       {
         title: 'Sample All Rows',
         icon: 'img/addSeed.svg',
         onClick: (button) => {
-          window.mainView.instanceGraph.seed(
-            Object.values(this.classObj.table.currentData.data));
-          this.render();
+          if (this.classObj && this.classObj.type !== 'Generic') {
+            window.mainView.instanceGraph.seed(
+              Object.values(this.classObj.table.currentData.data));
+            this.render();
+          }
         },
-        disabled: this.classObj === null
+        disabled: () => this.classObj === null || this.classObj.type === 'Generic'
       },
       {
         title: 'New Attribute...',
@@ -125,17 +127,18 @@ class TableView extends GoldenLayoutView {
         onClick: (button) => {
           window.mainView.showModal(new DeriveModal(this.classObj));
         },
-        disabled: this.classObj === null
+        disabled: () => this.classObj === null
       }
     ];
 
-    let tableButtons = this.d3el.append('div')
-      .classed('tableButtons', true)
-      .selectAll('.button').data(buttons);
+    this.d3el.append('div').classed('tableButtons', true);
+  }
+  drawIcons () {
+    let tableButtons = this.d3el.select('.tableButtons')
+      .selectAll('.button').data(this.iconButtons);
     const tableButtonsEnter = tableButtons.enter().append('div')
       .classed('button', true)
-      .classed('small', true)
-      .classed('disabled', d => d.disabled);
+      .classed('small', true);
     tableButtonsEnter.append('a').append('img')
       .attr('src', d => d.icon);
     tableButtonsEnter.on('click', function (d) { d.onClick(this); })
@@ -145,6 +148,8 @@ class TableView extends GoldenLayoutView {
           targetBounds: this.getBoundingClientRect()
         });
       });
+    tableButtons = tableButtons.merge(tableButtonsEnter);
+    tableButtons.classed('disabled', d => d.disabled());
   }
   setupTab () {
     super.setupTab();
@@ -175,8 +180,12 @@ class TableView extends GoldenLayoutView {
   drawCell (element, attribute, dataValue) {
     const isSeeded = window.mainView.instanceGraph.contains(dataValue);
     element.classed('idColumn', attribute.name === null)
-      .classed('addSeed', attribute.name === null && !isSeeded)
-      .classed('removeSeed', attribute.name === null && isSeeded)
+      .classed('addSeed', this.classObj &&
+        this.classObj.type !== 'Generic' &&
+        attribute.name === null && !isSeeded)
+      .classed('removeSeed', this.classObj &&
+        this.classObj.type !== 'Generic' &&
+        attribute.name === null && isSeeded)
       .classed('metaColumn', attribute.meta)
       .classed('highlighted', window.mainView.highlightedInstance &&
         window.mainView.highlightedInstance.classObj.classId === this.classId &&
@@ -360,6 +369,8 @@ class TableView extends GoldenLayoutView {
   draw () {
     super.draw();
     const self = this;
+
+    this.drawIcons();
 
     if (this.classObj === null) {
       // TODO: show some kind of empty state content
