@@ -117,7 +117,7 @@ return (sortedBins[0] || [])[0];`;
   }
   setup () {
     this.d3el.classed('DeriveModal', true).html(`
-      <div class="PathSpecificationView"></div>
+      <div class="pathSpecView PathSpecificationView"></div>
       <div class="selectorView">
         <div>
           <h3>Choose an attribute</h3>

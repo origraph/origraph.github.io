@@ -1,9 +1,11 @@
 /* globals d3, Handsontable */
 import Modal from './Modal.js';
+import PathSpecificationView from './PathSpecificationView.js';
 
 class ConnectModal extends Modal {
   constructor (options) {
     super(options);
+    this.customStyling = true;
     this.side = options.side;
     this.sourceClass = options.sourceClass;
     this.targetClass = options.targetClass;
@@ -14,6 +16,7 @@ class ConnectModal extends Modal {
     this.edgeAttribute = null;
     this.otherAttribute = null;
     this.initPairwiseConnectionCounts();
+    this.pathSpecView = new PathSpecificationView(this.nodeClass);
   }
   initPairwiseConnectionCounts () {
     this._pairwiseConnectionCounts = [];
@@ -31,32 +34,85 @@ class ConnectModal extends Modal {
     }
   }
   setup () {
-    this.d3el.html(`
-      <h2 class="sourceTableLabel">${this.sourceClass.className}</h2>
-      <div class="ConnectMenu">
-        <div class="sourceTable"></div>
-        <svg class="connections" height="5em"></svg>
-        <div class="targetTable"></div>
+    this.d3el.classed('ConnectModal', true).html(`
+      <div class="shortcutView PathSpecificationView"></div>
+      <div class="matchView">
+        <h2 class="sourceTableLabel">${this.sourceClass.className}</h2>
+        <div class="ConnectMenu">
+          <div class="sourceTable TableView"></div>
+          <svg class="connections" height="5em"></svg>
+          <div class="targetTable TableView"></div>
+        </div>
+        <h2 class="targetTableLabel">${this.targetClass.className}</h2>
       </div>
-      <h2 class="targetTableLabel">${this.targetClass.className}</h2>
     `);
+    super.setup();
     this.sourceRenderer = this.initTable(this.d3el.select('.sourceTable'), this.sourceClass, true);
     this.targetRenderer = this.initTable(this.d3el.select('.targetTable'), this.targetClass);
-    super.setup();
-    // Align the buttons to the bottom instead of floating in the center
-    this.d3el.select('.center')
-      .classed('center', false)
-      .classed('bottom', true);
+    this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
+    this.pathSpecView.on('pathChange', () => { this.render(); });
+    this.setupButtons();
   }
   draw () {
-    // These empty updateSettings calls are necessary so that handsontable keeps
-    // rendering rows when the user scrolls
-    this.sourceRenderer.updateSettings({});
-    this.sourceRenderer.render();
-    this.targetRenderer.updateSettings({});
-    this.targetRenderer.render();
+    this.d3el.select('.PathSpecificationView')
+      .style('display', this.shortcutMode ? null : 'none');
+    this.d3el.select('.matchView')
+      .style('display', this.shortcutMode ? 'none' : null);
 
-    this.drawConnections();
+    this.drawButtons();
+    if (this.shortcutMode) {
+      this.pathSpecView.render();
+    } else {
+      this.sourceRenderer.updateSettings({
+        data: Object.keys(this.sourceClass.table.currentData.lookup)
+      });
+      this.targetRenderer.updateSettings({
+        data: Object.keys(this.targetClass.table.currentData.lookup)
+      });
+
+      this.drawConnections();
+    }
+  }
+  ok (resolve) {
+    if (this.shortcutMode) {
+      throw new Error(`unimplemented`);
+    } else {
+      if (this.edgeClass) {
+        resolve(this.edgeClass.connectToNodeClass({
+          nodeClass: this.nodeClass,
+          side: this.side,
+          nodeAttribute: this.nodeAttribute,
+          edgeAttribute: this.edgeAttribute
+        }));
+      } else {
+        resolve(this.nodeClass.connectToNodeClass({
+          otherNodeClass: this.otherNodeClass,
+          attribute: this.nodeAttribute,
+          otherAttribute: this.otherAttribute
+        }));
+      }
+    }
+  }
+  cancel (resolve) {
+    resolve();
+  }
+  setupButtons () {
+    // Add a button for toggling mode
+    const toggleButton = this.d3el.select('.dialogButtons')
+      .append('div')
+      .classed('button', true)
+      .attr('id', 'modeButton')
+      .lower();
+    toggleButton.append('a');
+    toggleButton.append('span');
+    toggleButton.on('click', () => {
+      this.shortcutMode = !this.shortcutMode;
+      this.render();
+    });
+  }
+  drawButtons () {
+    this.d3el.select('#modeButton > span')
+      .text(this.shortcutMode ? 'Attribute Mode' : 'Shortcut Mode');
   }
   drawConnections () {
     // Update the svg size, and figure out its CSS placement on the screen
@@ -119,7 +175,12 @@ C${coords.scx},${coords.scy}\
     });
   }
   drawCell (element, attribute, item) {
-    element.text(attribute.name === null ? item.index : item.row[attribute.name]);
+    if (attribute.name !== null && item.row[attribute.name] instanceof Promise) {
+      (async () => {
+        const value = await item.row[attribute.name];
+        element.select('.cellWrapper').text(value);
+      })();
+    }
   }
   drawColumnHeader (element, attribute, classObj) {
     // Override handsontable's click handler
@@ -145,25 +206,30 @@ C${coords.scx},${coords.scy}\
       thElement.classed('selected', this.otherAttribute === attribute.name);
     }
   }
-  initColumns (data, attrs) {
+  initColumns (classObj, attrs) {
     const self = this;
     return attrs.map((attr, index) => {
       attr.columnIndex = index;
       return {
         renderer: function (instance, td, row, col, prop, value, cellProperties) {
           Handsontable.renderers.TextRenderer.apply(this, arguments);
+          td = d3.select(td);
+          const temp = td.html();
+          td.html(`<div class="cellWrapper">${temp}</div>`);
           const index = instance.getSourceDataAtRow(row);
-          self.drawCell(d3.select(td), attr, data[index]);
+          const dataValue = classObj.table.currentData.data[classObj.table.currentData.lookup[index]];
+          if (dataValue !== undefined) {
+            self.drawCell(td, attr, dataValue);
+          }
         },
         data: index => {
           if (attr.name === null) {
             return index;
           } else {
-            const value = data[index].row[attr.name];
-            if (value === undefined) {
-              return '';
-            } else if (typeof value === 'object') {
-              return '{}';
+            const rowIndex = classObj.table.currentData.lookup[index];
+            const value = classObj.table.currentData.data[rowIndex].row[attr.name];
+            if (value instanceof Promise) {
+              return '...';
             } else {
               return value;
             }
@@ -184,13 +250,13 @@ C${coords.scx},${coords.scy}\
   }
   initTable (element, classObj, headersOnBottom = false) {
     const self = this;
-    const data = classObj.table.currentData.data;
+    classObj.table.on('cacheBuilt', () => { this.render(); });
     const attrs = window.mainView.tableAttributes[classObj.classId];
     const renderer = new Handsontable(element.node(), {
-      data: Object.keys(data),
+      data: Object.keys(classObj.table.currentData.lookup),
       dataSchema: index => { return { index }; }, // Fake "dataset"
       // (Handsontable can't handle our actual Wrapper objects, because they have cycles)
-      columns: this.initColumns(data, attrs),
+      columns: this.initColumns(classObj, attrs),
       colHeaders: this.initHeaders(attrs),
       manualColumnResize: true,
       readOnly: true,
@@ -222,25 +288,6 @@ C${coords.scx},${coords.scy}\
       this.drawConnections();
     });
     return renderer;
-  }
-  ok (resolve) {
-    if (this.edgeClass) {
-      resolve(this.edgeClass.connectToNodeClass({
-        nodeClass: this.nodeClass,
-        side: this.side,
-        nodeAttribute: this.nodeAttribute,
-        edgeAttribute: this.edgeAttribute
-      }));
-    } else {
-      resolve(this.nodeClass.connectToNodeClass({
-        otherNodeClass: this.otherNodeClass,
-        attribute: this.nodeAttribute,
-        otherAttribute: this.otherAttribute
-      }));
-    }
-  }
-  cancel (resolve) {
-    resolve();
   }
 }
 

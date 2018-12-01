@@ -303,12 +303,14 @@ class TableView extends GoldenLayoutView {
       }
     };
 
+    /*
     menuEntries['Hide'] = {
       icon: 'img/hide.svg',
       onClick: async () => {
         window.mainView.alert(`Sorry, not implemented yet...`);
       }
     };
+    */
 
     if (attribute.name === null) {
       // Add Transpose to the ID column
@@ -328,6 +330,7 @@ class TableView extends GoldenLayoutView {
           this.classObj.aggregate(attribute.name);
         }
       };
+      /*
       menuEntries['Separate Delimited...'] = {
         icon: 'img/separate.svg',
         onClick: async () => {
@@ -337,6 +340,7 @@ class TableView extends GoldenLayoutView {
           }
         }
       };
+      */
       menuEntries.Facet = {
         icon: 'img/facet.svg',
         onClick: () => {
