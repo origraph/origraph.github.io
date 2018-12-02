@@ -115,7 +115,7 @@ class TableView extends GoldenLayoutView {
         onClick: (button) => {
           if (this.classObj && this.classObj.type !== 'Generic') {
             window.mainView.instanceGraph.seed(
-              Object.values(this.classObj.table.currentData.data));
+              Object.values(this.classObj.table.currentData.data).map(instance => instance.instanceId));
             this.render();
           }
         },
@@ -178,7 +178,7 @@ class TableView extends GoldenLayoutView {
     }
   }
   drawCell (element, attribute, dataValue) {
-    const isSeeded = window.mainView.instanceGraph.contains(dataValue);
+    const isSeeded = window.mainView.instanceGraph.contains(dataValue.instanceId);
     element.classed('idColumn', attribute.name === null)
       .classed('addSeed', this.classObj &&
         this.classObj.type !== 'Generic' &&
@@ -194,9 +194,9 @@ class TableView extends GoldenLayoutView {
       window.mainView.highlightInstance(dataValue, this);
       if (attribute.name === null) {
         if (isSeeded) {
-          await window.mainView.instanceGraph.unseed(dataValue);
+          await window.mainView.instanceGraph.unseed(dataValue.instanceId);
         } else {
-          await window.mainView.instanceGraph.seed(dataValue);
+          await window.mainView.instanceGraph.seed(dataValue.instanceId);
         }
       }
     });
