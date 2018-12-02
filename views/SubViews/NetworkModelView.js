@@ -72,14 +72,14 @@ bbox.bounds = {
   width: 1,
   height: 1
 };
-bbox.strength = 15;
+bbox.strength = 30;
 bbox.initialize = nodes => {
   bbox.nodes = nodes;
 };
 
 const DEFAULT_FORCES = {
   link: d3.forceLink(),
-  collide: d3.forceCollide().radius(2 * NODE_SIZE),
+  collide: d3.forceCollide().radius(1.5 * NODE_SIZE),
   bbox
 };
 

@@ -1,4 +1,4 @@
-/* globals d3, Handsontable */
+/* globals origraph, d3, Handsontable */
 import Modal from './Modal.js';
 import PathSpecificationView from './PathSpecificationView.js';
 
@@ -35,7 +35,7 @@ class ConnectModal extends Modal {
   }
   setup () {
     this.d3el.classed('ConnectModal', true).html(`
-      <div class="shortcutView PathSpecificationView"></div>
+      <div class="edgeProjectionView PathSpecificationView"></div>
       <div class="matchView">
         <h3 class="sourceTableLabel">${this.sourceClass.className}</h3>
         <div class="ConnectMenu">
@@ -55,12 +55,12 @@ class ConnectModal extends Modal {
   }
   draw () {
     this.d3el.select('.PathSpecificationView')
-      .style('display', this.shortcutMode ? null : 'none');
+      .style('display', this.edgeProjectionMode ? null : 'none');
     this.d3el.select('.matchView')
-      .style('display', this.shortcutMode ? 'none' : null);
+      .style('display', this.edgeProjectionMode ? 'none' : null);
 
     this.drawButtons();
-    if (this.shortcutMode) {
+    if (this.edgeProjectionMode) {
       this.pathSpecView.render();
     } else {
       this.sourceRenderer.updateSettings({
@@ -74,8 +74,13 @@ class ConnectModal extends Modal {
     }
   }
   ok (resolve) {
-    if (this.shortcutMode) {
-      throw new Error(`unimplemented`);
+    if (this.edgeProjectionMode) {
+      const currentPath = this.pathSpecView.currentPath;
+      const firstClass = origraph.currentModel.classes[currentPath[0]];
+      const lastClass = origraph.currentModel.classes[currentPath[currentPath.length - 1]];
+      if (currentPath.length > 2 && firstClass.type === 'Node' && lastClass.type === 'Node') {
+        resolve(firstClass.projectNewEdge(currentPath.slice(1)));
+      }
     } else {
       if (this.edgeClass) {
         resolve(this.edgeClass.connectToNodeClass({
@@ -106,13 +111,13 @@ class ConnectModal extends Modal {
     toggleButton.append('a');
     toggleButton.append('span');
     toggleButton.on('click', () => {
-      this.shortcutMode = !this.shortcutMode;
+      this.edgeProjectionMode = !this.edgeProjectionMode;
       this.render();
     });
   }
   drawButtons () {
     this.d3el.select('#modeButton > span')
-      .text(this.shortcutMode ? 'Attribute Mode' : 'Shortcut Mode');
+      .text(this.edgeProjectionMode ? 'Attribute Mode' : 'Edge Projection Mode');
   }
   drawConnections () {
     // Update the svg size, and figure out its CSS placement on the screen
@@ -276,7 +281,7 @@ C${coords.scx},${coords.scy}\
     classObj.table.on('cacheBuilt', () => { this.render(); });
     const attrs = window.mainView.tableAttributes[classObj.classId];
     const renderer = new Handsontable(element.node(), {
-      data: Object.keys(classObj.table.currentData.lookup),
+      data: [], // Object.keys(classObj.table.currentData.lookup),
       dataSchema: index => { return { index }; }, // Fake "dataset"
       // (Handsontable can't handle our actual Wrapper objects, because they have cycles)
       columns: this.initColumns(classObj, attrs),
