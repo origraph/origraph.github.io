@@ -73,13 +73,16 @@ class ConnectModal extends Modal {
       this.drawConnections();
     }
   }
+  get projectionPathIsValid () {
+    const currentPath = this.pathSpecView.currentPath;
+    const lastClass = origraph.currentModel.classes[currentPath[currentPath.length - 1]];
+    return currentPath.length > 2 && this.pathSpecView.targetClass.type === 'Node' &&
+      lastClass.type === 'Node';
+  }
   ok (resolve) {
     if (this.edgeProjectionMode) {
-      const currentPath = this.pathSpecView.currentPath;
-      const firstClass = origraph.currentModel.classes[currentPath[0]];
-      const lastClass = origraph.currentModel.classes[currentPath[currentPath.length - 1]];
-      if (currentPath.length > 2 && firstClass.type === 'Node' && lastClass.type === 'Node') {
-        resolve(firstClass.projectNewEdge(currentPath.slice(1)));
+      if (this.projectionPathIsValid) {
+        resolve(this.pathSpecView.targetClass.projectNewEdge(this.pathSpecView.currentPath.slice(1)));
       }
     } else {
       if (this.edgeClass) {
@@ -118,6 +121,8 @@ class ConnectModal extends Modal {
   drawButtons () {
     this.d3el.select('#modeButton > span')
       .text(this.edgeProjectionMode ? 'Attribute Mode' : 'Edge Projection Mode');
+    this.d3el.select('.ok.button')
+      .classed('disabled', this.edgeProjectionMode && !this.projectionPathIsValid);
   }
   drawConnections () {
     // Update the svg size, and figure out its CSS placement on the screen

@@ -21,7 +21,7 @@
     "handsontable": "^6.2.0",
     "jquery": "^3.3.1",
     "less": "^3.9.0",
-    "origraph": "^0.2.1",
+    "origraph": "^0.2.2",
     "serve": "^10.1.1",
     "uki": "^0.2.5"
   }
