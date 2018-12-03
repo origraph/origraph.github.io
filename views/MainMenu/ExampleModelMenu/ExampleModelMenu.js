@@ -80,13 +80,13 @@ const EXAMPLE_MODELS = [
       let categories = classes['northwind/categories.csv'].interpretAsNodes();
       categories.setClassName('Categories');
 
-      employees.connectToEdgeClass({
+      employees.Class({
         edgeClass: employeeTerritories,
         side: 'source',
         nodeAttribute: 'employeeID',
         edgeAttribute: 'employeeID'
       });
-      territories.connectToEdgeClass({
+      territories.Class({
         edgeClass: employeeTerritories,
         side: 'target',
         nodeAttribute: 'territoryID',
@@ -225,16 +225,82 @@ const EXAMPLE_MODELS = [
     }
   },
   {
-    'name': 'Panama Papers',
-    'icon': 'img/panama.svg',
-    'description': 'Panama papers dataset (<a target="_blank" href="https://offshoreleaks.icij.org/pages/database">source</a>)',
+    'name': 'Twitter, Politics',
+    'icon': 'img/politics.svg',
+    'description': 'Data extracted from <a href="https://www.propublica.org/datastore/datasets/politics">ProPublica\'s</a> and <a href="https://developer.twitter.com">Twitter\'s</a> APIs related to US involvement in the 2018 Saudi Arabia / Yemen conflict',
     'files': [
-      'panama/address.csv',
-      'panama/edges.csv',
-      'panama/entity.csv',
-      'panama/intermediary.csv',
-      'panama/officer.csv'
-    ]
+      'twitterPolitics/YemenCrisis.json',
+      'twitterPolitics/YemenWar.json',
+      'twitterPolitics/allContributions.json',
+      'twitterPolitics/mentions.json',
+      'twitterPolitics/pressReleases.json',
+      'twitterPolitics/senate_votes_yemen.json',
+      'twitterPolitics/senateMembers.json',
+      'twitterPolitics/senateTweetAccts.json',
+      'twitterPolitics/senateTweets.json'
+    ],
+    prefab: (model, classes) => {
+      const senators = classes['twitterPolitics/senateMembers.json']
+        .interpretAsNodes();
+      senators.setClassName('Senators');
+
+      const votes = classes['twitterPolitics/senate_votes_yemen.json']
+        .interpretAsEdges();
+
+      senators.connectToEdgeClass({
+        edgeClass: votes,
+        side: 'source',
+        nodeAttribute: 'id',
+        edgeAttribtue: 'member_id'
+      });
+
+      let [ noVotes, yesVotes ] = votes
+        .closedFacet('vote_position', [ 'No', 'Yes' ]);
+      noVotes.setClassName('Voted No');
+      yesVotes.setClassName('Voted Yes');
+      votes.delete();
+
+      const contribs = classes['twitterPolitics/allContributions.json']
+        .interpretAsEdges();
+
+      contribs.connectToNodeClass({
+        nodeClass: senators,
+        side: 'target',
+        nodeAttribute: 'fec_candidate_id',
+        edgeAttribute: 'candidate'
+      });
+
+      const donorCommittees = contribs.promote('fec_committee_name');
+      donorCommittees.setClassName('Donor Committees');
+
+      const [ contribsFor, contribsAgainst ] = contribs
+        .closedFacet('support_or_oppose', [ 'S', 'O' ]);
+      contribsFor.setClassName('Contributions For');
+      contribsAgainst.setClassName('Contributions Against');
+      contribs.delete();
+
+      const pressReleases = classes['twitterPolitics/pressReleases.json']
+        .interpretAsEdges();
+      pressReleases.setClassName('Press Releases');
+
+      senators.connectToEdgeClass({
+        edgeClass: pressReleases,
+        side: 'source',
+        nodeAttribute: 'id',
+        edgeAttribute: 'member_id'
+      });
+
+      const twitterAccounts = classes['twitterPolitics/senateTweetAccts.json']
+        .interpretAsEdges();
+      twitterAccounts.setClassName('Twitter Accounts');
+
+      senators.connectToEdgeClass({
+        edgeClass: twitterAccounts,
+        side: 'source',
+        nodeAttribute: 'twitter_account',
+        edgeAttribute: 'screen_name'
+      });
+    }
   },
   {
     'name': 'Air Travel',
