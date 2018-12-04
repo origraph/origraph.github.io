@@ -87,37 +87,32 @@
       background-color: @lightBackgroundColor;
       color: @lightTextColor;
       text-align: right;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       .colHeader {
-        justify-content: flex-end;
         .menu.icon {
           padding: 0px;
         }
       }
-      &.addSeed::after,
-      &.removeSeed::after {
-        position: absolute;
-        left: @smallButtonPadding;
-        top: @smallButtonPadding;
-        width: @smallButtonImageSize;
-        height: @smallButtonImageSize;
-        filter: @lightTextColorImageFilter;
-        cursor: pointer;
-      }
-      &.addSeed::after {
-        content: url('../img/addSeed.svg');
-      }
-      &.removeSeed::after {
-        content: url('../img/removeSeed.svg');
+      .icons {
+        display: flex;
+        .button {
+          margin-right: @tinyButtonPadding;
+        }
       }
     }
     .highlighted {
       background-color: @invertedBackgroundColor;
       color: @invertedTextColor;
     }
-    .cellWrapper {
+    td {
       max-width: 12em;
       overflow: hidden;
-      white-space: nowrap;
+      .cellWrapper {
+        white-space: nowrap;
+      }
     }
   }
 

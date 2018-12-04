@@ -476,8 +476,17 @@ class MainView extends View {
       },
       'Interpret as Edge': {
         icon: 'img/edge.svg',
-        onClick: () => {
-          origraph.currentModel.classes[classId].interpretAsEdges();
+        onClick: async () => {
+          const classObj = origraph.currentModel.classes[classId];
+          let autoconnect = false;
+          if (classObj.type === 'Node') {
+            const numEdges = Array.from(classObj.edgeClasses()).length;
+            if (numEdges === 1 || numEdges === 2) {
+              autoconnect = await this.confirm(`Preserve connections to node classes?
+                If so, the existing edge classes will be detached.`);
+            }
+          }
+          origraph.currentModel.classes[classId].interpretAsEdges({ autoconnect });
         }
       },
       'Delete': {

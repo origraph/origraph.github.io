@@ -122,6 +122,14 @@ class TableView extends GoldenLayoutView {
         disabled: () => this.classObj === null || this.classObj.type === 'Generic'
       },
       {
+        title: 'Expand All Rows',
+        icon: 'img/expand.svg',
+        onClick: () => {
+          this.collectNewClasses(this.classObj.openTranspose());
+        },
+        disabled: () => this.classObj === null
+      },
+      {
         title: 'New Attribute...',
         icon: 'img/deriveAttribute.svg',
         onClick: (button) => {
@@ -178,28 +186,65 @@ class TableView extends GoldenLayoutView {
     }
   }
   drawCell (element, attribute, dataValue) {
-    const isSeeded = window.mainView.instanceGraph.contains(dataValue.instanceId);
+    /* Do some funky stuff to wrap values of each cell in a DIV for CSS reasons,
+       and add icons to the ID column */
+    let cellWrapper = element.select('.cellWrapper');
+    if (cellWrapper.node() === null) {
+      let cellContents = `<div class="cellWrapper">${element.html()}</div>`;
+      if (attribute.name === null) {
+        cellContents = `\
+<div class="icons">
+  <div class="seed tiny button"><a><img/></a></div>
+  <div class="expand tiny button"><a><img src="img/expand.svg"/></a></div>
+</div>
+${cellContents}`;
+      }
+      element.html(cellContents);
+      cellWrapper = element.select('.cellWrapper');
+    }
+
+    // Generic stuff that applies to all cells
     element.classed('idColumn', attribute.name === null)
-      .classed('addSeed', this.classObj &&
-        this.classObj.type !== 'Generic' &&
-        attribute.name === null && !isSeeded)
-      .classed('removeSeed', this.classObj &&
-        this.classObj.type !== 'Generic' &&
-        attribute.name === null && isSeeded)
       .classed('metaColumn', attribute.meta)
       .classed('highlighted', window.mainView.highlightedInstance &&
         window.mainView.highlightedInstance.classObj.classId === this.classId &&
         window.mainView.highlightedInstance.index === dataValue.index);
     element.on('click', async () => {
       window.mainView.highlightInstance(dataValue, this);
-      if (attribute.name === null) {
-        if (isSeeded) {
-          await window.mainView.instanceGraph.unseed(dataValue.instanceId);
-        } else {
-          await window.mainView.instanceGraph.seed(dataValue.instanceId);
-        }
-      }
     });
+
+    // Special stuff for ID column buttons, etc
+    const isSeeded = window.mainView.instanceGraph.contains(dataValue.instanceId);
+    element.select('.seed.button img')
+      .attr('src', isSeeded ? 'img/removeSeed.svg' : 'img/addSeed.svg');
+    element.select('.seed.button')
+      .classed('disabled', this.classObj.type === 'Generic')
+      .on('mouseenter', function () {
+        window.mainView.showTooltip({
+          content: isSeeded ? 'Remove Sample' : 'Add Sample',
+          targetBounds: this.getBoundingClientRect()
+        });
+      }).on('click', () => {
+        if (this.classObj.type !== 'Generic') {
+          if (isSeeded) {
+            window.mainView.instanceGraph.unseed(dataValue.instanceId);
+          } else {
+            window.mainView.instanceGraph.seed(dataValue.instanceId);
+          }
+        }
+      });
+    element.select('.expand.button')
+      .on('mouseenter', function () {
+        window.mainView.showTooltip({
+          content: 'Expand Row',
+          targetBounds: this.getBoundingClientRect()
+        });
+      }).on('click', () => {
+        this.classObj.closedTranspose([ dataValue.index ]);
+      });
+
+    // Some cell values aren't known yet (they rely on async calls); update the
+    // contents when those values are ready
     if (attribute.meta) {
       (async () => {
         let idList = [];
@@ -218,12 +263,12 @@ class TableView extends GoldenLayoutView {
             idList.push(nodeItem.index);
           }
         }
-        element.select('.cellWrapper').text(idList.join(','));
+        cellWrapper.text(idList.join(','));
       })();
     } else if (attribute.name !== null && dataValue.row[attribute.name] instanceof Promise) {
       (async () => {
         const value = await dataValue.row[attribute.name];
-        element.select('.cellWrapper').text(value);
+        cellWrapper.text(value);
       })();
     }
   }
@@ -313,13 +358,7 @@ class TableView extends GoldenLayoutView {
     */
 
     if (attribute.name === null) {
-      // Add Transpose to the ID column
-      menuEntries['Expand Rows as Tables'] = {
-        icon: 'img/expand.svg',
-        onClick: () => {
-          this.collectNewClasses(this.classObj.openTranspose());
-        }
-      };
+      // Add options specific to ID column (currently none)
     } else if (attribute.meta) {
       // Add options specific to meta columns (currently none)
     } else {
@@ -330,17 +369,18 @@ class TableView extends GoldenLayoutView {
           this.classObj.promote(attribute.name);
         }
       };
-      /*
-      menuEntries['Separate Delimited...'] = {
-        icon: 'img/separate.svg',
-        onClick: async () => {
-          const delimiter = await window.mainView.prompt('Value Delimiter:', ',');
-          if (delimiter !== null) {
-            this.classObj.expand(attribute.name, delimiter);
-          }
+      menuEntries['Expand'] = {
+        icon: 'img/expand.svg',
+        onClick: () => {
+          this.classObj.expand(attribute.name);
         }
       };
-      */
+      menuEntries['Unroll'] = {
+        icon: 'img/unroll.svg',
+        onClick: () => {
+          this.classObj.unroll(attribute.name);
+        }
+      };
       menuEntries.Facet = {
         icon: 'img/facet.svg',
         onClick: () => {
@@ -418,13 +458,10 @@ class TableView extends GoldenLayoutView {
           renderer: function (instance, td, row, col, prop, value, cellProperties) {
             if (!self.classObj.deleted) {
               Handsontable.renderers.TextRenderer.apply(this, arguments);
-              td = d3.select(td);
-              const temp = td.html();
-              td.html(`<div class="cellWrapper">${temp}</div>`);
               const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
               const dataValue = currentTable.data[currentTable.lookup[index]];
               if (dataValue !== undefined) {
-                self.drawCell(td, attribute, dataValue);
+                self.drawCell(d3.select(td), attribute, dataValue);
               }
             }
           },

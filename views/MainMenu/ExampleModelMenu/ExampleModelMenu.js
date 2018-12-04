@@ -240,6 +240,12 @@ const EXAMPLE_MODELS = [
       'twitterPolitics/senateTweets.json'
     ],
     prefab: (model, classes) => {
+      const tweets = classes['twitterPolitics/senateTweets.json']
+        .interpretAsNodes();
+
+      const entities = tweets.expand('entities');
+      entities.unroll('user_mentions');
+      /*
       const senators = classes['twitterPolitics/senateMembers.json']
         .interpretAsNodes();
       senators.setClassName('Senators');
@@ -300,6 +306,7 @@ const EXAMPLE_MODELS = [
         nodeAttribute: 'twitter_account',
         edgeAttribute: 'screen_name'
       });
+      */
     }
   },
   {
