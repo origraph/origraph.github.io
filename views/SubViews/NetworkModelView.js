@@ -77,10 +77,34 @@ bbox.initialize = nodes => {
   bbox.nodes = nodes;
 };
 
+function horizontal (alpha) {
+  for (const node of horizontal.nodes) {
+    if (node.classObj && node.classObj.type === 'Node') {
+      let sources = 0;
+      let targets = 0;
+      for (const edgeClass of node.classObj.edgeClasses()) {
+        const role = node.classObj.getEdgeRole(edgeClass);
+        if (role === 'source') {
+          sources++;
+        } else if (role === 'target') {
+          targets++;
+        }
+      }
+      node.vx += (targets - sources) * alpha * horizontal.strength;
+    }
+  }
+}
+horizontal.nodes = [];
+horizontal.strength = 30;
+horizontal.initialize = nodes => {
+  horizontal.nodes = nodes;
+};
+
 const DEFAULT_FORCES = {
   link: d3.forceLink(),
   collide: d3.forceCollide().radius(1.5 * NODE_SIZE),
-  bbox
+  bbox,
+  horizontal
 };
 
 class Handle {

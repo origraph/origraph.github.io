@@ -229,42 +229,18 @@ const EXAMPLE_MODELS = [
     'icon': 'img/politics.svg',
     'description': 'Data extracted from <a href="https://www.propublica.org/datastore/datasets/politics">ProPublica\'s</a> and <a href="https://developer.twitter.com">Twitter\'s</a> APIs related to US involvement in the 2018 Saudi Arabia / Yemen conflict',
     'files': [
-      'twitterPolitics/YemenCrisis.json',
-      'twitterPolitics/YemenWar.json',
       'twitterPolitics/allContributions.json',
-      'twitterPolitics/mentions.json',
       'twitterPolitics/pressReleases.json',
-      'twitterPolitics/senate_votes_yemen.json',
+      'twitterPolitics/recent_bills.json',
+      'twitterPolitics/recent_votes.json',
       'twitterPolitics/senateMembers.json',
       'twitterPolitics/senateTweetAccts.json',
       'twitterPolitics/senateTweets.json'
     ],
     prefab: (model, classes) => {
-      const tweets = classes['twitterPolitics/senateTweets.json']
-        .interpretAsNodes();
-
-      const entities = tweets.expand('entities');
-      entities.unroll('user_mentions');
-      /*
       const senators = classes['twitterPolitics/senateMembers.json']
         .interpretAsNodes();
       senators.setClassName('Senators');
-
-      const votes = classes['twitterPolitics/senate_votes_yemen.json']
-        .interpretAsEdges();
-
-      senators.connectToEdgeClass({
-        edgeClass: votes,
-        side: 'source',
-        nodeAttribute: 'id',
-        edgeAttribtue: 'member_id'
-      });
-
-      let [ noVotes, yesVotes ] = votes
-        .closedFacet('vote_position', [ 'No', 'Yes' ]);
-      noVotes.setClassName('Voted No');
-      yesVotes.setClassName('Voted Yes');
-      votes.delete();
 
       const contribs = classes['twitterPolitics/allContributions.json']
         .interpretAsEdges();
@@ -279,11 +255,15 @@ const EXAMPLE_MODELS = [
       const donorCommittees = contribs.promote('fec_committee_name');
       donorCommittees.setClassName('Donor Committees');
 
+      /*
       const [ contribsFor, contribsAgainst ] = contribs
         .closedFacet('support_or_oppose', [ 'S', 'O' ]);
       contribsFor.setClassName('Contributions For');
       contribsAgainst.setClassName('Contributions Against');
       contribs.delete();
+
+      let votes = classes['twitterPolitics/recent_votes.json'];
+      votes.setClassName('votes');
 
       const pressReleases = classes['twitterPolitics/pressReleases.json']
         .interpretAsEdges();
@@ -305,6 +285,20 @@ const EXAMPLE_MODELS = [
         side: 'source',
         nodeAttribute: 'twitter_account',
         edgeAttribute: 'screen_name'
+      });
+
+      const tweets = classes['twitterPolitics/senateTweets.json']
+        .interpretAsNodes();
+      tweets.setClassName('Tweets');
+
+      const accounts = classes['twitterPolitics/senateTweetAccts.json']
+        .interpretAsNodes();
+      accounts.setClassName('Accounts');
+
+      accounts.connectToNodeClass({
+        otherNodeClass: tweets,
+        attribute: 'id_str',
+        otherAttribute: 'user'
       });
       */
     }
