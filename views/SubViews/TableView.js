@@ -185,7 +185,26 @@ class TableView extends GoldenLayoutView {
         });
     }
   }
-  drawCell (element, attribute, dataValue) {
+  fillCell (element, value) {
+    let text = value;
+    element.classed('nullCell', value === null)
+      .classed('undefinedCell', value === undefined)
+      .classed('arrayCell', value instanceof Array)
+      .classed('objectCell', typeof value === 'object' && value !== null && !(value instanceof Array));
+    if (value === null) {
+      text = 'null';
+    } else if (value === undefined) {
+      text = '';
+    } else if (typeof value === 'object') {
+      if (value instanceof Array) {
+        text = `[${value.length}]`;
+      } else {
+        text = `{${Object.keys(value).length}}`;
+      }
+    }
+    element.select('.cellWrapper').text(text);
+  }
+  async drawCell (element, attribute, dataValue) {
     /* Do some funky stuff to wrap values of each cell in a DIV for CSS reasons,
        and add icons to the ID column */
     let cellWrapper = element.select('.cellWrapper');
@@ -213,39 +232,38 @@ ${cellContents}`;
       window.mainView.highlightInstance(dataValue, this);
     });
 
-    // Special stuff for ID column buttons, etc
-    const isSeeded = window.mainView.instanceGraph.contains(dataValue.instanceId);
-    element.select('.seed.button img')
-      .attr('src', isSeeded ? 'img/removeSeed.svg' : 'img/addSeed.svg');
-    element.select('.seed.button')
-      .classed('disabled', this.classObj.type === 'Generic')
-      .on('mouseenter', function () {
-        window.mainView.showTooltip({
-          content: isSeeded ? 'Remove Sample' : 'Add Sample',
-          targetBounds: this.getBoundingClientRect()
-        });
-      }).on('click', () => {
-        if (this.classObj.type !== 'Generic') {
-          if (isSeeded) {
-            window.mainView.instanceGraph.unseed(dataValue.instanceId);
-          } else {
-            window.mainView.instanceGraph.seed(dataValue.instanceId);
+    if (attribute.name === null) {
+      // Special stuff for ID column buttons, etc
+      const isSeeded = window.mainView.instanceGraph.contains(dataValue.instanceId);
+      element.select('.seed.button img')
+        .attr('src', isSeeded ? 'img/removeSeed.svg' : 'img/addSeed.svg');
+      element.select('.seed.button')
+        .classed('disabled', this.classObj.type === 'Generic')
+        .on('mouseenter', function () {
+          window.mainView.showTooltip({
+            content: isSeeded ? 'Remove Sample' : 'Add Sample',
+            targetBounds: this.getBoundingClientRect()
+          });
+        }).on('click', () => {
+          if (this.classObj.type !== 'Generic') {
+            if (isSeeded) {
+              window.mainView.instanceGraph.unseed(dataValue.instanceId);
+            } else {
+              window.mainView.instanceGraph.seed(dataValue.instanceId);
+            }
           }
-        }
-      });
-    element.select('.expand.button')
-      .on('mouseenter', function () {
-        window.mainView.showTooltip({
-          content: 'Expand Row',
-          targetBounds: this.getBoundingClientRect()
         });
-      }).on('click', () => {
-        this.classObj.closedTranspose([ dataValue.index ]);
-      });
-
-    // Some cell values aren't known yet (they rely on async calls); update the
-    // contents when those values are ready
-    if (attribute.meta) {
+      element.select('.expand.button')
+        .on('mouseenter', function () {
+          window.mainView.showTooltip({
+            content: 'Expand Row',
+            targetBounds: this.getBoundingClientRect()
+          });
+        }).on('click', () => {
+          this.classObj.closedTranspose([ dataValue.index ]);
+        });
+    } else if (attribute.meta) {
+      // Meta column contents are computed asynchronously
       (async () => {
         let idList = [];
         if (attribute.edgeClass) {
@@ -265,11 +283,15 @@ ${cellContents}`;
         }
         cellWrapper.text(idList.join(','));
       })();
-    } else if (attribute.name !== null && dataValue.row[attribute.name] instanceof Promise) {
+    } else if (dataValue.row[attribute.name] instanceof Promise) {
+      // We need to wait for delayed contents
+      cellWrapper.text('');
       (async () => {
-        const value = await dataValue.row[attribute.name];
-        cellWrapper.text(value);
+        this.fillCell(element, await dataValue.row[attribute.name]);
       })();
+    } else {
+      // We can just drop the value in directly
+      this.fillCell(element, dataValue.row[attribute.name]);
     }
   }
   drawColumnHeader (element, attribute) {
@@ -311,6 +333,7 @@ ${cellContents}`;
 
     // Attach menu event
     element.select('.menu')
+      .style('display', attribute.meta ? 'none' : null)
       .on('mouseenter', function () {
         window.mainView.showTooltip({
           content: 'Attribute Options',
@@ -456,8 +479,8 @@ ${cellContents}`;
       const columns = this.attributes.map(attribute => {
         return {
           renderer: function (instance, td, row, col, prop, value, cellProperties) {
+            Handsontable.renderers.TextRenderer.apply(this, arguments);
             if (!self.classObj.deleted) {
-              Handsontable.renderers.TextRenderer.apply(this, arguments);
               const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
               const dataValue = currentTable.data[currentTable.lookup[index]];
               if (dataValue !== undefined) {
@@ -467,21 +490,21 @@ ${cellContents}`;
           },
           data: (index, newValue) => {
             // TODO: handle newValue if readOnly is false
+            // Note: these values are not actually displayed; they are only used
+            // for handsontable's sorting
             if (attribute.name === null) {
               return index;
-            } else if (attribute.meta) {
-              // Meta values are computed asynchronously
+            } else if (!this.classObj || attribute.meta) {
+              // No way to access a value
               return '...';
-            } else if (!this.classObj) {
-              return '';
             } else {
               const rowIndex = this.classObj.table.currentData.lookup[index];
-              const value = this.classObj.table.currentData.data[rowIndex].row[attribute.name];
+              const item = this.classObj.table.currentData.data[rowIndex];
+              let value = item.row[attribute.name];
               if (value instanceof Promise) {
-                return '...';
-              } else {
-                return value;
+                value = (item.delayedRow && item.delayedRow[attribute.name]) || '...';
               }
+              return value;
             }
           }
         };

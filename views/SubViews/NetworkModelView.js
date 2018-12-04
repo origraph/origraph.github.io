@@ -95,7 +95,7 @@ function horizontal (alpha) {
   }
 }
 horizontal.nodes = [];
-horizontal.strength = 30;
+horizontal.strength = 60;
 horizontal.initialize = nodes => {
   horizontal.nodes = nodes;
 };
@@ -250,12 +250,10 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     objects.call(d3.drag()
       .on('start', d => {
         if (!d3.event.active && !this.draggingHandle) {
-          this.simulation.alpha(0.1).restart();
+          this.simulation.alpha(0.3).restart();
         }
         d.fx = d.x;
         d.fy = d.y;
-        // Activate the corresponding table
-        window.mainView.subViews[d.classObj.classId + 'TableView'].raise();
       }).on('drag', d => {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
@@ -263,6 +261,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         if (!d3.event.active) {
           this.simulation.alpha(0);
         }
+        setTimeout(() => {
+          // Activate the corresponding table (on a delay, so that rendering
+          // the table doesn't interfere too much with interaction)
+          window.mainView.subViews[d.classObj.classId + 'TableView'].raise();
+        }, 200);
       }));
     // When dragging handles, determine if the connection is valid, and if so,
     // register this.handleTarget. Also attach the click listener to bring up
