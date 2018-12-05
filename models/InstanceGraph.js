@@ -58,12 +58,23 @@ class InstanceGraph extends PersistentGraph {
   }
   async deriveGraph () {
     if (!this._debouncedPromise) {
+      this._lastModelId = origraph.currentModel.modelId;
       this._debouncedPromise = new Promise((resolve, reject) => {
-        setTimeout(() => {
+        const attempt = () => {
+          if (origraph.currentModel.modelId !== this._lastModelId) {
+            this.purge();
+          }
           const instanceIdList = this._instanceIds ? Object.keys(this._instanceIds) : null;
-          delete this._debouncedPromise;
-          resolve(window.origraph.currentModel.getInstanceGraph(instanceIdList));
-        }, 100);
+          try {
+            const result = origraph.currentModel.getInstanceGraph(instanceIdList);
+            delete this._lastModelId;
+            delete this._debouncedPromise;
+            resolve(result);
+          } catch (err) {
+            setTimeout(attempt, 100);
+          }
+        };
+        setTimeout(attempt, 100);
       });
     }
     return this._debouncedPromise;

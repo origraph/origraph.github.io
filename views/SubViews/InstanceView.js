@@ -4,6 +4,13 @@ import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 
 const NODE_SIZE = 7;
 
+const FORCES = {
+  link: d3.forceLink(),
+  charge: d3.forceManyBody().strength(-15),
+  center: d3.forceCenter(),
+  collide: d3.forceCollide().radius(NODE_SIZE)
+};
+
 class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   constructor ({ container, state }) {
     super({
@@ -22,11 +29,10 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       .classed('edgeLayer', true);
     this.content.append('g')
       .classed('nodeLayer', true);
-    this.simulation = d3.forceSimulation()
-      .force('link', d3.forceLink()) // .distance(50)) //.id(d => d.id))
-      .force('charge', d3.forceManyBody())
-      .force('center', d3.forceCenter())
-      .force('collide', d3.forceCollide().radius(NODE_SIZE));
+    this.simulation = d3.forceSimulation();
+    for (const [ forceName, forceObj ] of Object.entries(FORCES)) {
+      this.simulation.force(forceName, forceObj);
+    }
     window.mainView.instanceGraph.on('update', () => {
       this.simulation.alpha(0.3).restart();
       this.render();

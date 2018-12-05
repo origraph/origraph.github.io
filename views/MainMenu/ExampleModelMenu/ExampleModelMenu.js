@@ -163,65 +163,74 @@ const EXAMPLE_MODELS = [
   {
     'name': 'Movies',
     'icon': 'img/movies.svg',
-    'description': '<a target="_blank" href="https://www.themoviedb.org">TMDB</a> movies, roles, companies, actors, and <a target="_blank" href="https://bechdeltest.com/">Bechdel ratings</a>',
+    'description': '<a target="_blank" href="https://www.themoviedb.org">TMDB</a> movies, people, credits, and <a target="_blank" href="https://bechdeltest.com/">Bechdel tests</a>',
     'files': [
       'movies/movies.json',
+      'movies/people.json',
       'movies/credits.json',
-      'movies/companies.json',
-      'movies/people.json'
+      'movies/bechdeltest.json'
     ],
     prefab: (model, classes) => {
       let movies = classes['movies/movies.json'].interpretAsNodes();
       movies.setClassName('Movies');
 
-      let [ cast, crew ] = classes['movies/credits.json']
-        .closedTranspose(['cast', 'crew']);
-      classes['movies/credits.json'].delete();
+      let produced = movies.unroll('production_companies');
+      produced.setClassName('Produced By');
 
-      cast = cast.interpretAsEdges();
+      let companies = produced.promote('name');
+      companies.setClassName('Companies');
+
+      let tempEdges = Array.from(produced.edgeClasses());
+      produced = produced.interpretAsEdges({ autoconnect: true });
+      for (const edgeClass of tempEdges) {
+        edgeClass.delete();
+      }
+
+      let cast = classes['movies/credits.json'].unroll('cast')
+        .interpretAsEdges();
       cast.setClassName('Cast');
-
-      crew = crew.interpretAsEdges();
+      let crew = classes['movies/credits.json'].unroll('crew')
+        .interpretAsEdges();
       crew.setClassName('Crew');
+      classes['movies/credits.json'].delete();
 
       let people = classes['movies/people.json'].interpretAsNodes();
       people.setClassName('People');
 
-      let produced = classes['movies/companies.json'].interpretAsEdges();
-      produced.setClassName('Produced');
+      cast.connectToNodeClass({
+        nodeClass: movies,
+        side: 'target',
+        nodeAttribute: 'id',
+        edgeAttribute: 'movie_id'
+      });
+      cast.connectToNodeClass({
+        nodeClass: people,
+        side: 'source',
+        nodeAttribute: 'id',
+        edgeAttribute: 'id'
+      });
+      crew.connectToNodeClass({
+        nodeClass: movies,
+        side: 'target',
+        nodeAttribute: 'id',
+        edgeAttribute: 'movie_id'
+      });
+      crew.connectToNodeClass({
+        nodeClass: people,
+        side: 'source',
+        nodeAttribute: 'id',
+        edgeAttribute: 'id'
+      });
 
-      cast.connectToNodeClass({
-        nodeClass: movies,
-        side: 'target',
-        nodeAttribute: 'id',
-        edgeAttribute: 'movie_id'
+      let bechdelTests = classes['movies/bechdeltest.json'].interpretAsNodes();
+      bechdelTests.setClassName('Bechdel Tests');
+      bechdelTests.table.deriveAttribute('tt_imdbid', item => 'tt' + item.row.imdbid);
+
+      bechdelTests.connectToNodeClass({
+        otherNodeClass: movies,
+        attribute: 'tt_imdbid',
+        otherAttribute: 'imdb_id'
       });
-      cast.connectToNodeClass({
-        nodeClass: people,
-        side: 'source',
-        nodeAttribute: 'id',
-        edgeAttribute: 'id'
-      });
-      crew.connectToNodeClass({
-        nodeClass: movies,
-        side: 'target',
-        nodeAttribute: 'id',
-        edgeAttribute: 'movie_id'
-      });
-      crew.connectToNodeClass({
-        nodeClass: people,
-        side: 'source',
-        nodeAttribute: 'id',
-        edgeAttribute: 'id'
-      });
-      produced.connectToNodeClass({
-        nodeClass: movies,
-        side: 'target',
-        nodeAttribute: 'id',
-        edgeAttribute: 'movie_id'
-      });
-      let companies = produced.promote('name');
-      companies.setClassName('Companies');
     }
   },
   {
