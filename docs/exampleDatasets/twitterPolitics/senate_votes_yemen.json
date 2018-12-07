@@ -1,0 +1,901 @@
+[{
+        "member_id": "A000360",
+        "name": "Lamar Alexander",
+        "party": "R",
+        "state": "TN",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.323
+    },
+    {
+        "member_id": "B001230",
+        "name": "Tammy Baldwin",
+        "party": "D",
+        "state": "WI",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.522
+    },
+    {
+        "member_id": "B001261",
+        "name": "John Barrasso",
+        "party": "R",
+        "state": "WY",
+
+        "vote_position": "No",
+        "dw_nominate": 0.533
+    },
+    {
+        "member_id": "B001267",
+        "name": "Michael Bennet",
+        "party": "D",
+        "state": "CO",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.207
+    },
+    {
+        "member_id": "B001277",
+        "name": "Richard Blumenthal",
+        "party": "D",
+        "state": "CT",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.423
+    },
+    {
+        "member_id": "B000575",
+        "name": "Roy Blunt",
+        "party": "R",
+        "state": "MO",
+
+        "vote_position": "No",
+        "dw_nominate": 0.43
+    },
+    {
+        "member_id": "B001288",
+        "name": "Cory Booker",
+        "party": "D",
+        "state": "NJ",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.612
+    },
+    {
+        "member_id": "B001236",
+        "name": "John Boozman",
+        "party": "R",
+        "state": "AR",
+
+        "vote_position": "No",
+        "dw_nominate": 0.401
+    },
+    {
+        "member_id": "B000944",
+        "name": "Sherrod Brown",
+        "party": "D",
+        "state": "OH",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.438
+    },
+    {
+        "member_id": "B001135",
+        "name": "Richard M. Burr",
+        "party": "R",
+        "state": "NC",
+
+        "vote_position": "No",
+        "dw_nominate": 0.453
+    },
+    {
+        "member_id": "C000127",
+        "name": "Maria Cantwell",
+        "party": "D",
+        "state": "WA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.292
+    },
+    {
+        "member_id": "C001047",
+        "name": "Shelley Moore Capito",
+        "party": "R",
+        "state": "WV",
+
+        "vote_position": "No",
+        "dw_nominate": 0.26
+    },
+    {
+        "member_id": "C000141",
+        "name": "Benjamin L. Cardin",
+        "party": "D",
+        "state": "MD",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.327
+    },
+    {
+        "member_id": "C000174",
+        "name": "Thomas R. Carper",
+        "party": "D",
+        "state": "DE",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.174
+    },
+    {
+        "member_id": "C001070",
+        "name": "Bob Casey",
+        "party": "D",
+        "state": "PA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.305
+    },
+    {
+        "member_id": "C001075",
+        "name": "Bill Cassidy",
+        "party": "R",
+        "state": "LA",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.452
+    },
+    {
+        "member_id": "C001035",
+        "name": "Susan Collins",
+        "party": "R",
+        "state": "ME",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.11
+    },
+    {
+        "member_id": "C001088",
+        "name": "Christopher A. Coons",
+        "party": "D",
+        "state": "DE",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.242
+    },
+    {
+        "member_id": "C001071",
+        "name": "Bob Corker",
+        "party": "R",
+        "state": "TN",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.395
+    },
+    {
+        "member_id": "C001056",
+        "name": "John Cornyn",
+        "party": "R",
+        "state": "TX",
+
+        "vote_position": "No",
+        "dw_nominate": 0.495
+    },
+    {
+        "member_id": "C001113",
+        "name": "Catherine Cortez Masto",
+        "party": "D",
+        "state": "NV",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.394
+    },
+    {
+        "member_id": "C001095",
+        "name": "Tom Cotton",
+        "party": "R",
+        "state": "AR",
+
+        "vote_position": "No",
+        "dw_nominate": 0.61
+    },
+    {
+        "member_id": "C000880",
+        "name": "Michael D. Crapo",
+        "party": "R",
+        "state": "ID",
+
+        "vote_position": "No",
+        "dw_nominate": 0.509
+    },
+    {
+        "member_id": "C001098",
+        "name": "Ted Cruz",
+        "party": "R",
+        "state": "TX",
+
+        "vote_position": "No",
+        "dw_nominate": 0.818
+    },
+    {
+        "member_id": "D000618",
+        "name": "Steve Daines",
+        "party": "R",
+        "state": "MT",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.544
+    },
+    {
+        "member_id": "D000607",
+        "name": "Joe Donnelly",
+        "party": "D",
+        "state": "IN",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.119
+    },
+    {
+        "member_id": "D000622",
+        "name": "Tammy Duckworth",
+        "party": "D",
+        "state": "IL",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.32
+    },
+    {
+        "member_id": "D000563",
+        "name": "Richard J. Durbin",
+        "party": "D",
+        "state": "IL",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.363
+    },
+    {
+        "member_id": "E000285",
+        "name": "Michael B. Enzi",
+        "party": "R",
+        "state": "WY",
+
+        "vote_position": "No",
+        "dw_nominate": 0.54
+    },
+    {
+        "member_id": "E000295",
+        "name": "Joni Ernst",
+        "party": "R",
+        "state": "IA",
+
+        "vote_position": "No",
+        "dw_nominate": 0.518
+    },
+    {
+        "member_id": "F000062",
+        "name": "Dianne Feinstein",
+        "party": "D",
+        "state": "CA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.27
+    },
+    {
+        "member_id": "F000463",
+        "name": "Deb Fischer",
+        "party": "R",
+        "state": "NE",
+
+        "vote_position": "No",
+        "dw_nominate": 0.467
+    },
+    {
+        "member_id": "F000444",
+        "name": "Jeff Flake",
+        "party": "R",
+        "state": "AZ",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.855
+    },
+    {
+        "member_id": "G000562",
+        "name": "Cory Gardner",
+        "party": "R",
+        "state": "CO",
+
+        "vote_position": "No",
+        "dw_nominate": 0.454
+    },
+    {
+        "member_id": "G000555",
+        "name": "Kirsten E. Gillibrand",
+        "party": "D",
+        "state": "NY",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.412
+    },
+    {
+        "member_id": "G000359",
+        "name": "Lindsey Graham",
+        "party": "R",
+        "state": "SC",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.408
+    },
+    {
+        "member_id": "G000386",
+        "name": "Charles E. Grassley",
+        "party": "R",
+        "state": "IA",
+
+        "vote_position": "No",
+        "dw_nominate": 0.343
+    },
+    {
+        "member_id": "H001075",
+        "name": "Kamala Harris",
+        "party": "D",
+        "state": "CA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.694
+    },
+    {
+        "member_id": "H001076",
+        "name": "Margaret Hassan",
+        "party": "D",
+        "state": "NH",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.257
+    },
+    {
+        "member_id": "H000338",
+        "name": "Orrin G. Hatch",
+        "party": "R",
+        "state": "UT",
+
+        "vote_position": "No",
+        "dw_nominate": 0.382
+    },
+    {
+        "member_id": "H001046",
+        "name": "Martin Heinrich",
+        "party": "D",
+        "state": "NM",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.303
+    },
+    {
+        "member_id": "H001069",
+        "name": "Heidi Heitkamp",
+        "party": "D",
+        "state": "ND",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.122
+    },
+    {
+        "member_id": "H001041",
+        "name": "Dean Heller",
+        "party": "R",
+        "state": "NV",
+
+        "vote_position": "No",
+        "dw_nominate": 0.463
+    },
+    {
+        "member_id": "H001042",
+        "name": "Mazie K. Hirono",
+        "party": "D",
+        "state": "HI",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.485
+    },
+    {
+        "member_id": "H001061",
+        "name": "John Hoeven",
+        "party": "R",
+        "state": "ND",
+
+        "vote_position": "No",
+        "dw_nominate": 0.34
+    },
+    {
+        "member_id": "H001079",
+        "name": "Cindy Hyde-Smith",
+        "party": "R",
+        "state": "MS",
+
+        "vote_position": "No",
+        "dw_nominate": 0.424
+    },
+    {
+        "member_id": "I000024",
+        "name": "James M. Inhofe",
+        "party": "R",
+        "state": "OK",
+
+        "vote_position": "No",
+        "dw_nominate": 0.552
+    },
+    {
+        "member_id": "I000055",
+        "name": "Johnny Isakson",
+        "party": "R",
+        "state": "GA",
+
+        "vote_position": "No",
+        "dw_nominate": 0.403
+    },
+    {
+        "member_id": "J000293",
+        "name": "Ron Johnson",
+        "party": "R",
+        "state": "WI",
+
+        "vote_position": "No",
+        "dw_nominate": 0.602
+    },
+    {
+        "member_id": "J000300",
+        "name": "Doug Jones",
+        "party": "D",
+        "state": "AL",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.131
+    },
+    {
+        "member_id": "K000384",
+        "name": "Tim Kaine",
+        "party": "D",
+        "state": "VA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.234
+    },
+    {
+        "member_id": "K000393",
+        "name": "John Kennedy",
+        "party": "R",
+        "state": "LA",
+
+        "vote_position": "No",
+        "dw_nominate": 0.463
+    },
+    {
+        "member_id": "K000383",
+        "name": "Angus King",
+        "party": "I",
+        "state": "ME",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.153
+    },
+    {
+        "member_id": "K000367",
+        "name": "Amy Klobuchar",
+        "party": "D",
+        "state": "MN",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.247
+    },
+    {
+        "member_id": "K000352",
+        "name": "Jon Kyl",
+        "party": "R",
+        "state": "AZ",
+
+        "vote_position": "No",
+        "dw_nominate": null
+    },
+    {
+        "member_id": "L000575",
+        "name": "James Lankford",
+        "party": "R",
+        "state": "OK",
+
+        "vote_position": "No",
+        "dw_nominate": 0.575
+    },
+    {
+        "member_id": "L000174",
+        "name": "Patrick J. Leahy",
+        "party": "D",
+        "state": "VT",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.37
+    },
+    {
+        "member_id": "L000577",
+        "name": "Mike Lee",
+        "party": "R",
+        "state": "UT",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.922
+    },
+    {
+        "member_id": "M001183",
+        "name": "Joe Manchin III",
+        "party": "D",
+        "state": "WV",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.056
+    },
+    {
+        "member_id": "M000133",
+        "name": "Edward J. Markey",
+        "party": "D",
+        "state": "MA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.504
+    },
+    {
+        "member_id": "M001170",
+        "name": "Claire McCaskill",
+        "party": "D",
+        "state": "MO",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.142
+    },
+    {
+        "member_id": "M000355",
+        "name": "Mitch McConnell",
+        "party": "R",
+        "state": "KY",
+
+        "vote_position": "No",
+        "dw_nominate": 0.403
+    },
+    {
+        "member_id": "M000639",
+        "name": "Robert Menendez",
+        "party": "D",
+        "state": "NJ",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.363
+    },
+    {
+        "member_id": "M001176",
+        "name": "Jeff Merkley",
+        "party": "D",
+        "state": "OR",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.48
+    },
+    {
+        "member_id": "M000934",
+        "name": "Jerry Moran",
+        "party": "R",
+        "state": "KS",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.414
+    },
+    {
+        "member_id": "M001153",
+        "name": "Lisa Murkowski",
+        "party": "R",
+        "state": "AK",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.207
+    },
+    {
+        "member_id": "M001169",
+        "name": "Christopher S. Murphy",
+        "party": "D",
+        "state": "CT",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.306
+    },
+    {
+        "member_id": "M001111",
+        "name": "Patty Murray",
+        "party": "D",
+        "state": "WA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.343
+    },
+    {
+        "member_id": "N000032",
+        "name": "Bill Nelson",
+        "party": "D",
+        "state": "FL",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.193
+    },
+    {
+        "member_id": "P000603",
+        "name": "Rand Paul",
+        "party": "R",
+        "state": "KY",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.879
+    },
+    {
+        "member_id": "P000612",
+        "name": "David Perdue",
+        "party": "R",
+        "state": "GA",
+
+        "vote_position": "No",
+        "dw_nominate": 0.611
+    },
+    {
+        "member_id": "P000595",
+        "name": "Gary Peters",
+        "party": "D",
+        "state": "MI",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.236
+    },
+    {
+        "member_id": "P000449",
+        "name": "Rob Portman",
+        "party": "R",
+        "state": "OH",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.374
+    },
+    {
+        "member_id": "R000122",
+        "name": "Jack Reed",
+        "party": "D",
+        "state": "RI",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.38
+    },
+    {
+        "member_id": "R000584",
+        "name": "Jim Risch",
+        "party": "R",
+        "state": "ID",
+
+        "vote_position": "No",
+        "dw_nominate": 0.636
+    },
+    {
+        "member_id": "R000307",
+        "name": "Pat Roberts",
+        "party": "R",
+        "state": "KS",
+
+        "vote_position": "No",
+        "dw_nominate": 0.414
+    },
+    {
+        "member_id": "R000605",
+        "name": "Mike Rounds",
+        "party": "R",
+        "state": "SD",
+
+        "vote_position": "No",
+        "dw_nominate": 0.39
+    },
+    {
+        "member_id": "R000595",
+        "name": "Marco Rubio",
+        "party": "R",
+        "state": "FL",
+
+        "vote_position": "No",
+        "dw_nominate": 0.576
+    },
+    {
+        "member_id": "S000033",
+        "name": "Bernard Sanders",
+        "party": "I",
+        "state": "VT",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.521
+    },
+    {
+        "member_id": "S001197",
+        "name": "Ben Sasse",
+        "party": "R",
+        "state": "NE",
+
+        "vote_position": "No",
+        "dw_nominate": 0.812
+    },
+    {
+        "member_id": "S001194",
+        "name": "Brian Schatz",
+        "party": "D",
+        "state": "HI",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.416
+    },
+    {
+        "member_id": "S000148",
+        "name": "Charles E. Schumer",
+        "party": "D",
+        "state": "NY",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.351
+    },
+    {
+        "member_id": "S001184",
+        "name": "Tim Scott",
+        "party": "R",
+        "state": "SC",
+
+        "vote_position": "No",
+        "dw_nominate": 0.653
+    },
+    {
+        "member_id": "S001181",
+        "name": "Jeanne Shaheen",
+        "party": "D",
+        "state": "NH",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.252
+    },
+    {
+        "member_id": "S000320",
+        "name": "Richard C. Shelby",
+        "party": "R",
+        "state": "AL",
+
+        "vote_position": "No",
+        "dw_nominate": 0.431
+    },
+    {
+        "member_id": "S001203",
+        "name": "Tina Smith",
+        "party": "D",
+        "state": "MN",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.345
+    },
+    {
+        "member_id": "S000770",
+        "name": "Debbie Stabenow",
+        "party": "D",
+        "state": "MI",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.331
+    },
+    {
+        "member_id": "S001198",
+        "name": "Dan Sullivan",
+        "party": "R",
+        "state": "AK",
+
+        "vote_position": "No",
+        "dw_nominate": 0.466
+    },
+    {
+        "member_id": "T000464",
+        "name": "Jon Tester",
+        "party": "D",
+        "state": "MT",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.21
+    },
+    {
+        "member_id": "T000250",
+        "name": "John Thune",
+        "party": "R",
+        "state": "SD",
+
+        "vote_position": "No",
+        "dw_nominate": 0.41
+    },
+    {
+        "member_id": "T000476",
+        "name": "Thom Tillis",
+        "party": "R",
+        "state": "NC",
+
+        "vote_position": "No",
+        "dw_nominate": 0.426
+    },
+    {
+        "member_id": "T000461",
+        "name": "Patrick J. Toomey",
+        "party": "R",
+        "state": "PA",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.638
+    },
+    {
+        "member_id": "U000039",
+        "name": "Tom Udall",
+        "party": "D",
+        "state": "NM",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.453
+    },
+    {
+        "member_id": "V000128",
+        "name": "Chris Van Hollen",
+        "party": "D",
+        "state": "MD",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.392
+    },
+    {
+        "member_id": "W000805",
+        "name": "Mark Warner",
+        "party": "D",
+        "state": "VA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.194
+    },
+    {
+        "member_id": "W000817",
+        "name": "Elizabeth Warren",
+        "party": "D",
+        "state": "MA",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.758
+    },
+    {
+        "member_id": "W000802",
+        "name": "Sheldon Whitehouse",
+        "party": "D",
+        "state": "RI",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.397
+    },
+    {
+        "member_id": "W000437",
+        "name": "Roger Wicker",
+        "party": "R",
+        "state": "MS",
+
+        "vote_position": "No",
+        "dw_nominate": 0.377
+    },
+    {
+        "member_id": "W000779",
+        "name": "Ron Wyden",
+        "party": "D",
+        "state": "OR",
+
+        "vote_position": "Yes",
+        "dw_nominate": -0.321
+    },
+    {
+        "member_id": "Y000064",
+        "name": "Todd Young",
+        "party": "R",
+        "state": "IN",
+
+        "vote_position": "Yes",
+        "dw_nominate": 0.483
+    }
+]
