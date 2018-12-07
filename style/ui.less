@@ -77,6 +77,23 @@ input {
   }
 }
 
+textarea {
+  font-family: inherit;
+  font-size: 1em;
+  background: @backgroundColor;
+  color: @textColor;
+  border: 1px solid @separatorColor;
+  border-radius: @borderRadius / 2;
+  height: @buttonSize / 2;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  outline: none;
+  &:focus {
+    background: @darkBackgroundColor;
+  }
+}
+
 select {
   font-family: inherit;
   font-size: 1em;

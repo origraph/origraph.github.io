@@ -80,13 +80,13 @@ const EXAMPLE_MODELS = [
       let categories = classes['northwind/categories.csv'].interpretAsNodes();
       categories.setClassName('Categories');
 
-      employees.Class({
+      employees.connectToEdgeClass({
         edgeClass: employeeTerritories,
         side: 'source',
         nodeAttribute: 'employeeID',
         edgeAttribute: 'employeeID'
       });
-      territories.Class({
+      territories.connectToEdgeClass({
         edgeClass: employeeTerritories,
         side: 'target',
         nodeAttribute: 'territoryID',

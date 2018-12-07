@@ -77,8 +77,7 @@ class ExampleOption extends ModalMenuOption {
         const classes = {};
         for (const filename of this.files) {
           const text = await d3.text(`docs/exampleDatasets/${filename}`);
-          const newClass = newModel.addStringAsStaticTable({
-            key: filename,
+          const newClass = await newModel.addTextFile({
             name: filename,
             text
           });

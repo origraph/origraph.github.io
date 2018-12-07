@@ -2,7 +2,7 @@
 import ModalMenuOption from '../Common/ModalMenuOption.js';
 import ModelSubmenuMixin from './ModelSubmenuMixin.js';
 
-class ProjectSummary extends ModelSubmenuMixin(ModalMenuOption) {
+class ModelSummary extends ModelSubmenuMixin(ModalMenuOption) {
   constructor (parentMenu, d3el) {
     super(parentMenu, d3el);
     this.icon = 'img/annotate.svg';
@@ -10,6 +10,7 @@ class ProjectSummary extends ModelSubmenuMixin(ModalMenuOption) {
   }
   setup () {
     super.setup();
+    this.contentDiv.classed('modelInfo', true);
     this.projectNameField = this.contentDiv.append('input')
       .property('value', this.model.name)
       .on('change', () => {
@@ -43,7 +44,7 @@ class ProjectSummary extends ModelSubmenuMixin(ModalMenuOption) {
     // TODO: do a more complete summary of all tables and their associated
     // classes?
     const tableList = d3.entries(this.model.tables)
-      .filter(({ key, value }) => value.type === 'Static');
+      .filter(({ key, value }) => value.type === 'Static' || value.type === 'StaticDict');
 
     let files = this.fileList.selectAll('.file')
       .data(tableList, d => d.key);
@@ -55,7 +56,9 @@ class ProjectSummary extends ModelSubmenuMixin(ModalMenuOption) {
     filesEnter.append('span').classed('filename', true);
     files.select('.filename').text(d => d.value.name);
 
-    filesEnter.append('div').classed('button', true)
+    filesEnter.append('div')
+      .classed('button', true)
+      .classed('small', true)
       .append('a')
       .append('img').attr('src', 'img/hamburger.svg');
     files.select('.button')
@@ -68,4 +71,4 @@ class ProjectSummary extends ModelSubmenuMixin(ModalMenuOption) {
       });
   }
 }
-export default ProjectSummary;
+export default ModelSummary;

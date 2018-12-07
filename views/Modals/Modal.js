@@ -47,7 +47,7 @@ class Modal extends View {
           .classed('button', true)
           .on('click', () => {
             if (typeof this.cancel === 'function') {
-              this.cancel(this, this.resolve);
+              this.cancel(this.resolve);
             } else {
               this.resolve(false);
             }
@@ -62,7 +62,7 @@ class Modal extends View {
           .classed('button', true)
           .on('click', () => {
             if (typeof this.ok === 'function') {
-              this.ok(this, this.resolve);
+              this.ok(this.resolve);
             } else {
               this.resolve(true);
             }

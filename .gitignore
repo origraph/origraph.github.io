@@ -76,3 +76,7 @@ node_modules/codemirror/mode/javascript/*
 !node_modules/codemirror/theme/
 node_modules/codemirror/theme/*
 !node_modules/codemirror/theme/material.css
+
+!node_modules/downloadjs/
+node_modules/downloadjs/*
+!node_modules/downloadjs/download.min.js

@@ -444,10 +444,27 @@ class MainView extends View {
   }
   showTableContextMenu ({ modelId, tableId, targetBounds = null } = {}) {
     const menuEntries = {
+      'Add As Generic Class': {
+        icon: 'img/add.svg',
+        onClick: () => {
+          origraph.models[modelId].createClass({
+            type: 'GenericClass',
+            tableId
+          });
+        }
+      },
       'Delete Table': {
         icon: 'img/delete.svg',
         onClick: () => {
-          origraph.models[modelId].tables[tableId].delete();
+          try {
+            origraph.models[modelId].tables[tableId].delete();
+          } catch (err) {
+            if (err.inUse) {
+              this.alert(`Can't delete table; it's in use by least one class`);
+            } else {
+              throw err;
+            }
+          }
         }
       }
     };

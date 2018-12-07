@@ -54,6 +54,15 @@
       }
     }
 
+    .option {
+      display: block;
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
+      label {
+        margin-right: 0.25em;
+      }
+    }
+
     .loadContainer {
       display: flex;
       align-items: center;
@@ -65,12 +74,37 @@
       }
     }
 
-    .option {
-      display: block;
-      margin-top: 0.25em;
-      margin-bottom: 0.25em;
+    &.modelInfo {
+      textarea {
+        width: 100%;
+        height: 4em;
+        margin-top: 0.5em;
+      }
+      .file {
+        margin-top: 0.5em;
+        display: flex;
+        align-items: center;
+        .filename {
+          margin-right: @smallButtonPadding;
+        }
+      }
+    }
+
+    &.downloadOption {
+      details {
+        margin-top: 0.5em;
+      }
+      form {
+        display: flex;
+        flex-wrap: wrap;
+      }
       label {
-        margin-right: 0.25em;
+        span {
+          margin: 0 1em 0 0.5em;
+        }
+      }
+      .download.button {
+        margin-top: 0.5em;
       }
     }
   }
