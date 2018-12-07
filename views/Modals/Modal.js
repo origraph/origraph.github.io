@@ -45,7 +45,14 @@ class Modal extends View {
         const cancelButton = dialogButtons.append('div')
           .classed('cancel', true)
           .classed('button', true)
-          .on('click', () => { this.handleButton(this.cancel); });
+          .on('click', () => {
+            if (typeof this.cancel === 'function') {
+              this.cancel(this, this.resolve);
+            } else {
+              this.resolve(false);
+            }
+            window.mainView.hideModal();
+          });
         cancelButton.append('a');
         cancelButton.append('span').text('Cancel');
       }
@@ -53,7 +60,14 @@ class Modal extends View {
         const okButton = dialogButtons.append('div')
           .classed('ok', true)
           .classed('button', true)
-          .on('click', () => { this.handleButton(this.ok); });
+          .on('click', () => {
+            if (typeof this.ok === 'function') {
+              this.ok(this, this.resolve);
+            } else {
+              this.resolve(true);
+            }
+            window.mainView.hideModal();
+          });
         okButton.append('a');
         okButton.append('span').text('OK');
       }
@@ -63,14 +77,6 @@ class Modal extends View {
     if (typeof this.content === 'function') {
       this.content(this.d3el);
     }
-  }
-  handleButton (response) {
-    if (typeof response === 'function') {
-      response.call(this, this.resolve);
-    } else {
-      this.resolve(response);
-    }
-    window.mainView.hideModal();
   }
 }
 export default Modal;
