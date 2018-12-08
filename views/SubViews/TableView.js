@@ -1,6 +1,7 @@
 /* globals d3, origraph, Handsontable */
 import GoldenLayoutView from './GoldenLayoutView.js';
 import DeriveModal from '../Modals/DeriveModal.js';
+import FilterModal from '../Modals/FilterModal.js';
 
 const INDICATOR_ICONS = {
   'filtered': 'img/filter.svg',
@@ -367,7 +368,7 @@ ${cellContents}`;
     menuEntries['Filter...'] = {
       icon: 'img/filter.svg',
       onClick: async () => {
-        window.mainView.alert(`Sorry, not implemented yet...`);
+        window.mainView.showModal(new FilterModal(this.classObj, attribute.name));
       }
     };
 

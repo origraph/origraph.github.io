@@ -6,7 +6,7 @@ class DeriveModal extends Modal {
   constructor (targetClass) {
     super({
       resources: {
-        text: 'views/Modals/DeriveModalDocs.html'
+        text: 'docs/code.html'
       }
     });
     this.customStyling = true;
@@ -208,12 +208,10 @@ return (sortedBins[0] || [])[0];`;
       mode: 'javascript',
       lineNumbers: true,
       value: this.generateCodeBlock(`\
-// Hint: if you apply a function in Template Mode,
-// it automatically replaces the contents of this
-// function
+// Hint: if you apply a function in Template Mode, it automatically
+// replaces the contents of this function
 
-// This is the default behavior (copies the index
-// from the same table):
+// This is the default behavior (copies the index from the same table):
 return ${this.targetClass.variableName}.index;`)
     });
     // Don't allow the user to edit the first or last lines
@@ -269,62 +267,65 @@ return ${this.targetClass.variableName}.index;`)
     }
   }
   drawPreview () {
-    const func = this.evalFunction();
-    const previewCell = async (element, item) => {
-      if (func instanceof Error) {
-        element.node().__error = func;
-        element.classed('error', true)
-          .text(func.constructor.name);
-      } else {
-        try {
-          const result = await func(item);
-          delete element.node().__error;
-          element.classed('error', false)
-            .text(result);
-        } catch (err) {
-          element.node().__error = err;
+    clearTimeout(this._previewTimeout);
+    this._previewTimeout = setTimeout(() => {
+      const func = this.evalFunction();
+      const previewCell = async (element, item) => {
+        if (func instanceof Error) {
+          element.node().__error = func;
           element.classed('error', true)
-            .text(err.constructor.name);
+            .text(func.constructor.name);
+        } else {
+          try {
+            const result = await func(item);
+            delete element.node().__error;
+            element.classed('error', false)
+              .text(result);
+          } catch (err) {
+            element.node().__error = err;
+            element.classed('error', true)
+              .text(err.constructor.name);
+          }
         }
-      }
-      element.on('click', function () {
-        if (this.__error) {
-          window.mainView.showTooltip({
-            targetBounds: this.getBoundingClientRect(),
-            hideAfterMs: 20000,
-            content: `<p>${this.__error.message}</p>`
-          });
-        }
-      });
-    };
+        element.on('click', function () {
+          if (this.__error) {
+            window.mainView.showTooltip({
+              targetBounds: this.getBoundingClientRect(),
+              hideAfterMs: 20000,
+              content: `<p>${this.__error.message}</p>`
+            });
+          }
+        });
+      };
 
-    const currentTable = this.targetClass.table.currentData;
-    const currentKeys = Object.keys(currentTable.data);
-    const cellRenderer = function (instance, td, row, col, prop, value, cellProperties) {
-      Handsontable.renderers.TextRenderer.apply(this, arguments);
-      const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
-      if (col === 0) {
-        d3.select(td).classed('idColumn', true);
-      } else {
-        previewCell(d3.select(td), currentTable.data[index]);
-      }
-    };
-    const columns = [
-      {
-        renderer: cellRenderer,
-        data: index => index
-      },
-      {
-        renderer: cellRenderer,
-        data: index => '...'
-      }
-    ];
-    const spec = {
-      data: currentKeys,
-      columns
-    };
-    this.tableRenderer.updateSettings(spec);
-    this.tableRenderer.render();
+      const currentTable = this.targetClass.table.currentData;
+      const currentKeys = Object.keys(currentTable.data);
+      const cellRenderer = function (instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.TextRenderer.apply(this, arguments);
+        const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
+        if (col === 0) {
+          d3.select(td).classed('idColumn', true);
+        } else {
+          previewCell(d3.select(td), currentTable.data[index]);
+        }
+      };
+      const columns = [
+        {
+          renderer: cellRenderer,
+          data: index => index
+        },
+        {
+          renderer: cellRenderer,
+          data: index => '...'
+        }
+      ];
+      const spec = {
+        data: currentKeys,
+        columns
+      };
+      this.tableRenderer.updateSettings(spec);
+      this.tableRenderer.render();
+    }, 1000);
   }
   drawSelectorView () {
     // Attribute select menu
@@ -363,7 +364,7 @@ return ${this.targetClass.variableName}.index;`)
     }
 
     // Apply changes whenever either select menu is changed
-    d3.selectAll('#attrSelect, #funcSelect')
+    this.d3el.selectAll('#attrSelect, #funcSelect')
       .on('change', () => {
         const func = funcSelect.node().value;
         if (func) {

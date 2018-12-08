@@ -1,9 +1,9 @@
-/* globals d3, origraph, CodeMirror, Handsontable */
+/* globals origraph, CodeMirror */
 import Modal from './Modal.js';
 import PathSpecificationView from './PathSpecificationView.js';
 
 class FilterModal extends Modal {
-  constructor (targetClass) {
+  constructor (targetClass, attribute) {
     super({
       resources: {
         text: 'docs/code.html'
@@ -12,9 +12,10 @@ class FilterModal extends Modal {
     this.customStyling = true;
     this.targetClass = targetClass;
     this.pathSpecView = new PathSpecificationView(targetClass);
+    this.attribute = attribute;
     this.codeTemplate = {
-      func: 'Duplicate',
-      attr: null
+      func: 'Equals',
+      value: 0
     };
     this.advancedMode = false;
   }
@@ -27,51 +28,13 @@ class FilterModal extends Modal {
 ${content.split(/\n/g).map(d => '  ' + d).join('\n')}
 }`;
   }
-  setCodeContents ({ func, attr }) {
-    this.codeTemplate = { func, attr };
+  setCodeContents ({ func, value }) {
+    this.codeTemplate = { func, value };
     let codeContent = '';
-    if (func === 'Count' || func === 'Mean') {
+    if (func.startsWith('Count')) {
       codeContent = 'let count = 0;\n';
-    } else if (func === 'Concatenate' || func === 'Median') {
-      codeContent = 'let values = [];\n';
-    } else if (func === 'Mode') {
-      codeContent = 'let counts = {};\n';
-    }
-    if (func === 'Mean' || func === 'Sum') {
-      codeContent += 'let total = 0;\n';
     }
 
-    const addLoopMiddle = (classObj, indent) => {
-      let result = '';
-      if (func === 'Count') {
-        result += `${indent}count++;`;
-      }
-      if (func !== 'Count') {
-        if (attr === '') {
-          result += `${indent}let value = ${classObj.variableName}.index;`;
-        } else {
-          result += `${indent}let value = ${classObj.variableName}.row['${attr}'];`;
-        }
-      }
-      if (func === 'Mean' || func === 'Sum') {
-        result += `
-${indent}if (!isNaN(parseFloat(value))) {
-${indent}  total += parseFloat(value);`;
-        if (func === 'Mean') {
-          result += `
-${indent}  count++;`;
-        }
-        result += `
-${indent}}`;
-      } else if (func === 'Median' || func === 'Concatenate') {
-        result += `
-${indent}values.push(value);`;
-      } else if (func === 'Mode') {
-        result += `
-${indent}counts[value] = (counts[value] || 0) + 1;`;
-      }
-      return result;
-    };
     const addLoop = (pathIndex, indent) => {
       const classId = this.currentPath[pathIndex];
       const classObj = origraph.currentModel.classes[classId];
@@ -80,7 +43,7 @@ ${indent}counts[value] = (counts[value] || 0) + 1;`;
       const loopIterator = `\
 ${lastClassObj.variableName}.${classObj.type.toLocaleLowerCase()}s({ classes: [class${pathIndex}] })`;
       const loopContents = pathIndex === this.currentPath.length - 1
-        ? addLoopMiddle(classObj, indent + '  ') : addLoop(pathIndex + 1, indent + '  ');
+        ? indent + '  count++;' : addLoop(pathIndex + 1, indent + '  ');
       return `\
 ${indent}const class${pathIndex} = origraph.currentModel.findClass('${classObj.className}');
 ${indent}for await (const ${classObj.variableName} of ${loopIterator}) {
@@ -88,27 +51,30 @@ ${loopContents}
 ${indent}}`;
     };
     if (this.currentPath.length === 1) {
-      codeContent += addLoopMiddle(origraph.currentModel.classes[this.currentPath[0]], '');
+      if (this.attribute === null) {
+        codeContent += `  let value = ${this.targetClass.variableName}.index;`;
+      } else {
+        codeContent += `  let value = ${this.targetClass.variableName}.row['${this.attribute}'];`;
+      }
     } else {
       codeContent += addLoop(1, '  ');
     }
     codeContent += '\n';
 
-    if (func === 'Duplicate') {
-      codeContent += 'return value;';
-    } else if (func === 'Count') {
-      codeContent += 'return count;';
-    } else if (func === 'Mean') {
-      codeContent += 'return total / count;';
-    } else if (func === 'Sum') {
-      codeContent += 'return total;';
-    } else if (func === 'Concatenate') {
-      codeContent += `return values.join(',');`;
-    } else if (func === 'Median') {
-      codeContent += `return values.sort()[Math.floor(values.length / 2)];`;
-    } else if (func === 'Mode') {
-      codeContent += `const sortedBins = Object.entries(counts).sort((a, b) => a[1] - b[1]).reverse();
-return (sortedBins[0] || [])[0];`;
+    if (func === 'Equals') {
+      codeContent += `return value === '${value}';`;
+    } else if (func === 'Contains') {
+      codeContent += `return value.indexOf('${value}') !== -1;`;
+    } else if (func === 'Greater than') {
+      codeContent += `return value > ${value};`;
+    } else if (func === 'Less than') {
+      codeContent += `return value < ${value};`;
+    } else if (func === 'Count equals') {
+      codeContent += `return count === ${value};`;
+    } else if (func === 'Count greater than') {
+      codeContent += `return count > '${value}';`;
+    } else if (func === 'Count less than') {
+      codeContent += `return count < '${value}';`;
     }
     this._injectingTemplate = true;
     this.code.setValue(this.generateCodeBlock(codeContent));
@@ -120,38 +86,37 @@ return (sortedBins[0] || [])[0];`;
       <div class="pathSpecView PathSpecificationView"></div>
       <div class="selectorView">
         <div>
-          <h3>Choose an attribute</h3>
-          <select id="attrSelect" size="10">
-            <option value="" selected>Index</option>
-            <optgroup label="Values:">
-            </optgroup>
-          </select>
-        </div>
-        <div>
           <h3>Choose a function</h3>
           <select id="funcSelect" size="10">
             <option disabled id="customFunc">Custom</option>
             <optgroup label="In-class:">
-              <option selected>Duplicate</option>
+              <option selected>Equals</option>
+              <option>Contains</option>
+              <option>Greater than</option>
+              <option>Less than</option>
             </optgroup>
             <optgroup label="Across Classes:" disabled>
-              <option>Count</option>
-              <option>Sum</option>
-              <option>Mean</option>
-              <option>Median</option>
-              <option>Mode</option>
-              <option>Concatenate</option>
+              <option>Count equals</option>
+              <option>Count greater than</option>
+              <option>Count less than</option>
             </optgroup>
           </select>
+        </div>
+        <div>
+          <h3>Filter value</h3>
+          <input id="filterValue" value="0"/>
         </div>
       </div>
       <div class="codeView"></div>
       <div class="docsView">${this.resources.text}</div>
       <div class="preview">
         <h3>Preview</h3>
-        <div class="TableView"></div>
-        <h3>Name the new attribute</h3>
-        <input type="text" id="attrName" value="New Attribute"/>
+        <div><span id="filterCount"></span> Filtered</div>
+        <div><span id="remainingCount"></span> Remaining</div>
+        <details id="errorMessage" style="display:none">
+          <summary></summary>
+          <div id="errorContents"></div>
+        </details>
       </div>
     `);
     super.setup();
@@ -159,7 +124,6 @@ return (sortedBins[0] || [])[0];`;
     this.pathSpecView.on('pathChange', () => { this.render(); });
     this.setupButtons();
     this.setupCodeView();
-    this.setupPreview();
   }
   draw () {
     this.d3el.selectAll('.PathSpecificationView,.selectorView')
@@ -176,8 +140,8 @@ return (sortedBins[0] || [])[0];`;
     }
   }
   ok (resolve) {
-    this.targetClass.table.deriveAttribute(
-      this.d3el.select('#attrName').node().value,
+    this.targetClass.table.addFilter(
+      this.attribute,
       this.evalFunction());
     resolve(true);
   }
@@ -203,18 +167,17 @@ return (sortedBins[0] || [])[0];`;
       .text(this.advancedMode ? 'Template Mode' : 'Advanced Mode');
   }
   setupCodeView () {
+    const attrBit = this.attribute === null ? '.index' : `.row['${this.attribute}']`;
     this.code = CodeMirror(this.d3el.select('.codeView').node(), {
       theme: 'material',
       mode: 'javascript',
       lineNumbers: true,
       value: this.generateCodeBlock(`\
-// Hint: if you apply a function in Template Mode,
-// it automatically replaces the contents of this
-// function
+// Hint: if you apply a function in Template Mode, it automatically
+// replaces the contents of this function
 
-// This is the default behavior (copies the index
-// from the same table):
-return ${this.targetClass.variableName}.index;`)
+// This is the default behavior (keeps only the first row):
+return ${this.targetClass.variableName}${attrBit} === 0;`)
     });
     // Don't allow the user to edit the first or last lines
     this.code.on('beforeChange', (cm, change) => {
@@ -233,31 +196,6 @@ return ${this.targetClass.variableName}.index;`)
   drawCodeView () {
     this.code.refresh();
   }
-  setupPreview () {
-    this.tableRenderer = new Handsontable(this.d3el.select('.TableView').node(), {
-      data: [],
-      dataSchema: index => { return { index }; }, // Fake "dataset"
-      // (Handsontable can't handle our actual Wrapper objects, because they have cycles)
-      columns: [],
-      readOnly: true,
-      stretchH: 'last',
-      disableVisualSelection: true
-    });
-
-    this.d3el.select('#attrName').on('change', () => {
-      this.handleNewName();
-    });
-  }
-  handleNewName () {
-    const attrDetails = this.targetClass.table.getAttributeDetails();
-    const el = this.d3el.select('#attrName').node();
-    const base = el.value;
-    let i = '';
-    while (attrDetails[base + i]) {
-      i = i === '' ? 1 : i + 1;
-    }
-    el.value = base + i;
-  }
   evalFunction () {
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
     let codeContents = this.code.getValue().split('\n');
@@ -269,82 +207,39 @@ return ${this.targetClass.variableName}.index;`)
     }
   }
   drawPreview () {
-    const func = this.evalFunction();
-    const previewCell = async (element, item) => {
+    clearTimeout(this._previewTimeout);
+    this._previewTimeout = setTimeout(async () => {
+      const func = this.evalFunction();
+      const errorMessage = this.d3el.select('#errorMessage');
       if (func instanceof Error) {
-        element.node().__error = func;
-        element.classed('error', true)
-          .text(func.constructor.name);
+        errorMessage.style('display', null);
+        errorMessage.select('summary').text(func.constructor.name);
+        errorMessage.select('#errorContents').text(func.message);
+        this.d3el.selectAll('#filterCount, #remainingCount').text('--');
       } else {
         try {
-          const result = await func(item);
-          delete element.node().__error;
-          element.classed('error', false)
-            .text(result);
+          errorMessage.style('display', 'none');
+          let keep = 0;
+          let reject = 0;
+          for await (const item of this.targetClass.table.iterate()) {
+            if (await func(item) === true) {
+              keep++;
+            } else {
+              reject++;
+            }
+          }
+          this.d3el.select('#filterCount').text(reject);
+          this.d3el.select('#remainingCount').text(keep);
         } catch (err) {
-          element.node().__error = err;
-          element.classed('error', true)
-            .text(err.constructor.name);
+          errorMessage.style('display', null);
+          errorMessage.select('summary').text(err.constructor.name);
+          errorMessage.select('#errorContents').text(err.message);
+          this.d3el.selectAll('#filterCount, #remainingCount').text('--');
         }
       }
-      element.on('click', function () {
-        if (this.__error) {
-          window.mainView.showTooltip({
-            targetBounds: this.getBoundingClientRect(),
-            hideAfterMs: 20000,
-            content: `<p>${this.__error.message}</p>`
-          });
-        }
-      });
-    };
-
-    const currentTable = this.targetClass.table.currentData;
-    const currentKeys = Object.keys(currentTable.data);
-    const cellRenderer = function (instance, td, row, col, prop, value, cellProperties) {
-      Handsontable.renderers.TextRenderer.apply(this, arguments);
-      const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
-      if (col === 0) {
-        d3.select(td).classed('idColumn', true);
-      } else {
-        previewCell(d3.select(td), currentTable.data[index]);
-      }
-    };
-    const columns = [
-      {
-        renderer: cellRenderer,
-        data: index => index
-      },
-      {
-        renderer: cellRenderer,
-        data: index => '...'
-      }
-    ];
-    const spec = {
-      data: currentKeys,
-      columns
-    };
-    this.tableRenderer.updateSettings(spec);
-    this.tableRenderer.render();
+    }, 1000);
   }
   drawSelectorView () {
-    // Attribute select menu
-    const attrSelect = this.d3el.select('#attrSelect');
-
-    // Update the Index option
-    attrSelect.select('[value=""]')
-      .property('selected', this.codeTemplate && this.codeTemplate.attr === null);
-
-    // Update the list of attributes
-    const attrList = d3.entries(origraph.currentModel
-      .classes[this.pathSpecView.currentClassId].table.getAttributeDetails());
-    let attrs = attrSelect.select('optgroup').selectAll('option')
-      .data(attrList, ({ key }) => key);
-    attrs.exit().remove();
-    const attrsEnter = attrs.enter().append('option');
-    attrs = attrsEnter.merge(attrs);
-    attrs.text(({ key }) => key)
-      .property('selected', ({ key }) => this.codeTemplate && this.codeTemplate.attr === key);
-
     // Function select menu
     const funcSelect = this.d3el.select('#funcSelect');
     // Enable / disable sections based on what currentPath and codeTemplate are
@@ -362,17 +257,28 @@ return ${this.targetClass.variableName}.index;`)
       funcSelect.node().value = null;
     }
 
-    // Apply changes whenever either select menu is changed
-    d3.selectAll('#attrSelect, #funcSelect')
-      .on('change', () => {
-        const func = funcSelect.node().value;
-        if (func) {
-          this.setCodeContents({
-            func,
-            attr: attrSelect.node().value
-          });
-        }
-      });
+    // Filter value
+    const filterValue = this.d3el.select('#filterValue')
+      .property('disabled', !this.codeTemplate);
+    filterValue.node().value = this.codeTemplate ? this.codeTemplate.value : '';
+
+    // Apply changes whenever either select menu or filterValue is changed
+    const updateContents = () => {
+      clearTimeout(this._updateContentsTimeout);
+      const func = funcSelect.node().value;
+      if (func) {
+        this.setCodeContents({
+          func,
+          value: filterValue.node().value
+        });
+      }
+    };
+    this.d3el.selectAll('#funcSelect, #filterValue')
+      .on('change', updateContents);
+    filterValue.on('keyup', () => {
+      clearTimeout(this._updateContentsTimeout);
+      this._updateContentsTimeout = setTimeout(updateContents, 1000);
+    });
   }
 }
 
