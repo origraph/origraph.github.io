@@ -241,7 +241,7 @@ export default [
       'twitterPolitics/senateMembers.json',
       'twitterPolitics/senateTweets.json'
     ],
-    prefab: (model, classes) => {
+    prefab: async (model, classes) => {
       const senators = classes['twitterPolitics/senateMembers.json']
         .interpretAsNodes();
       senators.setClassName('Senators');
@@ -259,52 +259,65 @@ export default [
       const donorCommittees = contribs.promote('fec_committee_name');
       donorCommittees.setClassName('Donor Committees');
 
-      /*
       const [ contribsFor, contribsAgainst ] = contribs
         .closedFacet('support_or_oppose', [ 'S', 'O' ]);
       contribsFor.setClassName('Contributions For');
       contribsAgainst.setClassName('Contributions Against');
       contribs.delete();
 
-      let votes = classes['twitterPolitics/recent_votes.json'];
-      votes.setClassName('votes');
-
       const pressReleases = classes['twitterPolitics/pressReleases.json']
-        .interpretAsEdges();
+        .interpretAsNodes();
       pressReleases.setClassName('Press Releases');
 
-      senators.connectToEdgeClass({
-        edgeClass: pressReleases,
-        side: 'source',
-        nodeAttribute: 'id',
-        edgeAttribute: 'member_id'
-      });
-
-      const twitterAccounts = classes['twitterPolitics/senateTweetAccts.json']
-        .interpretAsEdges();
-      twitterAccounts.setClassName('Twitter Accounts');
-
-      senators.connectToEdgeClass({
-        edgeClass: twitterAccounts,
-        side: 'source',
-        nodeAttribute: 'twitter_account',
-        edgeAttribute: 'screen_name'
+      senators.connectToNodeClass({
+        otherNodeClass: pressReleases,
+        attribute: 'id',
+        otherAttribute: 'member_id'
       });
 
       const tweets = classes['twitterPolitics/senateTweets.json']
         .interpretAsNodes();
       tweets.setClassName('Tweets');
 
-      const accounts = classes['twitterPolitics/senateTweetAccts.json']
-        .interpretAsNodes();
-      accounts.setClassName('Accounts');
+      let twitterAccounts = tweets.expand('user');
 
-      accounts.connectToNodeClass({
-        otherNodeClass: tweets,
-        attribute: 'id_str',
-        otherAttribute: 'user'
+      senators.connectToNodeClass({
+        otherNodeClass: twitterAccounts,
+        attribute: 'twitter_account',
+        otherAttribute: 'screen_name'
       });
+
+      const intermediateClasses = [ twitterAccounts ];
+      for (const edgeClass of twitterAccounts.edgeClasses()) {
+        if (twitterAccounts.getEdgeRole(edgeClass) === 'source') {
+          intermediateClasses.push(edgeClass);
+        } else {
+          intermediateClasses.unshift(edgeClass);
+        }
+      }
+      intermediateClasses.push(tweets);
+      senators.projectNewEdge(intermediateClasses.map(classObj => classObj.classId));
+      /*
+      for (const classObj of intermediateClasses) {
+        classObj.delete();
+      }
       */
+
+      const [ yesses, nos ] = classes['twitterPolitics/senate_votes_yemen.json']
+        .closedFacet('vote_position', ['Yes', 'No'])
+        .map(classObj => classObj.interpretAsNodes());
+      classes['twitterPolitics/senate_votes_yemen.json'].delete();
+
+      senators.connectToNodeClass({
+        otherNodeClass: yesses,
+        attribute: 'id',
+        otherAttribute: 'member_id'
+      });
+      senators.connectToNodeClass({
+        otherNodeClass: nos,
+        attribute: 'id',
+        otherAttribute: 'member_id'
+      });
     }
   },
   {
