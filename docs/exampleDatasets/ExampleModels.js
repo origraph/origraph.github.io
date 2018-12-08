@@ -275,6 +275,22 @@ export default [
         otherAttribute: 'member_id'
       });
 
+      const [ yesses, nos ] = classes['twitterPolitics/senate_votes_yemen.json']
+        .closedFacet('vote_position', ['Yes', 'No'])
+        .map(classObj => classObj.interpretAsNodes());
+      classes['twitterPolitics/senate_votes_yemen.json'].delete();
+
+      senators.connectToNodeClass({
+        otherNodeClass: yesses,
+        attribute: 'id',
+        otherAttribute: 'member_id'
+      });
+      senators.connectToNodeClass({
+        otherNodeClass: nos,
+        attribute: 'id',
+        otherAttribute: 'member_id'
+      });
+
       const tweets = classes['twitterPolitics/senateTweets.json']
         .interpretAsNodes();
       tweets.setClassName('Tweets');
@@ -295,29 +311,12 @@ export default [
           intermediateClasses.unshift(edgeClass);
         }
       }
-      intermediateClasses.push(tweets);
-      senators.projectNewEdge(intermediateClasses.map(classObj => classObj.classId));
-      /*
+      senators.projectNewEdge(intermediateClasses
+        .map(classObj => classObj.classId)
+        .concat([tweets.classId]));
       for (const classObj of intermediateClasses) {
         classObj.delete();
       }
-      */
-
-      const [ yesses, nos ] = classes['twitterPolitics/senate_votes_yemen.json']
-        .closedFacet('vote_position', ['Yes', 'No'])
-        .map(classObj => classObj.interpretAsNodes());
-      classes['twitterPolitics/senate_votes_yemen.json'].delete();
-
-      senators.connectToNodeClass({
-        otherNodeClass: yesses,
-        attribute: 'id',
-        otherAttribute: 'member_id'
-      });
-      senators.connectToNodeClass({
-        otherNodeClass: nos,
-        attribute: 'id',
-        otherAttribute: 'member_id'
-      });
     }
   },
   {
