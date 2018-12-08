@@ -141,8 +141,8 @@ ${indent}}`;
   }
   ok (resolve) {
     this.targetClass.table.addFilter(
-      this.attribute,
-      this.evalFunction());
+      this.evalFunction(),
+      this.attribute);
     resolve(true);
   }
   cancel (resolve) {
