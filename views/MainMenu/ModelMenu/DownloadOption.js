@@ -35,6 +35,7 @@ class DownloadOption extends ModelSubmenuMixin(ModalMenuOption) {
       <select id="format">
         <option value="D3Json">D3.js-style JSON</option>
         <option value="CsvZip">Zipped CSV Files</option>
+        <option value="GEXF">GEXF</option>
       </select>
       <details>
         <summary>Options</summary>
@@ -87,6 +88,10 @@ class DownloadOption extends ModelSubmenuMixin(ModalMenuOption) {
           <input id="indexName" name="indexName" value="index"/>
           Index attribute name
         </label>
+      `);
+    } else if (format === 'GEXF') {
+      this.contentDiv.select('#options').html(`
+        GEXF support is currently very minimal (no attributes other than class will be exported)
       `);
     }
   }

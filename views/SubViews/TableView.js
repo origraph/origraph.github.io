@@ -6,6 +6,7 @@ import FilterModal from '../Modals/FilterModal.js';
 const INDICATOR_ICONS = {
   'filtered': 'img/filter.svg',
   'derived': 'img/deriveAttribute.svg',
+  'tagged': 'img/tag.svg',
   'ascending': 'img/ascending.svg',
   'descending': 'img/descending.svg'
 };
@@ -309,6 +310,10 @@ ${cellContents}`;
 
     const indicatorList = ['filtered', 'derived']
       .filter(d => attribute[d]);
+    if (this.classObj.annotations.labelAttr === attribute.name ||
+       (this.classObj.annotations.labelAttr === undefined && attribute.name === null)) {
+      indicatorList.push('tagged');
+    }
     if (element.classed('ascending')) {
       indicatorList.push('ascending');
     } else if (element.classed('descending')) {
@@ -362,6 +367,17 @@ ${cellContents}`;
       icon: sortIcon,
       onClick: () => {
         this.sortAttribute(attribute);
+      }
+    };
+
+    menuEntries['Use as Label'] = {
+      icon: 'img/tag.svg',
+      onClick: () => {
+        if (attribute.name === null) {
+          this.classObj.deleteAnnotation('labelAttr');
+        } else {
+          this.classObj.setAnnotation('labelAttr', attribute.name);
+        }
       }
     };
 
