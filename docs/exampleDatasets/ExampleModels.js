@@ -297,18 +297,18 @@ export default [
 
       let twitterAccounts = tweets.expand('user');
 
-      senators.connectToNodeClass({
-        otherNodeClass: twitterAccounts,
-        attribute: 'twitter_account',
-        otherAttribute: 'screen_name'
+      twitterAccounts.connectToNodeClass({
+        otherNodeClass: senators,
+        attribute: 'screen_name',
+        otherAttribute: 'twitter_account'
       });
 
       const intermediateClasses = [ twitterAccounts ];
       for (const edgeClass of twitterAccounts.edgeClasses()) {
         if (twitterAccounts.getEdgeRole(edgeClass) === 'source') {
-          intermediateClasses.push(edgeClass);
-        } else {
           intermediateClasses.unshift(edgeClass);
+        } else {
+          intermediateClasses.push(edgeClass);
         }
       }
       senators.projectNewEdge(intermediateClasses
