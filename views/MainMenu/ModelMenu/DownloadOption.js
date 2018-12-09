@@ -82,7 +82,12 @@ class DownloadOption extends ModelSubmenuMixin(ModalMenuOption) {
         </label>
       `);
     } else if (format === 'CsvZip') {
-      this.contentDiv.select('#options').html(`No options (yet)`);
+      this.contentDiv.select('#options').html(`
+        <label for="indexName">
+          <input id="indexName" name="indexName" value="index"/>
+          Index attribute name
+        </label>
+      `);
     }
   }
   draw () {
