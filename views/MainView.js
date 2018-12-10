@@ -254,16 +254,16 @@ class MainView extends View {
       this.goldenLayout.updateSize();
     }
   }
+  async highlightPool (instance) {
+    this.highlightedPool = {};
+    for await (const { source, target } of instance.pairwiseNeighborhood()) {
+      this.highlightedPool[source.instanceId] = source;
+      this.highlightedPool[target.instanceId] = target;
+    }
+    this.render();
+  }
   highlightInstance (instance, sourceSubView) {
     this.highlightedInstance = instance;
-    this.highlightedPool = {};
-    (async () => {
-      for await (const { source, target } of instance.pairwiseNeighborhood()) {
-        this.highlightedPool[source.instanceId] = source;
-        this.highlightedPool[target.instanceId] = target;
-      }
-      this.render();
-    })();
     const tableView = this.subViews[instance.classObj.classId + 'TableView'];
     if (!this.viewsShareStack(tableView, sourceSubView)) {
       tableView.raise();

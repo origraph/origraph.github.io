@@ -14,9 +14,21 @@ class InstanceGraph extends PersistentGraph {
   contains (instanceId) {
     return this._instanceIds && !!this._instanceIds[instanceId];
   }
-  async purge () {
+  async reset () {
     this._instanceIds = null;
     await this.update();
+  }
+  async purge () {
+    this._instanceIds = {};
+    await this.update();
+  }
+  async getArbitraryInstanceIds () {
+    const idList = await origraph.currentModel.getArbitraryInstanceList();
+    const result = {};
+    for (const id of idList) {
+      result[id] = true;
+    }
+    return result;
   }
   async unseed (instanceIds) {
     if (!this._instanceIds) {
@@ -43,16 +55,13 @@ class InstanceGraph extends PersistentGraph {
         }
       }
     }
-    if (Object.keys(this._instanceIds).length === 0) {
-      this._instanceIds = null;
-    }
     await this.update();
   }
   async seed (instanceIds) {
     if (!(instanceIds instanceof Array)) {
       instanceIds = [ instanceIds ];
     }
-    this._instanceIds = this._instanceIds || {};
+    this._instanceIds = this._instanceIds || await this.getArbitraryInstanceIds() || null;
     for (const instanceId of instanceIds) {
       this._instanceIds[instanceId] = true;
     }
@@ -64,19 +73,24 @@ class InstanceGraph extends PersistentGraph {
       this._debouncedPromise = new Promise((resolve, reject) => {
         const attempt = async () => {
           if (origraph.currentModel.modelId !== this._lastModelId) {
-            this.purge();
+            this.reset();
+            return;
           }
-          const instanceIdList = this._instanceIds ? Object.keys(this._instanceIds) : null;
-          const result = await origraph.currentModel.getInstanceGraph(instanceIdList);
+          const instanceIds = this._instanceIds || await this.getArbitraryInstanceIds();
+          if (!instanceIds) {
+            setTimeout(attempt, 1000);
+            return;
+          }
+          const result = await origraph.currentModel.getInstanceGraph(Object.keys(instanceIds));
           if (result === null) {
-            setTimeout(attempt, 100);
+            setTimeout(attempt, 1000);
           } else {
             delete this._lastModelId;
             delete this._debouncedPromise;
             resolve(result);
           }
         };
-        setTimeout(attempt, 100);
+        setTimeout(attempt, 1000);
       });
     }
     return this._debouncedPromise;

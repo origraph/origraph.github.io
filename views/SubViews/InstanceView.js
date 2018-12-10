@@ -43,6 +43,11 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       .classed('edgeLayer', true);
     this.content.append('g')
       .classed('nodeLayer', true);
+
+    this.controls = d3.select(this.content.node().parentNode).append('div')
+      .classed('controls', true);
+    // this.setupButtons();
+
     this.simulation = d3.forceSimulation();
     for (const [ forceName, forceObj ] of Object.entries(FORCES)) {
       this.simulation.force(forceName, forceObj);
@@ -52,6 +57,12 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       this.render();
     });
   }
+  /* setupButtons () {
+    this.controls.append('div')
+      .classed('button', true)
+      .classed('reset', true);
+
+  } */
   draw () {
     super.draw();
     const bounds = this.getContentBounds(this.content);
@@ -104,8 +115,10 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           }
           delete d.fx;
           delete d.fy;
-          // Clear the highlighted row in the table
-          // window.mainView.clearHighlightInstance();
+          // After dragging, update the highlighted pool
+          if (d.nodeInstance) {
+            window.mainView.highlightPool(d.nodeInstance);
+          }
         }));
 
     let edges = this.content.select('.edgeLayer')
@@ -123,6 +136,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
 
     edges.on('click', d => {
       window.mainView.highlightInstance(d.edgeInstance, this);
+      window.mainView.highlightPool(d.edgeInstance);
     });
 
     edges.classed('highlighted', d => window.mainView.highlightedInstance &&
