@@ -110,16 +110,16 @@ export default [
         otherAttribute: 'shipVia'
       }).setClassName('Shipped Via');
       orderDetails.connectToNodeClass({
-        nodeClass: orders,
-        side: 'source',
-        nodeAttribute: 'orderID',
-        edgeAttribute: 'orderID'
-      });
-      orderDetails.connectToNodeClass({
         nodeClass: products,
-        side: 'target',
+        side: 'source',
         nodeAttribute: 'productID',
         edgeAttribute: 'productID'
+      });
+      orderDetails.connectToNodeClass({
+        nodeClass: orders,
+        side: 'target',
+        nodeAttribute: 'orderID',
+        edgeAttribute: 'orderID'
       });
       products.connectToNodeClass({
         otherNodeClass: suppliers,

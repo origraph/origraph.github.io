@@ -6,8 +6,10 @@ class InstanceGraph extends PersistentGraph {
     super();
     this._instanceIds = null;
   }
-  keyFunction (instanceId) {
-    return instanceId;
+  keyFunction (instance) {
+    return instance.nodeInstance ? instance.nodeInstance.instanceId
+      : instance.edgeInstance ? instance.edgeInstance.instanceId
+        : instance;
   }
   contains (instanceId) {
     return this._instanceIds && !!this._instanceIds[instanceId];
@@ -60,18 +62,18 @@ class InstanceGraph extends PersistentGraph {
     if (!this._debouncedPromise) {
       this._lastModelId = origraph.currentModel.modelId;
       this._debouncedPromise = new Promise((resolve, reject) => {
-        const attempt = () => {
+        const attempt = async () => {
           if (origraph.currentModel.modelId !== this._lastModelId) {
             this.purge();
           }
           const instanceIdList = this._instanceIds ? Object.keys(this._instanceIds) : null;
-          try {
-            const result = origraph.currentModel.getInstanceGraph(instanceIdList);
+          const result = await origraph.currentModel.getInstanceGraph(instanceIdList);
+          if (result === null) {
+            setTimeout(attempt, 100);
+          } else {
             delete this._lastModelId;
             delete this._debouncedPromise;
             resolve(result);
-          } catch (err) {
-            setTimeout(attempt, 100);
           }
         };
         setTimeout(attempt, 100);

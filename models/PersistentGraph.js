@@ -18,6 +18,10 @@ class PersistentGraph extends Model {
       const key = this.keyFunction(node);
       if (key !== null) {
         existingStats[this.keyFunction(node)] = {
+          fx: node.fx,
+          fy: node.fy,
+          vx: node.vx,
+          vy: node.vy,
           x: node.x,
           y: node.y
         };

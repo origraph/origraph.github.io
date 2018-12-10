@@ -1,6 +1,6 @@
 /* globals origraph, d3 */
 import GoldenLayoutView from './GoldenLayoutView.js';
-import SvgViewMixin from './SvgViewMixin.js';
+import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 import ConnectModal from '../Modals/ConnectModal.js';
 
 const NODE_SIZE = 30;
@@ -53,30 +53,6 @@ L${-HANDLE_SIZE / 2},${-HANDLE_SIZE}\
 Z`
 };
 
-function bbox (alpha) {
-  for (const node of bbox.nodes) {
-    if (node.x <= NODE_SIZE) {
-      node.vx += bbox.strength * alpha;
-    } else if (node.x >= bbox.bounds.width - NODE_SIZE) {
-      node.vx -= bbox.strength * alpha;
-    }
-    if (node.y <= NODE_SIZE) {
-      node.vy += bbox.strength * alpha;
-    } else if (node.y >= bbox.bounds.height - 2 * NODE_SIZE) {
-      node.vy -= bbox.strength * alpha;
-    }
-  }
-}
-bbox.nodes = [];
-bbox.bounds = {
-  width: 1,
-  height: 1
-};
-bbox.strength = 30;
-bbox.initialize = nodes => {
-  bbox.nodes = nodes;
-};
-
 function horizontal (alpha) {
   for (const node of horizontal.nodes) {
     if (node.classObj && node.classObj.type === 'Node') {
@@ -103,7 +79,9 @@ horizontal.initialize = nodes => {
 const DEFAULT_FORCES = {
   link: d3.forceLink(),
   collide: d3.forceCollide().radius(1.5 * NODE_SIZE),
-  bbox,
+  charge: d3.forceManyBody().strength(-(NODE_SIZE ** 2)),
+  forceX: d3.forceX().strength(0.2),
+  forceY: d3.forceY().strength(0.2),
   horizontal
 };
 
@@ -141,7 +119,7 @@ class Handle {
   }
 }
 
-class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
+class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   constructor ({
     container,
     state
@@ -182,8 +160,11 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
   draw () {
     super.draw();
     const bounds = this.getContentBounds(this.content);
-    if (this.simulation.force('bbox')) {
-      this.simulation.force('bbox').bounds = bounds;
+    if (this.simulation.force('forceX')) {
+      this.simulation.force('forceX').x(bounds.width / 2);
+    }
+    if (this.simulation.force('forceY')) {
+      this.simulation.force('forceY').y(bounds.height / 2);
     }
 
     // Assign initial positions to nodes that don't have any, or
@@ -193,8 +174,10 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
         node.x = Math.random() * bounds.width;
         node.y = Math.random() * bounds.height;
       } else {
+        /*
         node.fx = node.x;
         node.fy = node.y;
+        */
       }
     }
     this.simulation.nodes(window.mainView.networkModelGraph.nodes);
@@ -250,7 +233,7 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
     objects.call(d3.drag()
       .on('start', d => {
         if (!d3.event.active && !this.draggingHandle) {
-          this.simulation.alpha(0.3).restart();
+          this.simulation.alpha(0.1).restart();
         }
         d.fx = d.x;
         d.fy = d.y;
@@ -662,11 +645,13 @@ class NetworkModelView extends SvgViewMixin(GoldenLayoutView) {
       this.draggingHandle = d;
       this.handleTarget = null;
       this.simulation.alpha(0);
-      d.x0 = d3.event.x;
-      d.y0 = d3.event.y;
+      const coords = d3.mouse(this.content.node());
+      d.x0 = coords[0];
+      d.y0 = coords[1];
     }).on('drag', d => {
-      d.dx = d3.event.x - d.x0;
-      d.dy = d3.event.y - d.y0;
+      const coords = d3.mouse(this.content.node());
+      d.dx = coords[0] - d.x0;
+      d.dy = coords[1] - d.y0;
       this.drawLineLayer();
       this.drawHandleLayer();
     }).on('end', d => {
