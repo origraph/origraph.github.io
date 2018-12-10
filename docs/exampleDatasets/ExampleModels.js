@@ -170,6 +170,7 @@ export default [
     prefab: (model, classes) => {
       let movies = classes['movies/movies.json'].interpretAsNodes();
       movies.setClassName('Movies');
+      movies.setAnnotation('labelAttr', 'original_title');
 
       let produced = movies.unroll('production_companies');
       produced.setClassName('Produced By');
@@ -186,13 +187,16 @@ export default [
       let cast = classes['movies/credits.json'].unroll('cast')
         .interpretAsEdges();
       cast.setClassName('Cast');
+      cast.setAnnotation('labelAttr', 'character');
       let crew = classes['movies/credits.json'].unroll('crew')
         .interpretAsEdges();
       crew.setClassName('Crew');
+      crew.setAnnotation('labelAttr', 'job');
       classes['movies/credits.json'].delete();
 
       let people = classes['movies/people.json'].interpretAsNodes();
       people.setClassName('People');
+      people.setAnnotation('labelAttr', 'name');
 
       cast.connectToNodeClass({
         nodeClass: movies,
