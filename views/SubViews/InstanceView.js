@@ -4,10 +4,24 @@ import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 
 const NODE_SIZE = 7;
 
+const REPULSION = node => {
+  if (node.nodeInstance) {
+    const instanceId = node.nodeInstance.instanceId;
+    if (window.mainView.highlightedInstance &&
+        window.mainView.highlightedInstance.instanceId === instanceId) {
+      return -(NODE_SIZE ** 4);
+    } else if (window.mainView.highlightedPool && window.mainView.highlightedPool[instanceId]) {
+      return -(NODE_SIZE ** 3);
+    }
+  }
+  return -(NODE_SIZE ** 2);
+};
+
 const FORCES = {
   link: d3.forceLink(),
-  charge: d3.forceManyBody().strength(-15),
-  center: d3.forceCenter(),
+  charge: d3.forceManyBody().strength(REPULSION),
+  forceX: d3.forceX().strength(0.1),
+  forceY: d3.forceY().strength(0.1),
   collide: d3.forceCollide().radius(NODE_SIZE)
 };
 
@@ -54,10 +68,19 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     nodes.select('circle')
       .attr('fill', d => d.nodeInstance && d.nodeInstance.classObj.annotations.color
         ? '#' + d.nodeInstance.classObj.annotations.color : '#BDBDBD');
+
+    nodesEnter.append('text')
+      .attr('y', '1.35em')
+      .attr('text-anchor', 'middle');
+    nodes.select('text')
+      .text(d => d.nodeInstance ? d.nodeInstance.label : '');
+
     nodes.classed('highlighted', d => d.nodeInstance &&
       window.mainView.highlightedInstance &&
-      window.mainView.highlightedInstance.classObj.classId === d.nodeInstance.classObj.classId &&
-      window.mainView.highlightedInstance.index === d.nodeInstance.index);
+      window.mainView.highlightedInstance.instanceId === d.nodeInstance.instanceId);
+    nodes.classed('pooled', d => d.nodeInstance &&
+      window.mainView.highlightedPool &&
+      window.mainView.highlightedPool[d.nodeInstance.instanceId]);
     nodes.classed('dummy', d => d.dummy)
       .call(d3.drag()
         .on('start', d => {
@@ -97,13 +120,13 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     edges.select('.line')
       .attr('stroke', d => d.edgeInstance.classObj.annotations.color
         ? '#' + d.edgeInstance.classObj.annotations.color : '#BDBDBD');
+
     edges.on('click', d => {
       window.mainView.highlightInstance(d.edgeInstance, this);
     });
 
     edges.classed('highlighted', d => window.mainView.highlightedInstance &&
-      window.mainView.highlightedInstance.classObj.classId === d.edgeInstance.classObj.classId &&
-      window.mainView.highlightedInstance.index === d.edgeInstance.index);
+      window.mainView.highlightedInstance.instanceId === d.edgeInstance.instanceId);
 
     this.simulation.on('tick', () => {
       edges.select('.line')
@@ -113,9 +136,9 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
 
     this.simulation.nodes(window.mainView.instanceGraph.nodes);
     this.simulation.force('link').links(window.mainView.instanceGraph.edges);
-    this.simulation.force('center')
-      .x(bounds.width / 2)
-      .y(bounds.height / 2);
+    this.simulation.force('forceX').x(bounds.width / 2);
+    this.simulation.force('forceY').y(bounds.height / 2);
+    this.simulation.force('charge').strength(REPULSION);
   }
 }
 InstanceView.icon = 'img/instanceView.svg';

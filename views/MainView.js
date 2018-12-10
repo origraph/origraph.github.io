@@ -256,6 +256,14 @@ class MainView extends View {
   }
   highlightInstance (instance, sourceSubView) {
     this.highlightedInstance = instance;
+    this.highlightedPool = {};
+    (async () => {
+      for await (const { source, target } of instance.pairwiseNeighborhood()) {
+        this.highlightedPool[source.instanceId] = source;
+        this.highlightedPool[target.instanceId] = target;
+      }
+      this.render();
+    })();
     const tableView = this.subViews[instance.classObj.classId + 'TableView'];
     if (!this.viewsShareStack(tableView, sourceSubView)) {
       tableView.raise();
@@ -267,6 +275,7 @@ class MainView extends View {
   }
   clearHighlightInstance () {
     delete this.highlightedInstance;
+    delete this.highlightedPool;
   }
   async showModal (options) {
     const overlay = this.d3el.select('#overlay');
