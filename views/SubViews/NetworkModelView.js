@@ -174,10 +174,8 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         node.x = Math.random() * bounds.width;
         node.y = Math.random() * bounds.height;
       } else {
-        /*
         node.fx = node.x;
         node.fy = node.y;
-        */
       }
     }
     this.simulation.nodes(window.mainView.networkModelGraph.nodes);
