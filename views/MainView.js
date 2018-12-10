@@ -256,9 +256,17 @@ class MainView extends View {
   }
   async highlightPool (instance) {
     this.highlightedPool = {};
-    for await (const { source, target } of instance.pairwiseNeighborhood()) {
-      this.highlightedPool[source.instanceId] = source;
-      this.highlightedPool[target.instanceId] = target;
+    if (instance.type === 'Node') {
+      for await (const edge of instance.edges()) {
+        this.highlightedPool[edge.instanceId] = true;
+        for await (const node of edge.nodes()) {
+          this.highlightedPool[node.instanceId] = true;
+        }
+      }
+    } else if (instance.type === 'Edge') {
+      for await (const node of instance.nodes()) {
+        this.highlightedPool[node.instanceId] = true;
+      }
     }
     this.render();
   }

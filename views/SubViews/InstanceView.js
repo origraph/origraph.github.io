@@ -1,4 +1,4 @@
-/* globals d3 */
+/* globals d3, origraph */
 import GoldenLayoutView from './GoldenLayoutView.js';
 import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 
@@ -46,7 +46,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
 
     this.controls = d3.select(this.content.node().parentNode).append('div')
       .classed('controls', true);
-    // this.setupButtons();
+    this.setupButtons();
 
     this.simulation = d3.forceSimulation();
     for (const [ forceName, forceObj ] of Object.entries(FORCES)) {
@@ -57,15 +57,68 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       this.render();
     });
   }
-  /* setupButtons () {
-    this.controls.append('div')
+  setupButtons () {
+    const controls = [
+      {
+        label: 'Default Sampling',
+        icon: 'img/defaultSamples.svg',
+        onClick: () => {
+          window.mainView.instanceGraph.reset();
+        },
+        disabled: () => !origraph.currentModel ||
+          Object.values(origraph.currentModel.classes)
+            .every(classObj => classObj.type === 'Generic'),
+        selected: () => window.mainView.instanceGraph.isReset
+      },
+      {
+        label: 'Clear',
+        icon: 'img/null.svg',
+        onClick: () => {
+          window.mainView.instanceGraph.clear();
+        },
+        disabled: () => !origraph.currentModel ||
+          Object.values(origraph.currentModel.classes)
+            .every(classObj => classObj.type === 'Generic'),
+        selected: () => window.mainView.instanceGraph.isClear
+      },
+      {
+        label: 'Seed Neighborhood',
+        icon: 'img/neighborhood.svg',
+        onClick: () => {
+          if (window.mainView.highlightedPool) {
+            window.mainView.instanceGraph.seed(Object.keys(window.mainView.highlightedPool));
+          }
+        },
+        disabled: () => !window.mainView.highlightedPool
+      }
+    ];
+    let buttons = this.controls.selectAll('.button').data(controls);
+    buttons.exit().remove();
+    const buttonsEnter = buttons.enter().append('div')
       .classed('button', true)
-      .classed('reset', true);
+      .classed('small', true);
+    buttons = buttons.merge(buttonsEnter);
 
-  } */
+    buttonsEnter.append('a').append('img');
+    buttons.select('img').attr('src', d => d.icon);
+    buttons.on('mouseenter', function (d) {
+      window.mainView.showTooltip({
+        content: d.label,
+        targetBounds: this.getBoundingClientRect()
+      });
+    }).on('click', (d) => { d.onClick(); });
+  }
+  drawButtons () {
+    this.controls.selectAll('.button')
+      .classed('disabled', d => d.disabled && d.disabled());
+    this.controls.selectAll('.button')
+      .classed('selected', d => d.selected && d.selected());
+  }
   draw () {
     super.draw();
     const bounds = this.getContentBounds(this.content);
+
+    this.drawButtons();
 
     let nodes = this.content.select('.nodeLayer')
       .selectAll('.node').data(window.mainView.instanceGraph.nodes);

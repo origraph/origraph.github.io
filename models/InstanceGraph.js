@@ -18,9 +18,15 @@ class InstanceGraph extends PersistentGraph {
     this._instanceIds = null;
     await this.update();
   }
-  async purge () {
+  get isReset () {
+    return this._instanceIds === null;
+  }
+  async clear () {
     this._instanceIds = {};
     await this.update();
+  }
+  get isClear () {
+    return this._instanceIds && Object.keys(this._instanceIds).length === 0;
   }
   async getArbitraryInstanceIds () {
     const idList = await origraph.currentModel.getArbitraryInstanceList();
