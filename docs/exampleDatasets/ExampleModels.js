@@ -249,6 +249,7 @@ export default [
       const senators = classes['twitterPolitics/senateMembers.json']
         .interpretAsNodes();
       senators.setClassName('Senators');
+      senators.setAnnotation('labelAttr', 'last_name');
 
       const contribs = classes['twitterPolitics/allContributions.json']
         .interpretAsEdges();
@@ -277,7 +278,7 @@ export default [
         otherNodeClass: pressReleases,
         attribute: 'id',
         otherAttribute: 'member_id'
-      });
+      }).setClassName('Released');
 
       const [ yesses, nos ] = classes['twitterPolitics/senate_votes_yemen.json']
         .closedFacet('vote_position', ['Yes', 'No'])
@@ -288,12 +289,12 @@ export default [
         otherNodeClass: yesses,
         attribute: 'id',
         otherAttribute: 'member_id'
-      });
+      }).setClassName('Voted');
       senators.connectToNodeClass({
         otherNodeClass: nos,
         attribute: 'id',
         otherAttribute: 'member_id'
-      });
+      }).setClassName('Voted');
 
       const tweets = classes['twitterPolitics/senateTweets.json']
         .interpretAsNodes();
@@ -315,9 +316,10 @@ export default [
           intermediateClasses.push(edgeClass);
         }
       }
-      senators.projectNewEdge(intermediateClasses
+      const tweeted = senators.projectNewEdge(intermediateClasses
         .map(classObj => classObj.classId)
         .concat([tweets.classId]));
+      tweeted.setClassName('Tweeted');
       for (const classObj of intermediateClasses) {
         classObj.delete();
       }

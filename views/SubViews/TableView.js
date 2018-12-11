@@ -232,6 +232,7 @@ ${cellContents}`;
         window.mainView.highlightedInstance.index === dataValue.index);
     element.on('click', async () => {
       window.mainView.highlightInstance(dataValue, this);
+      window.mainView.highlightPool(dataValue);
     });
 
     if (attribute.name === null) {
@@ -517,6 +518,9 @@ ${cellContents}`;
             } else {
               const rowIndex = this.classObj.table.currentData.lookup[index];
               const item = this.classObj.table.currentData.data[rowIndex];
+              if (!item) {
+                return '';
+              }
               let value = item.row[attribute.name];
               if (value instanceof Promise) {
                 value = (item.delayedRow && item.delayedRow[attribute.name]) || '...';
