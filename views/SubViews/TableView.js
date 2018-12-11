@@ -82,8 +82,6 @@ class TableView extends GoldenLayoutView {
     }
   }
   setupIcons () {
-    const hiddenClassMenuEntries = {};
-    const numHiddenAttrs = Object.keys(hiddenClassMenuEntries).length;
     this.iconButtons = [
       {
         title: 'Class Options',
@@ -102,14 +100,22 @@ class TableView extends GoldenLayoutView {
         title: 'Show Hidden Attributes',
         icon: 'img/show.svg',
         onClick: (button) => {
-          if (numHiddenAttrs > 0) {
+          if (this.classObj && this.classObj.table.suppressedAttributes.length > 0) {
+            const suppressedMenu = {};
+            for (const attr of this.classObj.table.suppressedAttributes) {
+              suppressedMenu[attr] = {
+                onClick: () => {
+                  this.classObj.table.unSuppressAttribute(attr);
+                }
+              };
+            }
             window.mainView.showContextMenu({
-              menuEntries: hiddenClassMenuEntries,
+              menuEntries: suppressedMenu,
               targetBounds: button.getBoundingClientRect()
             });
           }
         },
-        disabled: () => numHiddenAttrs === 0
+        disabled: () => !this.classObj || this.classObj.table.suppressedAttributes.length === 0
       },
       {
         title: 'Sample All Rows',
@@ -389,14 +395,12 @@ ${cellContents}`;
       }
     };
 
-    /*
     menuEntries['Hide'] = {
       icon: 'img/hide.svg',
       onClick: async () => {
-        window.mainView.alert(`Sorry, not implemented yet...`);
+        this.classObj.table.suppressAttribute(attribute.name);
       }
     };
-    */
 
     if (attribute.name === null) {
       // Add options specific to ID column (currently none)
@@ -462,7 +466,8 @@ ${cellContents}`;
     } else {
       const currentTable = this.classObj.table.currentData;
       this.currentKeys = Object.keys(currentTable.lookup);
-      this.attributes = Object.values(this.classObj.table.getAttributeDetails());
+      this.attributes = Object.values(this.classObj.table.getAttributeDetails())
+        .filter(attr => !attr.suppressed);
       if (this.classObj.type === 'Node') {
         // Connected ID columns:
         for (const edgeClass of this.classObj.edgeClasses()) {

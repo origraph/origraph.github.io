@@ -170,7 +170,7 @@ export default [
     prefab: (model, classes) => {
       let movies = classes['movies/movies.json'].interpretAsNodes();
       movies.setClassName('Movies');
-      movies.setAnnotation('labelAttr', 'original_title');
+      movies.setAnnotation('labelAttr', 'title');
 
       let produced = movies.unroll('production_companies');
       produced.setClassName('Produced By');
@@ -227,11 +227,11 @@ export default [
       bechdelTests.setClassName('Bechdel Tests');
       bechdelTests.table.deriveAttribute('tt_imdbid', item => 'tt' + item.row.imdbid);
 
-      bechdelTests.connectToNodeClass({
-        otherNodeClass: movies,
-        attribute: 'tt_imdbid',
-        otherAttribute: 'imdb_id'
-      });
+      movies.connectToNodeClass({
+        otherNodeClass: bechdelTests,
+        attribute: 'imdb_id',
+        otherAttribute: 'tt_imdbid'
+      }).setClassName('Has Score');
     }
   },
   {
