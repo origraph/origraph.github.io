@@ -5,6 +5,7 @@ import CollapsibleMenu from './Common/CollapsibleMenu.js';
 import ModelMenu from './ModelMenu/ModelMenu.js';
 import ExampleModelMenu from './ExampleModelMenu/ExampleModelMenu.js';
 import NewModelMenu from './NewModelMenu.js';
+import HelpButton from './HelpButton.js';
 
 class MainMenu extends SubMenu {
   constructor (d3el) {
@@ -17,6 +18,7 @@ class MainMenu extends SubMenu {
     }
     this._exampleModelMenu = new ExampleModelMenu(this);
     this._newModelMenu = new NewModelMenu(this);
+    this._helpButton = new HelpButton(this);
   }
   get items () {
     const nextModelMenus = {};
@@ -28,7 +30,9 @@ class MainMenu extends SubMenu {
     return [
       this._exampleModelMenu,
       this._newModelMenu
-    ].concat(Object.values(this._modelMenus));
+    ].concat(Object.values(this._modelMenus)).concat([
+      this._helpButton
+    ]);
   }
   setup () {
     super.setup();
