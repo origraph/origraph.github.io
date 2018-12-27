@@ -227,11 +227,51 @@ export default [
       bechdelTests.setClassName('Bechdel Tests');
       bechdelTests.table.deriveAttribute('tt_imdbid', item => 'tt' + item.row.imdbid);
 
-      movies.connectToNodeClass({
+      const hasScore = movies.connectToNodeClass({
         otherNodeClass: bechdelTests,
         attribute: 'imdb_id',
         otherAttribute: 'tt_imdbid'
-      }).setClassName('Has Score');
+      });
+      hasScore.setClassName('Has Score');
+
+      movies.table.deriveAttribute('Bechdel Score', async (movie) => {
+        for await (const score of movie.edges({ classes: [hasScore] })) {
+          for await (const bechdelTest of score.nodes({ classes: [bechdelTests] })) {
+            return bechdelTest.row['rating'];
+          }
+        }
+        return null;
+      });
+      movies.table.deriveAttribute('Cast Gender Bias', async (movie) => {
+        let nWomen = 0;
+        let nMen = 0;
+        for await (const castEdge of movie.edges({ classes: [cast] })) {
+          for await (const person of castEdge.nodes({ classes: [people] })) {
+            let value = person.row['gender'];
+            if (value === 1) {
+              nWomen++;
+            } else if (value === 2) {
+              nMen++;
+            }
+          }
+        }
+        return nMen / (nWomen + nMen);
+      });
+      movies.table.deriveAttribute('Crew Gender Bias', async (movie) => {
+        let nWomen = 0;
+        let nMen = 0;
+        for await (const crewEdge of movie.edges({ classes: [crew] })) {
+          for await (const person of crewEdge.nodes({ classes: [people] })) {
+            let value = person.row['gender'];
+            if (value === 1) {
+              nWomen++;
+            } else if (value === 2) {
+              nMen++;
+            }
+          }
+        }
+        return nMen / (nWomen + nMen);
+      });
     }
   },
   {

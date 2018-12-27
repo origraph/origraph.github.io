@@ -31,7 +31,7 @@ class InstanceGraph extends PersistentGraph {
   async getArbitraryInstanceIds () {
     const idList = await origraph.currentModel.getArbitraryInstanceList();
     const result = {};
-    for (const id of idList) {
+    for (const id of idList || []) {
       result[id] = true;
     }
     return result;
