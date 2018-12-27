@@ -1,6 +1,6 @@
 OriGraph
 ========
-App for folding graphs (better description + readme coming eventually...)
+Origraph is a tool for wrangling graph data. See the [deployed application](https://origraph.github.io) for more details.
 
 # Installing
 ```bash

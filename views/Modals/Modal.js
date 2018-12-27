@@ -26,7 +26,9 @@ class Modal extends View {
   }
   setup () {
     if (typeof this.content !== 'function') {
-      this.d3el.append('div').html(this.content);
+      this.d3el.append('div')
+        .classed('modalContent', true)
+        .html(this.content);
     }
     if (this.spinner) {
       this.d3el.append('img')

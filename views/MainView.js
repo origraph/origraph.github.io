@@ -4,6 +4,7 @@ import MainMenu from './MainMenu/MainMenu.js';
 import InstanceGraph from '../models/InstanceGraph.js';
 import NetworkModelGraph from '../models/NetworkModelGraph.js';
 import Modal from './Modals/Modal.js';
+import HtmlModal from './Modals/HtmlModal.js';
 
 class MainView extends View {
   constructor (d3el) {
@@ -42,7 +43,11 @@ class MainView extends View {
     });
     if (this.firstDraw) {
       this.firstDraw = false;
-      this.hideModal();
+      if (window.localStorage.getItem('skipIntro')) {
+        this.hideModal();
+      } else {
+        this.showIntro();
+      }
     }
   }
   async handleClassChange () {
@@ -306,6 +311,23 @@ class MainView extends View {
   }
   hideModal () {
     this.showModal(null);
+  }
+  showHtmlModal (url) {
+    this.showModal(new HtmlModal({ url, ok: true }));
+  }
+  async showIntro () {
+    await this.showModal(new HtmlModal({
+      url: 'docs/index.html',
+      ok: () => {
+        const showIntro = d3.select('#modal .dialogButtons .checkbox input').node().checked;
+        if (showIntro) {
+          window.localStorage.removeItem('skipIntro');
+        } else {
+          window.localStorage.setItem('skipIntro', 'true');
+        }
+      },
+      checkboxText: 'Show this screen every time you visit'
+    }));
   }
   /**
    * @param  {String} [content='']

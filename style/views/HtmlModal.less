@@ -1,0 +1,53 @@
+@import '../colors.less';
+@import '../measurements.less';
+
+#modal.HtmlModal {
+  top: 1em;
+  bottom: 1em;
+  left: 1em;
+  right: 1em;
+
+  .modalContent {
+    position: absolute;
+    top: 1em;
+    bottom: calc(2em + @buttonSize);
+    overflow-y: auto;
+  }
+
+  h1 {
+    text-align: center;
+    img {
+      height: 2em;
+      vertical-align: middle;
+    }
+  }
+
+  .logos {
+    display: flex;
+    justify-content: space-around;
+    img {
+      height: 2em;
+    }
+    a {
+      opacity: 0.75;
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .dialogButtons {
+    position: absolute;
+    bottom: 1em;
+    left: 1em;
+    right: 1em;
+    height: @buttonSize;
+
+    .checkbox {
+      flex: 1 1 auto;
+      label {
+        margin-left: 0.5em;
+      }
+    }
+  }
+}
