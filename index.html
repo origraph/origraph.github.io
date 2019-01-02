@@ -11,7 +11,6 @@
         <script type="text/javascript" src="node_modules/d3/dist/d3.min.js"></script>
         <script type="text/javascript" src="node_modules/origraph/dist/origraph.umd.js"></script>
         <!--script type="text/javascript" src="node_modules/@origraph/twitter-import/dist/origraphTwitterImport.umd.js"></script-->
-        <script type="text/javascript" src="lib/goldenlayout.js"></script>
         <link type="text/css" rel="stylesheet" href="style/goldenlayout-base.css" />
         <link rel="stylesheet/less" type="text/css" href="style/style.less"/>
         <link type="text/css" rel="stylesheet/less" href="style/goldenlayout-origraph-theme.less" />
@@ -22,6 +21,8 @@
         <link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css" />
         <link rel="stylesheet" href="node_modules/codemirror/theme/material.css" />
         <script type="text/javascript" src="node_modules/less/dist/less.min.js" data-log-level="1"></script>
+        <!--GoldenLayout always needs to load AFTER less has processed everything, or weird things happen, particularly in Firefox-->
+        <script type="text/javascript" src="lib/goldenlayout.js"></script>
         <script type="module" src="app.js"></script>
         <script src="lib/recolorImageFilter.js"></script>
     </head>
