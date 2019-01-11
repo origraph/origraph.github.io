@@ -46,9 +46,17 @@ class UploadOption extends ModelSubmenuMixin(ModalMenuOption) {
     this.loadedFiles = {};
     const fileList = Array.from(this.uploadInput.node().files);
 
-    await Promise.all(fileList.map(async fileObj => {
-      await this.model.addFileAsStaticTable({ fileObj });
-      window.mainView.render();
+    await Promise.all(fileList.map(fileObj => {
+      return new Promise((resolve, reject) => {
+        const reader = new window.FileReader();
+        reader.onload = event => {
+          resolve(this.model.addTextFile({
+            name: fileObj.name,
+            text: event.target.result
+          }));
+        };
+        reader.readAsText(fileObj);
+      });
     }));
     this.loading = false;
     this.loaded = true;
