@@ -7,7 +7,7 @@ class Modal extends View {
     ok = null,
     cancel = null,
     prompt = null,
-    resources = {}
+    resources = []
   } = {}) {
     super(null, resources);
     this.content = content;

@@ -2,14 +2,15 @@
 @import '../measurements.less';
 
 #modal.HtmlModal {
-  top: 1em;
-  bottom: 1em;
-  left: 1em;
-  right: 1em;
+  margin: 1em;
+  left: 50%;
+  top: 50vh;
+  transform: translate(-50%, -50%);
+  min-width: 25em;
 
   .modalContent {
-    position: absolute;
-    top: 1em;
+    margin-top: 1em;
+    max-width: 30em;
     bottom: calc(2em + @buttonSize);
     overflow-y: auto;
   }
@@ -37,10 +38,7 @@
   }
 
   .dialogButtons {
-    position: absolute;
-    bottom: 1em;
-    left: 1em;
-    right: 1em;
+    margin: 1em;
     height: @buttonSize;
 
     .checkbox {

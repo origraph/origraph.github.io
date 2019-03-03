@@ -6,7 +6,7 @@ class GoldenLayoutView extends View {
     container,
     icon,
     label,
-    resources = {}
+    resources = []
   }) {
     super(null, resources);
     this.container = container;

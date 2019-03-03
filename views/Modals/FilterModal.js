@@ -5,9 +5,7 @@ import PathSpecificationView from './PathSpecificationView.js';
 class FilterModal extends Modal {
   constructor (targetClass, attribute) {
     super({
-      resources: {
-        text: 'docs/code.html'
-      }
+      resources: [{ type: 'text', url: 'docs/code.html' }]
     });
     this.customStyling = true;
     this.targetClass = targetClass;
@@ -108,7 +106,7 @@ ${indent}}`;
         </div>
       </div>
       <div class="codeView"></div>
-      <div class="docsView">${this.resources.text}</div>
+      <div class="docsView">${this.resources[0]}</div>
       <div class="preview">
         <h3>Preview</h3>
         <div><span id="filterCount"></span> Filtered</div>

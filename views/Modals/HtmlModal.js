@@ -7,12 +7,12 @@ class HtmlModal extends Modal {
     cancel = null,
     checkboxText = null
   }) {
-    super({ content: '', ok, cancel, resources: { text: url } });
+    super({ content: '', ok, cancel, resources: [{ type: 'text', url }] });
     this.customStyling = true;
     this.checkboxText = checkboxText;
   }
   setup () {
-    this.content = this.resources.text;
+    this.content = this.resources[0];
     super.setup();
     this.d3el.classed('HtmlModal', true);
     if (this.checkboxText) {

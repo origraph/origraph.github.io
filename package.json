@@ -16,14 +16,14 @@
   },
   "homepage": "https://github.com/alex-r-bigelow/origraph#readme",
   "dependencies": {
-    "codemirror": "^5.42.0",
-    "d3": "^5.7.0",
+    "codemirror": "^5.44.0",
+    "d3": "^5.9.1",
     "downloadjs": "^1.4.7",
-    "handsontable": "^6.2.0",
+    "handsontable": "^6.2.2",
     "jquery": "^3.3.1",
     "less": "^3.9.0",
     "origraph": "^0.2.4",
-    "serve": "^10.1.1",
-    "uki": "^0.2.5"
+    "serve": "^10.1.2",
+    "uki": "^0.3.0"
   }
 }
