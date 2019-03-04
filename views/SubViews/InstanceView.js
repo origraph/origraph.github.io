@@ -95,8 +95,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     let buttons = this.controls.selectAll('.button').data(controls);
     buttons.exit().remove();
     const buttonsEnter = buttons.enter().append('div')
-      .classed('button', true)
-      .classed('small', true);
+      .classed('button', true);
     buttons = buttons.merge(buttonsEnter);
 
     buttonsEnter.append('a').append('img');

@@ -2,12 +2,11 @@
 @import '../measurements.less';
 
 .TableView {
-  /* Stuff that is pertinent to / overrides handsontable: */
   .scrollArea {
     overflow: hidden;
-    left: @smallButtonSize + @smallButtonPadding;
   }
 
+  /* Stuff that is pertinent to / overrides handsontable: */
   .handsontable {
     .colHeader.columnSorting::after {
       display: none;
@@ -116,20 +115,6 @@
       .cellWrapper {
         white-space: nowrap;
       }
-    }
-  }
-
-  .tableButtons {
-    position: absolute;
-    left: 0px;
-    top: @smallButtonPadding;
-    padding: @smallButtonPadding;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-
-    .button {
-      margin-bottom: @smallButtonPadding;
     }
   }
 }

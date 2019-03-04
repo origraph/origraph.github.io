@@ -3,47 +3,47 @@
 
 #tooltip {
   .vertical-menu {
-    a .icon {
-      width: @buttonImageSize;
-      height: @buttonImageSize;
-      filter: @textColorImageFilter;
-      padding-right: @buttonImageSize / 2;
-    }
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    max-height: 21em;
 
-    a label {
-      white-space: nowrap;
-      vertical-align: 0.35em;
-    }
+    a {
+      background-color: @lightBackgroundColor;
+      color: @textColor;
+      padding: 12px;
+      margin: 9px 5px 5px 5px;
+      cursor: pointer;
 
-    a.active {
-      background-color: @selectionColor;
+      .icon {
+        width: @buttonImageSize;
+        height: @buttonImageSize;
+        filter: @textColorImageFilter;
+        padding-right: @buttonImageSize / 2;
+      }
+
+      label {
+        white-space: nowrap;
+        vertical-align: 0.35em;
+      }
+    }
+    a:hover {
+      background-color: @darkestBackgroundColor;
       color: @invertedTextColor;
+      .icon {
+        filter: @invertedTextImageFilter;
+      }
     }
     a.selected {
       background-color: @invertedBackgroundColor;
       color: @invertedTextColor;
     }
-  }
-
-  .menu-submit {
-    width: 400px;
-    display: block;
-    a {
-      text-align: center;
-    }
-  }
-
-  .vertical-menu a, .menu-submit a {
-    background-color: @lightBackgroundColor; /* Grey background color */
-    color: @textColor; /* Black text color */
-    display: block; /* Make the links appear below each other */
-    padding: 12px; /* Add some padding */
-    text-decoration: none; /* Remove underline from links */
-    margin: 9px 5px 5px 5px;
-    cursor: pointer;
-
-    &:hover {
-      background-color: @darkestBackgroundColor; /* Dark grey background on mouse-over */
+    a.disabled {
+      background-color: @darkBackgroundColor;
+      color: @separatorColor;
+      .icon {
+        filter: @separatorImageFilter;
+      }
     }
   }
 }

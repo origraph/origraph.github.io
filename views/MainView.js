@@ -359,6 +359,7 @@ class MainView extends View {
     let tooltip = this.d3el.select('#tooltip')
       .style('left', null)
       .style('top', null)
+      .style('width', null)
       .style('display', content ? null : 'none');
 
     if (content) {
@@ -432,6 +433,7 @@ class MainView extends View {
       tooltip.style('left', left + 'px')
         .style('top', top + 'px');
 
+      window.clearTimeout(this._tooltipTimeout);
       if (hideAfterMs > 0) {
         this._tooltipTimeout = window.setTimeout(() => {
           this.hideTooltip();
@@ -461,6 +463,8 @@ class MainView extends View {
         const menuItemsEnter = menuItems.enter().append('a');
         menuItems = menuItems.merge(menuItemsEnter);
 
+        menuItems.classed('disabled', d => d.value.disabled && d.value.disabled());
+
         menuItemsEnter.append('img')
           .classed('icon', true);
         menuItems.select('.icon')
@@ -478,6 +482,18 @@ class MainView extends View {
           }
           this.hideTooltip();
         });
+        // A flexbox bug in most browsers necessitates manually setting the
+        // width of the tooltip (verticalMenu.node().getBoundingClientRect()
+        // also computes incorrect dimensions):
+        // https://stackoverflow.com/questions/33891709/when-flexbox-items-wrap-in-column-mode-container-does-not-grow-its-width/33899301#33899301
+        let left = Infinity;
+        let right = 0;
+        menuItems.each(function () {
+          const bounds = this.getBoundingClientRect();
+          left = Math.min(left, bounds.left);
+          right = Math.max(right, bounds.right);
+        });
+        tooltip.style('width', (this.emSize + right - left) + 'px'); // hard-coded padding for now
       }
     });
   }

@@ -3,7 +3,7 @@ import Modal from './Modal.js';
 import PathSpecificationView from './PathSpecificationView.js';
 
 class DeriveModal extends Modal {
-  constructor (targetClass) {
+  constructor (targetClass, attr) {
     super({
       resources: [{ type: 'text', url: 'docs/code.html' }]
     });
@@ -12,7 +12,7 @@ class DeriveModal extends Modal {
     this.pathSpecView = new PathSpecificationView(targetClass);
     this.codeTemplate = {
       func: 'Duplicate',
-      attr: null
+      attr
     };
     this.advancedMode = false;
   }

@@ -68,7 +68,6 @@ class TableView extends GoldenLayoutView {
           self.drawColumnHeader(d3.select(this.parentNode), self.attributes[this.dataset.columnIndex]);
         });
     });
-    this.setupIcons();
   }
   raise () {
     let container = this.container;
@@ -80,92 +79,6 @@ class TableView extends GoldenLayoutView {
     if (stack.type === 'stack') {
       stack.setActiveContentItem(container);
     }
-  }
-  setupIcons () {
-    this.iconButtons = [
-      {
-        title: 'Class Options',
-        icon: 'img/hamburger.svg',
-        onClick: (button) => {
-          if (this.classObj) {
-            window.mainView.showClassContextMenu({
-              classId: this.classId,
-              targetBounds: button.getBoundingClientRect()
-            });
-          }
-        },
-        disabled: () => this.classObj === null
-      },
-      {
-        title: 'Show Hidden Attributes',
-        icon: 'img/show.svg',
-        onClick: (button) => {
-          if (this.classObj && this.classObj.table.suppressedAttributes.length > 0) {
-            const suppressedMenu = {};
-            for (const attr of this.classObj.table.suppressedAttributes) {
-              suppressedMenu[attr] = {
-                onClick: () => {
-                  this.classObj.table.unSuppressAttribute(attr);
-                }
-              };
-            }
-            window.mainView.showContextMenu({
-              menuEntries: suppressedMenu,
-              targetBounds: button.getBoundingClientRect()
-            });
-          }
-        },
-        disabled: () => !this.classObj || this.classObj.table.suppressedAttributes.length === 0
-      },
-      {
-        title: 'Sample All Rows',
-        icon: 'img/addSeed.svg',
-        onClick: (button) => {
-          if (this.classObj && this.classObj.type !== 'Generic') {
-            window.mainView.instanceGraph.seed(
-              Object.values(this.classObj.table.currentData.data).map(instance => instance.instanceId));
-            this.render();
-          }
-        },
-        disabled: () => this.classObj === null || this.classObj.type === 'Generic'
-      },
-      {
-        title: 'Expand All Rows',
-        icon: 'img/expand.svg',
-        onClick: () => {
-          this.collectNewClasses(this.classObj.openTranspose());
-        },
-        disabled: () => this.classObj === null
-      },
-      {
-        title: 'New Attribute...',
-        icon: 'img/deriveAttribute.svg',
-        onClick: (button) => {
-          window.mainView.showModal(new DeriveModal(this.classObj));
-        },
-        disabled: () => this.classObj === null
-      }
-    ];
-
-    this.d3el.append('div').classed('tableButtons', true);
-  }
-  drawIcons () {
-    let tableButtons = this.d3el.select('.tableButtons')
-      .selectAll('.button').data(this.iconButtons);
-    const tableButtonsEnter = tableButtons.enter().append('div')
-      .classed('button', true)
-      .classed('small', true);
-    tableButtonsEnter.append('a').append('img')
-      .attr('src', d => d.icon);
-    tableButtonsEnter.on('click', function (d) { d.onClick(this); })
-      .on('mouseenter', function (d) {
-        window.mainView.showTooltip({
-          content: d.title,
-          targetBounds: this.getBoundingClientRect()
-        });
-      });
-    tableButtons = tableButtons.merge(tableButtonsEnter);
-    tableButtons.classed('disabled', d => d.disabled());
   }
   setupTab () {
     super.setupTab();
@@ -395,38 +308,87 @@ ${cellContents}`;
       }
     };
 
-    menuEntries['Hide'] = {
-      icon: 'img/hide.svg',
-      onClick: async () => {
-        this.classObj.table.suppressAttribute(attribute.name);
+    if (attribute.name !== null) {
+      // Allow hiding for all columns except the ID column
+      menuEntries['Hide'] = {
+        icon: 'img/hide.svg',
+        onClick: async () => {
+          this.classObj.table.suppressAttribute(attribute.name);
+        }
+      };
+    }
+
+    menuEntries['Show Hidden Attributes'] = {
+      icon: 'img/show.svg',
+      onClick: (button) => {
+        if (this.classObj && this.classObj.table.suppressedAttributes.length > 0) {
+          const suppressedMenu = {};
+          for (const attr of this.classObj.table.suppressedAttributes) {
+            suppressedMenu[attr] = {
+              onClick: () => {
+                this.classObj.table.unSuppressAttribute(attr);
+              }
+            };
+          }
+          const fakeBounds = {
+            left: d3.event.x,
+            top: d3.event.y,
+            right: d3.event.x,
+            bottom: d3.event.y,
+            width: 0,
+            height: 0
+          };
+          // Need a timeout, because clicking also fires a later event
+          // that will force this second context menu to close
+          window.setTimeout(() => {
+            window.mainView.showContextMenu({
+              menuEntries: suppressedMenu,
+              targetBounds: fakeBounds
+            });
+          }, 50);
+        }
+      },
+      disabled: () => !this.classObj || this.classObj.table.suppressedAttributes.length === 0
+    };
+
+    menuEntries['New Attribute...'] = {
+      icon: 'img/deriveAttribute.svg',
+      onClick: (button) => {
+        window.mainView.showModal(new DeriveModal(this.classObj, attribute.name));
       }
     };
 
     if (attribute.name === null) {
       // Add options specific to ID column (currently none)
+      menuEntries['Expand Rows as Classes'] = {
+        icon: 'img/transpose.svg',
+        onClick: () => {
+          this.collectNewClasses(this.classObj.openTranspose());
+        }
+      };
     } else if (attribute.meta) {
       // Add options specific to meta columns (currently none)
     } else {
       // Add options specific to regular attributes
-      menuEntries.Promote = {
+      menuEntries['Promote Distinct Values'] = {
         icon: 'img/promote.svg',
         onClick: () => {
           this.classObj.promote(attribute.name);
         }
       };
-      menuEntries['Expand'] = {
+      menuEntries['Expand Cells as Rows'] = {
         icon: 'img/expand.svg',
         onClick: () => {
           this.classObj.expand(attribute.name);
         }
       };
-      menuEntries['Unroll'] = {
+      menuEntries['Unroll Contents as Rows'] = {
         icon: 'img/unroll.svg',
         onClick: () => {
           this.classObj.unroll(attribute.name);
         }
       };
-      menuEntries.Facet = {
+      menuEntries['Facet by Value'] = {
         icon: 'img/facet.svg',
         onClick: () => {
           this.collectNewClasses(this.classObj.openFacet(attribute.name));
@@ -458,8 +420,6 @@ ${cellContents}`;
   draw () {
     super.draw();
     const self = this;
-
-    this.drawIcons();
 
     if (this.classObj === null) {
       // TODO: show some kind of empty state content
