@@ -308,15 +308,15 @@ ${cellContents}`;
       }
     };
 
-    if (attribute.name !== null) {
-      // Allow hiding for all columns except the ID column
-      menuEntries['Hide'] = {
-        icon: 'img/hide.svg',
-        onClick: async () => {
-          this.classObj.table.suppressAttribute(attribute.name);
+    menuEntries['Hide'] = {
+      icon: 'img/hide.svg',
+      onClick: async () => {
+        if (attribute.name) {
+          this.classObj.table.suppressAttribute(attribute.name !== null);
         }
-      };
-    }
+      },
+      disabled: () => attribute.name === null
+    };
 
     menuEntries['Show Hidden Attributes'] = {
       icon: 'img/show.svg',
