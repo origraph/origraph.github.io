@@ -42,11 +42,14 @@ h1, h2, h3, h4, h5, h6 {
   padding: @contentPadding;
 }
 
-img.emptyState {
+.emptyState {
   position: absolute;
-  width: 50%;
-  left: 25%;
-  top: 33%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 30em;
+  text-align: center;
+  color: @separatorColor;
 }
 
 #overlay {

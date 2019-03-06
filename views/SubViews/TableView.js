@@ -45,6 +45,7 @@ class TableView extends GoldenLayoutView {
   }
   setup () {
     super.setup();
+    this.emptyStateDiv.html(`<h3>${origraph.currentModel.name} has no classes</h3>`);
     this.tableDiv = this.content.append('div');
     this.renderer = new Handsontable(this.tableDiv.node(), {
       data: [],
@@ -428,7 +429,7 @@ class TableView extends GoldenLayoutView {
         return {
           renderer: function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
-            if (!self.classObj.deleted) {
+            if (self.classObj && !self.classObj.deleted) {
               const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
               const dataValue = currentTable.data[currentTable.lookup[index]];
               if (dataValue !== undefined) {

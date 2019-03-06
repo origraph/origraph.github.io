@@ -155,6 +155,8 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     this.container.on('resize', () => {
       this.simulation.alpha(0.3);
     });
+
+    this.emptyStateDiv.html(`<h3>No data loaded; use the menu on the right to upload data or load example datasets</h3>`);
   }
 
   draw () {

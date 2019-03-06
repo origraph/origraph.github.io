@@ -35,10 +35,15 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     });
   }
   isEmpty () {
-    return window.mainView.instances && window.mainView.instances.length === 0;
+    return Object.values(origraph.currentModel.classes)
+      .filter(d => d.type === 'Node' || d.type === 'Edge').length === 0;
   }
   setup () {
     super.setup();
+
+    this.emptyStateDiv.html(`<h3>Need at least one node or edge class to sample the graph</h3>`)
+      .style('display', null);
+
     this.content.append('g')
       .classed('edgeLayer', true);
     this.content.append('g')
