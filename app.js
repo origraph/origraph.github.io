@@ -1,4 +1,5 @@
 /* globals d3 */
+import './docs/exampleDatasets/debugScripts.js';
 import MainView from './views/MainView.js';
 import * as SUBVIEW_CLASSES from './views/SubViews/SubViews.js';
 
