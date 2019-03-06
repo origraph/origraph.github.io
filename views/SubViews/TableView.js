@@ -126,19 +126,11 @@ class TableView extends GoldenLayoutView {
     element.select('.cellWrapper').text(text);
   }
   async drawCell (element, attribute, dataValue) {
-    /* Do some funky stuff to wrap values of each cell in a DIV for CSS reasons,
-       and add icons to the ID column */
+    /* Do some funky stuff to wrap values of each cell in a DIV for CSS reasons */
     let cellWrapper = element.select('.cellWrapper');
     if (cellWrapper.node() === null) {
       let cellContents = `<div class="cellWrapper">${element.html()}</div>`;
-      if (attribute.name === null) {
-        cellContents = `\
-<div class="icons">
-  <div class="seed tiny button"><a><img/></a></div>
-  <div class="expand tiny button"><a><img src="img/expand.svg"/></a></div>
-</div>
-${cellContents}`;
-      }
+      // TODO: customize special cells here?
       element.html(cellContents);
       cellWrapper = element.select('.cellWrapper');
     }
@@ -150,40 +142,13 @@ ${cellContents}`;
         window.mainView.highlightedInstance.classObj.classId === this.classId &&
         window.mainView.highlightedInstance.index === dataValue.index);
     element.on('click', async () => {
+      window.mainView.instanceGraph.seed(dataValue.instanceId);
       window.mainView.highlightInstance(dataValue, this);
       window.mainView.highlightPool(dataValue);
     });
 
     if (attribute.name === null) {
-      // Special stuff for ID column buttons, etc
-      const isSeeded = window.mainView.instanceGraph.contains(dataValue.instanceId);
-      element.select('.seed.button img')
-        .attr('src', isSeeded ? 'img/removeSeed.svg' : 'img/addSeed.svg');
-      element.select('.seed.button')
-        .classed('disabled', this.classObj.type === 'Generic')
-        .on('mouseenter', function () {
-          window.mainView.showTooltip({
-            content: isSeeded ? 'Remove Sample' : 'Add Sample',
-            targetBounds: this.getBoundingClientRect()
-          });
-        }).on('click', () => {
-          if (this.classObj.type !== 'Generic') {
-            if (isSeeded) {
-              window.mainView.instanceGraph.unseed(dataValue.instanceId);
-            } else {
-              window.mainView.instanceGraph.seed(dataValue.instanceId);
-            }
-          }
-        });
-      element.select('.expand.button')
-        .on('mouseenter', function () {
-          window.mainView.showTooltip({
-            content: 'Expand Row',
-            targetBounds: this.getBoundingClientRect()
-          });
-        }).on('click', () => {
-          this.classObj.closedTranspose([ dataValue.index ]);
-        });
+      // TODO: anything special for ID column?
     } else if (attribute.meta) {
       // Meta column contents are computed asynchronously
       (async () => {
