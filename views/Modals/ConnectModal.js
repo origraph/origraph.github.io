@@ -12,88 +12,51 @@ class ConnectModal extends Modal {
     this.nodeClass = options.nodeClass;
     this.edgeClass = options.edgeClass;
     this.otherNodeClass = options.otherNodeClass;
-    this._stats = {};
-    this._sourceAttribute = null;
-    this._targetAttribute = null;
+    this._stats = [];
+    this._sourceAttribute = undefined;
+    this._targetAttribute = undefined;
     this.pathSpecView = new PathSpecificationView(this.nodeClass);
   }
   async initStats () {
-    // TODO: collect target counts with something like PouchDB? Could get big...
-    const targets = {};
-    let currentSource = null;
-    let tick = 0;
-    for await (const stat of origraph.currentModel.iterAllPairwiseMatches(this.sourceClass, this.targetClass)) {
-      // Update the view every 1000 bits of info
-      tick++;
-      if (tick % 1000 === 0) {
-        delete this._sortedStats;
-        this.render();
+    this.startedStats = true;
+    const statWorker = new window.Worker('views/Modals/ConnectModalStatWorker.js');
+    statWorker.onmessage = stat => {
+      this._sortedStats = false;
+      if (stat === 'done') {
+        this.finishedStats = true;
+      } else {
+        this._stats.push(JSON.parse(stat));
       }
-      // Initialize counting structures if they're not alrady there
-      const pairwiseAttr = stat.sourceAttr + '=' + stat.targetAttr;
-      this._stats[pairwiseAttr] = this._stats[pairwiseAttr] ||
-        {
-          matches: 0,
-          sourceAttr: stat.sourceAttr,
-          targetAttr: stat.targetAttr,
-          sourceDistribution: {},
-          targetDistribution: {}
-        };
-      targets[stat.targetIndex] = targets[stat.targetIndex] || {};
-      targets[stat.targetIndex][pairwiseAttr] = targets[stat.targetIndex][pairwiseAttr] || 0;
-      // If we're working with a different source, log + reset its count
-      if (currentSource === null || currentSource.index !== stat.sourceIndex) {
-        if (currentSource !== null) {
-          this._stats[pairwiseAttr].sourceDistribution[currentSource.count] =
-            this._stats[pairwiseAttr].sourceDistribution[currentSource.count] || 0;
-          this._stats[pairwiseAttr].sourceDistribution[currentSource.count]++;
-        }
-        currentSource = {
-          index: stat.index,
-          count: 0
-        };
-      }
-      // Add to counts if we have a match
-      if (stat.type === 'match') {
-        currentSource.count++;
-        targets[stat.targetIndex][pairwiseAttr]++;
-        this._stats[pairwiseAttr].matches++;
-      }
-    }
-    delete this._sortedStats;
-    this.render();
-    // Now log all the target counts
-    for (const counts of Object.values(targets)) {
-      for (const [pairwiseAttr, count] of Object.entries(counts)) {
-        this._stats[pairwiseAttr].targetDistribution[count] =
-          this._stats[pairwiseAttr].targetDistribution[count] || 0;
-        this._stats[pairwiseAttr].targetDistribution[count]++;
-      }
-    }
-    this.finishedStats = true;
-    delete this._sortedStats;
+      this.render();
+    };
+    const sourceCounts = await this.sourceClass.countAllUniqueValues();
+    const targetCounts = await this.targetClass.countAllUniqueValues();
+    statWorker.postMessage([JSON.stringify(sourceCounts), JSON.stringify(targetCounts)]);
     this.render();
   }
   get bestStat () {
     if (!this._sortedStats) {
-      // For now, pick the pair of attributes with the most matches
-      this._sortedStats = Object.values(this._stats)
-        .sort((a, b) => { return a.matches - b.matches; });
+      // Pick the pair of attributes with the highest match to miss ratio
+      this._stats.sort((a, b) => {
+        return (a.matches / (a.sourceDistribution[0] + a.targetDistribution[0])) -
+          (b.matches / (b.sourceDistribution[0] + b.targetDistribution[0]));
+      });
+      this._sortedStats = true;
     }
-    return this._sortedStats[this._sortedStats.length - 1];
+    return this._stats[this._stats.length - 1];
   }
   get sourceAttribute () {
-    if (this._sourceAttribute) {
+    if (this._sourceAttribute !== undefined) {
       return this._sourceAttribute;
     } else {
-      return this.bestStat.sourceAttr;
+      return this.bestStat ? this.bestStat.sourceAttr : null;
     }
   }
   get targetAttribute () {
-    if (this._targetAttribute) {
+    if (this._targetAttribute !== undefined) {
       return this._targetAttribute;
     } else {
-      return this.bestStat.targetAttr;
+      return this.bestStat ? this.bestStat.targetAttr : null;
     }
   }
   get projectionPathIsValid () {
@@ -105,7 +68,7 @@ class ConnectModal extends Modal {
   setup () {
     this.d3el.classed('ConnectModal', true).html(`
       <div class="edgeProjectionView PathSpecificationView"></div>
-      <div class="matchView">
+      <div class="attributeColumnsView">
         <div>
           <h3>Match when equivalent:</h3>
           <label>${this.sourceClass.className}</label>
@@ -118,7 +81,7 @@ class ConnectModal extends Modal {
           <div class="targetDistribution"></div>
           <div class="scatterplot"></div>
         </div>
-        <div>
+        <div class="matchView">
           <h3 class="sourceTableLabel">${this.sourceClass.className}</h3>
           <div class="ConnectMenu">
             <div class="sourceTable TableView"></div>
@@ -136,12 +99,11 @@ class ConnectModal extends Modal {
     this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
     this.pathSpecView.on('pathChange', () => { this.render(); });
     this.setupButtons();
-    this.initStats();
   }
   draw () {
-    this.d3el.select('.PathSpecificationView')
+    this.d3el.select('.edgeProjectionView')
       .style('display', this.edgeProjectionMode ? null : 'none');
-    this.d3el.select('.matchView')
+    this.d3el.select('.attributeColumnsView')
       .style('display', this.edgeProjectionMode ? 'none' : null);
 
     this.drawButtons();
@@ -156,6 +118,15 @@ class ConnectModal extends Modal {
         data: Object.keys(this.targetClass.table.currentData.lookup)
       });
       this.drawConnections();
+    }
+
+    // Wait to draw at least once before attempting to compute stats (so the
+    // interface doesn't pause in a pre-draw state during the
+    // sort-of-expensive, but worker-incompatible countAllUniqueValues calls)
+    if (!this.startedStats) {
+      setTimeout(() => {
+        this.initStats();
+      }, 100);
     }
   }
   ok (resolve) {
@@ -219,28 +190,38 @@ class ConnectModal extends Modal {
       .getBoundingClientRect().width);
     const svgBounds = svg.node().getBoundingClientRect();
 
+    // If the currently selected pair of attributes don't have stats yet, create
+    // a fake one
+    const selectedIndex = this._stats.findIndex(stat => {
+      return stat.sourceAttr === this.sourceAttribute &&
+        stat.targetAttr === this.targetAttribute;
+    });
+    const statList = selectedIndex !== -1 ? this._stats : [{
+      sourceAttr: this.sourceAttribute,
+      targetAttr: this.targetAttribute
+    }].concat(this._stats);
+
     // Draw the lines in the connection view
-    let connections = svg.selectAll('path')
-      .data(d3.entries(this._stats), d => d.key);
+    let connections = svg.selectAll('path').data(statList);
     connections.exit().remove();
     const connectionsEnter = connections.enter().append('path');
     connections = connections.merge(connectionsEnter);
 
     connections.classed('selected', d => {
-      return d.sourceAttr.name === this.sourceAttribute &&
-        d.targetAttr.name === this.targetAttribute;
+      return d.sourceAttr === this.sourceAttribute &&
+        d.targetAttr === this.targetAttribute;
     });
 
     connections.attr('d', d => {
       const sourceHeader = this.d3el.selectAll('.sourceTable .ht_clone_top .htCore tr th')
         .filter(function (d2, i) {
-          return d.sourceAttr.name === this.textContent ||
-            (d.sourceAttr.name === null && i === 0);
+          return d.sourceAttr === this.textContent ||
+            (d.sourceAttr === null && i === 0);
         }).node();
       const targetHeader = this.d3el.selectAll('.targetTable .ht_clone_top .htCore tr th')
         .filter(function (d2, i) {
-          return d.targetAttr.name === this.textContent ||
-            (d.targetAttr.name === null && i === 0);
+          return d.targetAttr === this.textContent ||
+            (d.targetAttr === null && i === 0);
         }).node();
       if (!sourceHeader || !targetHeader) {
         return '';
