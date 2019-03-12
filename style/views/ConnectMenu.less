@@ -29,16 +29,29 @@
 
   .attributeColumnsView {
     display: flex;
+    & > div {
+      display: flex;
+      flex-direction: column;
+    }
+    h3 {
+      margin: 0;
+    }
+  }
+
+  .statSummaries {
+    position: relative;
+    min-width: 30em;
+    .spinner {
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      width: 100%;
+      height: 100%;
+      background: fade(@backgroundColor, 80%) center / 3em no-repeat url("/img/spinner.gif");
+    }
   }
 
   .matchView {
-    display: flex;
-    flex-direction: column;
-    .sourceTableLabel,
-    .targetTableLabel {
-      margin: 0;
-    }
-
     .ConnectMenu {
       position: relative;
       flex: 1 1 auto;
@@ -67,7 +80,7 @@
       }
       .connections {
         position: absolute;
-        top: calc(50% - 2.5em);
+        top: calc(50% - 2.5em - 17px);
         left: 0px;
 
         path {

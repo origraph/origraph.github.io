@@ -2,6 +2,8 @@
 import Modal from './Modal.js';
 import PathSpecificationView from './PathSpecificationView.js';
 
+const MAX_SUMMARY_BINS = 10;
+
 class ConnectModal extends Modal {
   constructor (options) {
     super(options);
@@ -20,12 +22,15 @@ class ConnectModal extends Modal {
   async initStats () {
     this.startedStats = true;
     const statWorker = new window.Worker('views/Modals/ConnectModalStatWorker.js');
-    statWorker.onmessage = stat => {
+    statWorker.onmessage = message => {
       this._sortedStats = false;
-      if (stat === 'done') {
+      if (message.data === 'done') {
         this.finishedStats = true;
       } else {
-        this._stats.push(JSON.parse(stat));
+        const stat = JSON.parse(message.data);
+        stat.sourceSummary = this.summarizeDistribution(stat.sourceDistribution);
+        stat.targetSummary = this.summarizeDistribution(stat.targetDistribution);
+        this._stats.push(stat);
       }
       this.render();
     };
@@ -34,16 +39,44 @@ class ConnectModal extends Modal {
     statWorker.postMessage([JSON.stringify(sourceCounts), JSON.stringify(targetCounts)]);
     this.render();
   }
+  summarizeDistribution (distribution) {
+    // Compute a summary of the distribution, because we really only care about
+    // how many things have exactly zero connections; exactly one connection; or
+    // many connections
+    const sourceBins = Object.keys(distribution).map(d => +d);
+    if (sourceBins.length > MAX_SUMMARY_BINS) {
+      const result = {};
+      if (distribution[0]) {
+        result[0] = distribution[0];
+      }
+      if (distribution[1]) {
+        result[1] = distribution[1];
+      }
+      const extent = d3.extent(sourceBins.filter(d => d > 1));
+      const interval = (extent[1] - extent[0]) / (MAX_SUMMARY_BINS - Object.keys(result).length);
+      for (let i = extent[0]; i < extent[1]; i += interval) {
+        const bottom = Math.floor(i);
+        let top = Math.floor(i + interval) - 1;
+        top = Math.max(bottom, top);
+        let key = top === bottom ? bottom : `${bottom}-${top}`;
+        result[key] = 0;
+        for (let j = bottom; j <= top; j++) {
+          result[key] += distribution[j] || 0;
+        }
+      }
+      return result;
+    } else {
+      return distribution;
+    }
+  }
   get bestStat () {
     if (!this._sortedStats) {
-      // Pick the pair of attributes with the highest match to miss ratio
-      this._stats.sort((a, b) => {
-        return (a.matches / (a.sourceDistribution[0] + a.targetDistribution[0])) -
-          (b.matches / (b.sourceDistribution[0] + b.targetDistribution[0]));
-      });
+      // Pick the pair of attributes with the highest combined heuristic score
+      this._stats.sort((a, b) => (b.sourceOneToOneNess + b.targetOneToOneNess) -
+        (a.sourceOneToOneNess + a.targetOneToOneNess));
       this._sortedStats = true;
     }
-    return this._stats[this._stats.length - 1];
+    return this._stats[0];
   }
   get sourceAttribute () {
     if (this._sourceAttribute !== undefined) {
@@ -70,25 +103,32 @@ class ConnectModal extends Modal {
       <div class="edgeProjectionView PathSpecificationView"></div>
       <div class="attributeColumnsView">
         <div>
-          <h3>Match when equivalent:</h3>
-          <label>${this.sourceClass.className}</label>
-          <select id="sourceSelect" size="10"></select>
-          <label>${this.targetClass.className}</label>
-          <select id="targetSelect" size="10"></select>
+          <h3 style="color:#${this.sourceClass.annotations.color}">${this.sourceClass.className}</h3>
+          <select id="sourceSelect" size="10">
+            <option value="" selected>Index</option>
+            <optgroup label="Attributes:">
+            </optgroup>
+          </select>
+          <p>Connect when values are equivalent</p>
+          <h3 style="color:#${this.targetClass.annotations.color}">${this.targetClass.className}</h3>
+          <select id="targetSelect" size="10">
+            <option value="" selected>Index</option>
+            <optgroup label="Attributes:">
+            </optgroup>
+          </select>
         </div>
-        <div>
+        <div class="statSummaries">
           <div class="sourceDistribution"></div>
-          <div class="targetDistribution"></div>
           <div class="scatterplot"></div>
+          <div class="targetDistribution"></div>
+          <div class="spinner"></div>
         </div>
         <div class="matchView">
-          <h3 class="sourceTableLabel">${this.sourceClass.className}</h3>
           <div class="ConnectMenu">
+            <svg class="connections" height="calc(5em + 17px)"></svg>
             <div class="sourceTable TableView"></div>
-            <svg class="connections" height="5em"></svg>
             <div class="targetTable TableView"></div>
           </div>
-          <h3 class="targetTableLabel">${this.targetClass.className}</h3>
         </div>
       </div>
     `);
@@ -169,13 +209,99 @@ class ConnectModal extends Modal {
     });
   }
   setupStatViews () {
-    // TODO: populate select menu
-    this.d3el.select('.sourceDistribution').text('TODO: source distribution');
-    this.d3el.select('.targetDistribution').text('TODO: target distribution');
-    this.d3el.select('.scatterplot').text('TODO: scatterplot');
+    const boilerplate = `
+      <svg>
+        <g class="chart"></g>
+        <g class="x axis"></g>
+        <g class="y axis"></g>
+        <text class="x label" text-anchor="middle" y="12"></text>
+        <text class="y label" text-anchor="middle" transform="rotate(-90)"></text>
+      </svg>`;
+    this.d3el.select('.sourceDistribution').html(boilerplate);
+    this.d3el.select('.targetDistribution').html(boilerplate);
+    this.d3el.select('.scatterplot').html(boilerplate);
   }
   drawStatViews () {
-    // throw new Error('unimplemented');
+    const statSummaries = this.d3el.select('.statSummaries');
+    const bounds = statSummaries.node().getBoundingClientRect();
+    const margin = { top: 20, right: 20, bottom: 40, left: 70 };
+    const width = bounds.width - (margin.left + margin.right);
+    const height = (bounds.height / 3) - (margin.top + margin.bottom);
+    const charts = statSummaries.selectAll('svg')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom);
+    charts.select('.chart')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+    charts.select('.x.axis')
+      .attr('transform', `translate(${margin.left},${height + margin.top})`);
+    charts.select('.y.axis')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+    let currentStat = this._stats.filter(stat => {
+      return stat.sourceAttr === this.sourceAttribute &&
+        stat.targetAttr === this.targetAttribute;
+    })[0];
+    statSummaries.select('.spinner')
+      .style('display', currentStat ? 'none' : null);
+    if (!currentStat) {
+      currentStat = {
+        matches: 0,
+        sourceAttr: null,
+        targetAttr: null,
+        sourceDistribution: { 0: 0 },
+        targetDistribution: { 0: 0 },
+        sourceSummary: { 0: 0 },
+        targetSummary: { 0: 0 },
+        sourceOneToOneNess: 0,
+        targetOneToOneNess: 0
+      };
+    }
+    this.drawBarChart(statSummaries.select('.sourceDistribution'), this.sourceClass, currentStat.sourceSummary, width, height, margin);
+    this.drawBarChart(statSummaries.select('.targetDistribution'), this.targetClass, currentStat.targetSummary, width, height, margin);
+    this.drawScatterplot(statSummaries.select('.scatterplot'), width, height, margin);
+  }
+  drawBarChart (container, classObj, distribution, width, height, margin) {
+    const bins = Object.keys(distribution);
+    const xScale = d3.scaleBand(bins, [0, width])
+      .padding(0.05);
+    const xTicks = Math.min(bins.length, Math.floor(width / 20)); // Leave at least 20px for each tick
+    container.select('.x.axis')
+      .call(d3.axisBottom(xScale).ticks(xTicks))
+      .selectAll('text')
+      .attr('transform', 'rotate(-45)')
+      .attr('x', '-5')
+      .attr('y', null)
+      .attr('dy', '1em')
+      .attr('text-anchor', 'end');
+    container.select('.x.label')
+      .attr('x', margin.left + width / 2)
+      .text(`Connections per ${classObj.className} ${classObj === this.edgeClass ? 'edge' : 'node'}`);
+    const yDomain = [0, d3.max(Object.values(distribution).concat([1]))];
+    const yScale = d3.scaleLinear()
+      .domain(yDomain)
+      .range([height, 0]);
+    container.select('.y.axis')
+      .call(d3.axisLeft(yScale).tickValues(yDomain).tickFormat(d3.format('d')));
+    container.select('.y.label')
+      .attr('y', margin.left / 2)
+      .attr('x', -(margin.top + height / 2))
+      .text('Count');
+
+    let bars = container.select('.chart').selectAll('.bar')
+      .data(d3.entries(distribution), d => d.key);
+    bars.exit().remove();
+    const barsEnter = bars.enter().append('g').classed('bar', true);
+    bars = bars.merge(barsEnter);
+
+    barsEnter.append('rect');
+    bars.select('rect')
+      .attr('x', d => xScale(d.key))
+      .attr('width', xScale.bandwidth())
+      .attr('y', d => yScale(d.value))
+      .attr('height', d => height - yScale(d.value))
+      .attr('fill', '#' + classObj.annotations.color);
+  }
+  drawScatterplot (container, width, height) {
+
   }
   drawButtons () {
     this.d3el.select('#modeButton > span')
@@ -342,7 +468,7 @@ C${coords.scx},${coords.scy}\
             .classed('bottomHeaderGap', true)
             .style('height', '25px');
         }
-        element.select('.ht_clone_top').style('top', null).style('bottom', '-6px');
+        element.select('.ht_clone_top').style('top', null).style('bottom', `${this.scrollBarSize - 3}px`);
       }
       element.selectAll('.ht_clone_top .colHeader .text')
         .each(function () {

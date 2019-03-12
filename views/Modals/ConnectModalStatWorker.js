@@ -1,14 +1,15 @@
-/* globals Worker */
-Worker.onmessage = (event) => {
+/* globals postMessage */
+
+onmessage = function (message) { // eslint-disable-line no-undef
   // Parse the counts that we got from origraph.js's countAllUniqueValues
-  const sourceCounts = JSON.parse(event.data[0]);
-  const targetCounts = JSON.parse(event.data[1]);
+  const sourceCounts = JSON.parse(message.data[0]);
+  const targetCounts = JSON.parse(message.data[1]);
   // Stitch the index bin with a special string into two series for iterating
   // (because our null convention everywhere else would get stringified and
   // potentially collide):
-  const sourceBins = Object.entries(sourceCounts.bins);
+  const sourceBins = Object.entries(sourceCounts.hashableBins);
   sourceBins.unshift([null, sourceCounts.indexBin]);
-  const targetBins = Object.entries(targetCounts.bins);
+  const targetBins = Object.entries(targetCounts.hashableBins);
   targetBins.unshift([null, targetCounts.indexBin]);
   // Look at every attr = attr combo...
   for (const [sourceAttr, sourceBin] of sourceBins) {
@@ -17,8 +18,10 @@ Worker.onmessage = (event) => {
         matches: 0,
         sourceAttr,
         targetAttr,
-        sourceDistribution: { '0': 0 },
-        targetDistribution: { '0': 0 }
+        sourceDistribution: { '0': (sourceAttr !== null && sourceCounts.unHashableCounts[sourceAttr]) || 0 },
+        targetDistribution: { '0': (sourceAttr !== null && targetCounts.unHashableCounts[targetAttr]) || 0 },
+        sourceOneToOneNess: 0,
+        targetOneToOneNess: 0
       };
       // Initialize our total value-to-match tallies
       const sourceEdgeCounts = {};
@@ -50,11 +53,35 @@ Worker.onmessage = (event) => {
         stat.targetDistribution[edgeCount] = stat.targetDistribution[edgeCount] || 0;
         stat.targetDistribution[edgeCount] += sourceBin[targetValue];
       }
+      // We have almost all the counts at this point, with the exception of
+      // values that never matched anything; add to the zero bin when a value
+      // never matched at all
+      for (const [sourceValue, sourceNodeCount] of Object.entries(sourceBin)) {
+        if (!sourceEdgeCounts[sourceValue]) {
+          stat.sourceDistribution[0] += sourceNodeCount;
+        }
+      }
+      for (const [targetValue, targetNodeCount] of Object.entries(targetBin)) {
+        if (!targetEdgeCounts[targetValue]) {
+          stat.targetDistribution[0] += targetNodeCount;
+        }
+      }
+
+      // Compute a heuristic score that suggests the likelihood that this pair
+      // of attributes should be the basis for a connection; currently the
+      // approach is to score highly when there's mostly a 1-to-1 relationship
+      // between nodes and new edges
+      for (const [edgeCount, nodeCount] of Object.entries(stat.sourceDistribution)) {
+        stat.sourceOneToOneNess += +edgeCount === 0 ? -nodeCount : nodeCount / edgeCount;
+      }
+      for (const [edgeCount, nodeCount] of Object.entries(stat.targetDistribution)) {
+        stat.targetOneToOneNess += +edgeCount === 0 ? -nodeCount : nodeCount / edgeCount;
+      }
       // Now that this attribute pairing's stats have been calculated, send it
       // back so it can be accumulated / rendered
-      Worker.postMessage(JSON.stringify(stat));
+      postMessage(JSON.stringify(stat));
     }
   }
   // Signal that we're done
-  Worker.postMessage('done');
+  postMessage('done');
 };

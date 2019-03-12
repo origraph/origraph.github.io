@@ -41,7 +41,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   setup () {
     super.setup();
 
-    this.emptyStateDiv.html(`<h3>Need at least one node or edge class to sample the graph</h3>`)
+    this.emptyStateDiv.html(`<h3>At least one node or edge class is needed to sample the graph</h3>`)
       .style('display', null);
 
     this.content.append('g')
