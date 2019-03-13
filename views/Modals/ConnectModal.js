@@ -287,7 +287,7 @@ class ConnectModal extends Modal {
         stat.targetAttr === this.targetAttribute;
     })[0];
     statSummaries.select('.spinner')
-      .style('display', currentStat ? 'none' : null);
+      .style('display', this.finishedStats ? 'none' : null);
     if (!currentStat) {
       currentStat = {
         matches: 0,
