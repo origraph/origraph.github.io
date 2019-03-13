@@ -42,11 +42,20 @@
     position: relative;
     min-width: 20em;
 
+    .axis {
+      path, line {
+        stroke: @separatorColor;
+      }
+    }
+
     .scatterplot {
       .point {
+        cursor: pointer;
         fill: fade(@textColor, 25%);
         &.selected {
-          fill: @invertedTextColor;
+          fill: @lightBackgroundColor;
+          stroke-width: 1px;
+          stroke: @textColor;
         }
       }
       .helpMark {

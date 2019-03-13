@@ -133,6 +133,8 @@ class ConnectModal extends Modal {
       </div>
     `);
     super.setup();
+    this.setupAttributeMenu('source');
+    this.setupAttributeMenu('target');
     this.setupStatViews();
     this.sourceRenderer = this.initTable(this.d3el.select('.sourceTable'), this.sourceClass, true);
     this.targetRenderer = this.initTable(this.d3el.select('.targetTable'), this.targetClass);
@@ -150,6 +152,8 @@ class ConnectModal extends Modal {
     if (this.edgeProjectionMode) {
       this.pathSpecView.render();
     } else {
+      this.updateSelectMenu(this.d3el.select('#sourceSelect'), this.sourceAttribute);
+      this.updateSelectMenu(this.d3el.select('#targetSelect'), this.targetAttribute);
       this.drawStatViews();
       this.sourceRenderer.updateSettings({
         data: Object.keys(this.sourceClass.table.currentData.lookup)
@@ -208,6 +212,26 @@ class ConnectModal extends Modal {
       this.render();
     });
   }
+  setupAttributeMenu (menuString) { // menuString is 'source' or 'target'
+    const classObj = this[menuString + 'Class'];
+    const selectMenu = this.d3el.select(`#${menuString}Select`);
+    // Update the list of attributes
+    const attrList = d3.entries(classObj.table.getAttributeDetails());
+    let attrs = selectMenu.select('optgroup').selectAll('option')
+      .data(attrList, ({ key }) => key);
+    attrs.exit().remove();
+    const attrsEnter = attrs.enter().append('option');
+    attrs = attrsEnter.merge(attrs);
+    attrs.text(({ key }) => key);
+
+    selectMenu.on('change', () => {
+      this[`_${menuString}Attribute`] = selectMenu.node().value || null;
+      this.render();
+    });
+  }
+  updateSelectMenu (selectMenu, attribute) {
+    selectMenu.node().value = attribute === null ? '' : attribute;
+  }
   setupStatViews () {
     const barChartBoilerplate = `
       <svg>
@@ -221,9 +245,9 @@ class ConnectModal extends Modal {
     this.d3el.select('.targetDistribution').html(barChartBoilerplate);
     this.d3el.select('.scatterplot').html(`
       <svg>
-        <g class="chart"></g>
         <g class="x axis"></g>
         <g class="y axis"></g>
+        <g class="chart"></g>
         <circle class="helpBubble" r="0.5em"></circle>
         <text class="x label" text-anchor="middle">One-to-one Cardinality<tspan class="helpMark" dx="0.5em">?</tspan></text>
         <text class="y label" text-anchor="middle" transform="rotate(-90)">Total Connections</text>
@@ -233,9 +257,9 @@ class ConnectModal extends Modal {
         window.mainView.showTooltip({
           content: `<p>This is a heuristic for how close a pair of attributes gets<br/>
                        to a one-to-one relationship.</p>
-                    <p>The value is computed a count of every item in both classes,<br/>
-                       divided by the number of that item's connections (or, minus<br/>
-                       one for items that have no connections)</p>`,
+                    <p>The value is a count of one for every item in both classes,<br/>
+                       divided by the number of that item's connections (or a<br/>
+                       count of minus one for items that have no connections)</p>`,
           targetBounds: this.getBoundingClientRect(),
           hideAfterMs: 60000
         });
@@ -326,8 +350,10 @@ class ConnectModal extends Modal {
       .attr('fill', '#' + classObj.annotations.color);
   }
   drawScatterplot (container, width, height, margin) {
+    const xDomain = this._stats.length === 0 ? [0, 1]
+      : d3.extent(this._stats.map(d => d.sourceOneToOneNess + d.targetOneToOneNess));
     const xScale = d3.scaleLinear()
-      .domain(d3.extent(this._stats.map(d => d.sourceOneToOneNess + d.targetOneToOneNess)))
+      .domain(xDomain)
       .range([0, width]);
     container.select('.x.axis')
       .call(d3.axisBottom(xScale).tickValues(xScale.domain()))
@@ -345,8 +371,10 @@ class ConnectModal extends Modal {
     container.select('.helpBubble')
       .attr('cx', labelBounds.right - 4 - svgBounds.left)
       .attr('cy', (labelBounds.top + labelBounds.bottom) / 2 - 2 - svgBounds.top);
+    const yDomain = this._stats.length === 0 ? [0, 1]
+      : [0, d3.max(this._stats.map(d => d.matches))];
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(this._stats.map(d => d.matches))])
+      .domain(yDomain)
       .range([height, 0]);
     container.select('.y.axis')
       .call(d3.axisLeft(yScale).tickValues(yScale.domain()));
@@ -361,11 +389,18 @@ class ConnectModal extends Modal {
     points = points.merge(pointsEnter);
 
     points.attr('transform', d => `translate(${xScale(d.sourceOneToOneNess + d.targetOneToOneNess)}, ${yScale(d.matches)})`)
-      .classed('selected', d => d.sourceAttr === this.sourceAttribute && d.targetAttr === this.targetAttribute);
+      .classed('selected', d => d.sourceAttr === this.sourceAttribute && d.targetAttr === this.targetAttribute)
+      .on('click', d => {
+        this._sourceAttribute = d.sourceAttr;
+        this._targetAttribute = d.targetAttr;
+        this.render();
+      });
 
     pointsEnter.append('circle');
     points.select('circle')
       .attr('r', '4');
+
+    points.select('.selected').raise();
   }
   drawButtons () {
     this.d3el.select('#modeButton > span')
