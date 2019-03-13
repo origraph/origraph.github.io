@@ -118,10 +118,10 @@ return (sortedBins[0] || [])[0];`;
       <div class="pathSpecView PathSpecificationView"></div>
       <div class="selectorView">
         <div>
-          <h3>Choose an attribute</h3>
+          <h3>Choose a value</h3>
           <select id="attrSelect" size="10">
             <option value="" selected>Index</option>
-            <optgroup label="Values:">
+            <optgroup label="Attributes:">
             </optgroup>
           </select>
         </div>

@@ -40,7 +40,26 @@
 
   .statSummaries {
     position: relative;
-    min-width: 30em;
+    min-width: 20em;
+
+    .scatterplot {
+      .point {
+        fill: fade(@textColor, 25%);
+        &.selected {
+          fill: @invertedTextColor;
+        }
+      }
+      .helpMark {
+        fill: @invertedTextColor;
+        cursor: pointer;
+        pointer-events: none;
+      }
+      .helpBubble {
+        fill: @lightTextColor;
+        cursor: pointer;
+      }
+    }
+
     .spinner {
       position: absolute;
       top: 0px;

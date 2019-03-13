@@ -209,17 +209,39 @@ class ConnectModal extends Modal {
     });
   }
   setupStatViews () {
-    const boilerplate = `
+    const barChartBoilerplate = `
       <svg>
         <g class="chart"></g>
         <g class="x axis"></g>
         <g class="y axis"></g>
-        <text class="x label" text-anchor="middle" y="12"></text>
+        <text class="x label" text-anchor="middle"></text>
         <text class="y label" text-anchor="middle" transform="rotate(-90)"></text>
       </svg>`;
-    this.d3el.select('.sourceDistribution').html(boilerplate);
-    this.d3el.select('.targetDistribution').html(boilerplate);
-    this.d3el.select('.scatterplot').html(boilerplate);
+    this.d3el.select('.sourceDistribution').html(barChartBoilerplate);
+    this.d3el.select('.targetDistribution').html(barChartBoilerplate);
+    this.d3el.select('.scatterplot').html(`
+      <svg>
+        <g class="chart"></g>
+        <g class="x axis"></g>
+        <g class="y axis"></g>
+        <circle class="helpBubble" r="0.5em"></circle>
+        <text class="x label" text-anchor="middle">One-to-one Cardinality<tspan class="helpMark" dx="0.5em">?</tspan></text>
+        <text class="y label" text-anchor="middle" transform="rotate(-90)">Total Connections</text>
+      </svg>`);
+    this.d3el.select('.scatterplot .helpBubble')
+      .on('mouseenter', function () {
+        window.mainView.showTooltip({
+          content: `<p>This is a heuristic for how close a pair of attributes gets<br/>
+                       to a one-to-one relationship.</p>
+                    <p>The value is computed a count of every item in both classes,<br/>
+                       divided by the number of that item's connections (or, minus<br/>
+                       one for items that have no connections)</p>`,
+          targetBounds: this.getBoundingClientRect(),
+          hideAfterMs: 60000
+        });
+      }).on('mouseleave', () => {
+        window.mainView.hideTooltip();
+      });
   }
   drawStatViews () {
     const statSummaries = this.d3el.select('.statSummaries');
@@ -261,7 +283,9 @@ class ConnectModal extends Modal {
   }
   drawBarChart (container, classObj, distribution, width, height, margin) {
     const bins = Object.keys(distribution);
-    const xScale = d3.scaleBand(bins, [0, width])
+    const xScale = d3.scaleBand()
+      .domain(bins)
+      .range([0, width])
       .padding(0.05);
     const xTicks = Math.min(bins.length, Math.floor(width / 20)); // Leave at least 20px for each tick
     container.select('.x.axis')
@@ -274,6 +298,7 @@ class ConnectModal extends Modal {
       .attr('text-anchor', 'end');
     container.select('.x.label')
       .attr('x', margin.left + width / 2)
+      .attr('y', 12)
       .text(`Connections per ${classObj.className} ${classObj === this.edgeClass ? 'edge' : 'node'}`);
     const yDomain = [0, d3.max(Object.values(distribution).concat([1]))];
     const yScale = d3.scaleLinear()
@@ -300,8 +325,47 @@ class ConnectModal extends Modal {
       .attr('height', d => height - yScale(d.value))
       .attr('fill', '#' + classObj.annotations.color);
   }
-  drawScatterplot (container, width, height) {
+  drawScatterplot (container, width, height, margin) {
+    const xScale = d3.scaleLinear()
+      .domain(d3.extent(this._stats.map(d => d.sourceOneToOneNess + d.targetOneToOneNess)))
+      .range([0, width]);
+    container.select('.x.axis')
+      .call(d3.axisBottom(xScale).tickValues(xScale.domain()))
+      .selectAll('text')
+      .attr('transform', 'rotate(-45)')
+      .attr('x', '-5')
+      .attr('y', null)
+      .attr('dy', '1em')
+      .attr('text-anchor', 'end');
+    container.select('.x.label')
+      .attr('x', margin.left + width / 2)
+      .attr('y', height + margin.top + 20);
+    const labelBounds = container.select('.x.label').node().getBoundingClientRect();
+    const svgBounds = container.select('svg').node().getBoundingClientRect();
+    container.select('.helpBubble')
+      .attr('cx', labelBounds.right - 4 - svgBounds.left)
+      .attr('cy', (labelBounds.top + labelBounds.bottom) / 2 - 2 - svgBounds.top);
+    const yScale = d3.scaleLinear()
+      .domain([0, d3.max(this._stats.map(d => d.matches))])
+      .range([height, 0]);
+    container.select('.y.axis')
+      .call(d3.axisLeft(yScale).tickValues(yScale.domain()));
+    container.select('.y.label')
+      .attr('y', margin.left / 2)
+      .attr('x', -(margin.top + height / 2));
 
+    let points = container.select('.chart').selectAll('.point')
+      .data(this._stats, d => d.sourceAttr + '=' + d.targetAttr);
+    points.exit().remove();
+    const pointsEnter = points.enter().append('g').classed('point', true);
+    points = points.merge(pointsEnter);
+
+    points.attr('transform', d => `translate(${xScale(d.sourceOneToOneNess + d.targetOneToOneNess)}, ${yScale(d.matches)})`)
+      .classed('selected', d => d.sourceAttr === this.sourceAttribute && d.targetAttr === this.targetAttribute);
+
+    pointsEnter.append('circle');
+    points.select('circle')
+      .attr('r', '4');
   }
   drawButtons () {
     this.d3el.select('#modeButton > span')
