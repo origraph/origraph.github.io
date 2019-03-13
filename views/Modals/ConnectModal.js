@@ -400,7 +400,7 @@ class ConnectModal extends Modal {
     points.select('circle')
       .attr('r', '4');
 
-    points.select('.selected').raise();
+    container.select('.selected').raise();
   }
   drawButtons () {
     this.d3el.select('#modeButton > span')
