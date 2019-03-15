@@ -65,17 +65,6 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   setupButtons () {
     const controls = [
       {
-        label: 'Default Sampling',
-        icon: 'img/defaultSamples.svg',
-        onClick: () => {
-          window.mainView.instanceGraph.reset();
-        },
-        disabled: () => !origraph.currentModel ||
-          Object.values(origraph.currentModel.classes)
-            .every(classObj => classObj.type === 'Generic'),
-        selected: () => window.mainView.instanceGraph.isReset
-      },
-      {
         label: 'Clear',
         icon: 'img/null.svg',
         onClick: () => {
@@ -95,6 +84,45 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           }
         },
         disabled: () => !window.mainView.highlightedPool
+      },
+      {
+        label: 'Seed Class...',
+        icon: 'img/convert.svg',
+        onClick: function () {
+          const menuEntries = {};
+          for (const classObj of Object.values(origraph.currentModel.classes)) {
+            if (classObj.type === 'Node' || classObj.type === 'Edge') {
+              menuEntries[classObj.className] = {
+                icon: `img/${classObj.lowerCamelCaseType}.svg`,
+                onClick: () => {
+                  window.mainView.instanceGraph.seedClass(classObj);
+                },
+                postProcess: element => {
+                  d3.select(element).style('background-color', '#' + classObj.annotations.color);
+                }
+              };
+            }
+          }
+          window.mainView.showContextMenu({
+            targetBounds: this.getBoundingClientRect(),
+            menuEntries
+          });
+        },
+        disabled: () => !origraph.currentModel ||
+          Object.values(origraph.currentModel.classes)
+            .every(classObj => classObj.type === 'Generic'),
+        selected: () => !!window.mainView.instanceGraph.seededClass
+      },
+      {
+        label: 'Default Sampling',
+        icon: 'img/defaultSamples.svg',
+        onClick: () => {
+          window.mainView.instanceGraph.reset();
+        },
+        disabled: () => !origraph.currentModel ||
+          Object.values(origraph.currentModel.classes)
+            .every(classObj => classObj.type === 'Generic'),
+        selected: () => window.mainView.instanceGraph.isReset
       }
     ];
     let buttons = this.controls.selectAll('.button').data(controls);
@@ -110,7 +138,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         content: d.label,
         targetBounds: this.getBoundingClientRect()
       });
-    }).on('click', (d) => { d.onClick(); });
+    }).on('click', function (d) { d.onClick.call(this); });
   }
   drawButtons () {
     this.controls.selectAll('.button')

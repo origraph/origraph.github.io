@@ -5,6 +5,7 @@ class InstanceGraph extends PersistentGraph {
   constructor () {
     super();
     this._instanceIds = null;
+    this.seededClass = null;
   }
   keyFunction (instance) {
     return instance.nodeInstance ? instance.nodeInstance.instanceId
@@ -16,6 +17,7 @@ class InstanceGraph extends PersistentGraph {
   }
   async reset () {
     this._instanceIds = null;
+    this.seededClass = null;
     await this.update();
   }
   get isReset () {
@@ -23,6 +25,7 @@ class InstanceGraph extends PersistentGraph {
   }
   async clear () {
     this._instanceIds = {};
+    this.seededClass = null;
     await this.update();
   }
   get isClear () {
@@ -43,6 +46,7 @@ class InstanceGraph extends PersistentGraph {
     if (!(instanceIds instanceof Array)) {
       instanceIds = [ instanceIds ];
     }
+    this.seededClass = null;
     // Unseed each instance. Additionally, if it's a node, unseed all of its
     // neighboring edges, or if it's an edge, unseed its neighboring nodes
     for (const instanceId of instanceIds) {
@@ -68,8 +72,17 @@ class InstanceGraph extends PersistentGraph {
       instanceIds = [ instanceIds ];
     }
     this._instanceIds = this._instanceIds || await this.getArbitraryInstanceIds() || null;
+    this.seededClass = null;
     for (const instanceId of instanceIds) {
       this._instanceIds[instanceId] = true;
+    }
+    await this.update();
+  }
+  async seedClass (classObj) {
+    this._instanceIds = {};
+    this.seededClass = classObj;
+    for await (const item of classObj.table.iterate()) {
+      this._instanceIds[item.instanceId] = true;
     }
     await this.update();
   }

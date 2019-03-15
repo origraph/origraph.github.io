@@ -494,6 +494,12 @@ class MainView extends View {
           right = Math.max(right, bounds.right);
         });
         tooltip.style('width', (this.emSize + right - left) + 'px'); // hard-coded padding for now
+
+        // Allow for post-processing (e.g. used to color InstanceView's class
+        // context menu)
+        menuItems.each(function (d) {
+          if (d.value.postProcess) { d.value.postProcess(this); }
+        });
       }
     });
   }
