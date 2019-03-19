@@ -139,13 +139,12 @@ class TableView extends GoldenLayoutView {
     // Generic stuff that applies to all cells
     element.classed('idColumn', attribute.name === null)
       .classed('metaColumn', attribute.meta)
-      .classed('highlighted', window.mainView.highlightedInstance &&
-        window.mainView.highlightedInstance.classObj.classId === this.classId &&
-        window.mainView.highlightedInstance.index === dataValue.index);
+      .classed('highlighted', window.mainView.instanceGraph
+        .highlightedSample[dataValue.instanceId]);
     element.on('click', async () => {
-      window.mainView.instanceGraph.seed(dataValue.instanceId);
-      window.mainView.highlightInstance(dataValue, this);
-      window.mainView.highlightPool(dataValue);
+      const sample = {};
+      sample[dataValue.instanceId] = dataValue;
+      window.mainView.instanceGraph.seed(sample);
     });
 
     if (attribute.name === null) {

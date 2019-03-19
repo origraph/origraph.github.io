@@ -19,7 +19,9 @@ class MainView extends View {
 
     this.instances = null;
     this.instanceGraph = new InstanceGraph();
+    this.instanceGraph.on('update', () => { this.render(); });
     this.networkModelGraph = new NetworkModelGraph();
+    this.networkModelGraph.on('update', () => { this.render(); });
 
     this.classColors = {};
     window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
@@ -259,36 +261,24 @@ class MainView extends View {
       this.goldenLayout.updateSize();
     }
   }
-  async highlightPool (instance) {
-    this.highlightedPool = {};
-    if (instance.type === 'Node') {
-      for await (const edge of instance.edges()) {
-        this.highlightedPool[edge.instanceId] = true;
-        for await (const node of edge.nodes()) {
-          this.highlightedPool[node.instanceId] = true;
-        }
-      }
-    } else if (instance.type === 'Edge') {
-      for await (const node of instance.nodes()) {
-        this.highlightedPool[node.instanceId] = true;
+  async highlightSample (sample = {}, sourceSubView = null) {
+    await this.instanceGraph.highlight(sample);
+    const instances = Object.values(sample);
+    // If a single instance was highlighted, and its table is NOT in the same
+    // GoldenLayout stack as the current interaction, bring its table to the
+    // front and scroll to its position
+    if (instances.length === 1 && !!sourceSubView) {
+      const instance = instances[0];
+      const tableView = this.subViews[instance.classObj.classId + 'TableView'];
+      if (!this.viewsShareStack(tableView, sourceSubView)) {
+        tableView.raise();
+        tableView.scrollToInstance(instance);
       }
     }
     this.render();
   }
-  highlightInstance (instance, sourceSubView) {
-    this.highlightedInstance = instance;
-    const tableView = this.subViews[instance.classObj.classId + 'TableView'];
-    if (!this.viewsShareStack(tableView, sourceSubView)) {
-      tableView.raise();
-    }
-    this.render();
-    if (tableView !== sourceSubView) {
-      tableView.scrollToInstance(instance);
-    }
-  }
-  clearHighlightInstance () {
-    delete this.highlightedInstance;
-    delete this.highlightedPool;
+  async clearHighlightSample () {
+    return this.highlightSample();
   }
   async showModal (options) {
     const overlay = this.d3el.select('#overlay');

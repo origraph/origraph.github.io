@@ -7,10 +7,9 @@ const NODE_SIZE = 7;
 const REPULSION = node => {
   if (node.nodeInstance) {
     const instanceId = node.nodeInstance.instanceId;
-    if (window.mainView.highlightedInstance &&
-        window.mainView.highlightedInstance.instanceId === instanceId) {
+    if (window.mainView.instanceGraph.highlightedSample[instanceId]) {
       return -(NODE_SIZE ** 4);
-    } else if (window.mainView.highlightedPool && window.mainView.highlightedPool[instanceId]) {
+    } else if (window.mainView.instanceGraph.highlightNeighbors[instanceId]) {
       return -(NODE_SIZE ** 3);
     }
   }
@@ -73,17 +72,18 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         disabled: () => !origraph.currentModel ||
           Object.values(origraph.currentModel.classes)
             .every(classObj => classObj.type === 'Generic'),
-        selected: () => window.mainView.instanceGraph.isClear
+        selected: () => window.mainView.instanceGraph.mode === 'EMPTY'
       },
       {
         label: 'Seed Neighborhood',
         icon: 'img/neighborhood.svg',
         onClick: () => {
-          if (window.mainView.highlightedPool) {
-            window.mainView.instanceGraph.seed(Object.keys(window.mainView.highlightedPool));
+          if (window.mainView.instanceGraph.highlightCount > 0) {
+            window.mainView.instanceGraph
+              .seedNeighbors(window.mainView.instanceGraph.highlightedSample);
           }
         },
-        disabled: () => !window.mainView.highlightedPool
+        disabled: () => window.mainView.instanceGraph.highlightCount === 0
       },
       {
         label: 'Seed Class...',
@@ -111,7 +111,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         disabled: () => !origraph.currentModel ||
           Object.values(origraph.currentModel.classes)
             .every(classObj => classObj.type === 'Generic'),
-        selected: () => !!window.mainView.instanceGraph.seededClass
+        selected: () => window.mainView.instanceGraph.mode === 'FULL_CLASS'
       },
       {
         label: 'Default Sampling',
@@ -122,7 +122,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         disabled: () => !origraph.currentModel ||
           Object.values(origraph.currentModel.classes)
             .every(classObj => classObj.type === 'Generic'),
-        selected: () => window.mainView.instanceGraph.isReset
+        selected: () => window.mainView.instanceGraph.mode === 'DEFAULT'
       }
     ];
     let buttons = this.controls.selectAll('.button').data(controls);
@@ -172,11 +172,10 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       .text(d => d.nodeInstance ? d.nodeInstance.label : '');
 
     nodes.classed('highlighted', d => d.nodeInstance &&
-      window.mainView.highlightedInstance &&
-      window.mainView.highlightedInstance.instanceId === d.nodeInstance.instanceId);
-    nodes.classed('pooled', d => d.nodeInstance &&
-      window.mainView.highlightedPool &&
-      window.mainView.highlightedPool[d.nodeInstance.instanceId]);
+      window.mainView.instanceGraph.highlightedSample[d.nodeInstance.instanceId]);
+    // Show the labels for all neighbors of the highlighted instance
+    nodes.classed('highlightedNeighbor', d => d.nodeInstance &&
+      window.mainView.instanceGraph.highlightNeighbors[d.nodeInstance.instanceId]);
     nodes.classed('dummy', d => d.dummy)
       .call(d3.drag()
         .on('start', d => {
@@ -187,9 +186,11 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           d.fy = d.y;
           // Initiate linked highlighting
           if (d.nodeInstance) {
-            window.mainView.highlightInstance(d.nodeInstance, this);
+            const sample = {};
+            sample[d.nodeInstance.instanceId] = d.nodeInstance;
+            window.mainView.highlightSample(sample, this);
           } else {
-            window.mainView.clearHighlightInstance();
+            window.mainView.clearHighlightSample();
           }
         }).on('drag', d => {
           d.fx = d3.event.x;
@@ -200,10 +201,6 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           }
           delete d.fx;
           delete d.fy;
-          // After dragging, update the highlighted pool
-          if (d.nodeInstance) {
-            window.mainView.highlightPool(d.nodeInstance);
-          }
         }));
 
     let edges = this.content.select('.edgeLayer')
@@ -220,12 +217,13 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
         ? '#' + d.edgeInstance.classObj.annotations.color : '#BDBDBD');
 
     edges.on('click', d => {
-      window.mainView.highlightInstance(d.edgeInstance, this);
-      window.mainView.highlightPool(d.edgeInstance);
+      const sample = {};
+      sample[d.edgeInstance.instanceId] = d.edgeInstance;
+      window.mainView.highlightSample(sample, this);
     });
 
-    edges.classed('highlighted', d => window.mainView.highlightedInstance &&
-      window.mainView.highlightedInstance.instanceId === d.edgeInstance.instanceId);
+    edges.classed('highlighted', d => window.mainView.instanceGraph
+      .highlightedSample[d.edgeInstance.instanceId]);
 
     this.simulation.on('tick', () => {
       edges.select('.line')
