@@ -682,7 +682,12 @@ C${coords.scx},${coords.scy}\
             .classed('bottomHeaderGap', true)
             .style('height', '25px');
         }
-        element.select('.ht_clone_top').style('top', null).style('bottom', `7px`);
+        let bottomOffset = -3;
+        const wtHolder = element.select('.ht_master > .wtHolder').node();
+        if (wtHolder.clientWidth < wtHolder.scrollWidth) {
+          bottomOffset += this.scrollBarSize;
+        }
+        element.select('.ht_clone_top').style('top', null).style('bottom', `${bottomOffset}px`);
       }
       element.selectAll('.ht_clone_top .colHeader .text')
         .each(function () {
