@@ -274,10 +274,7 @@ score is shown separately.<p>
       .attr('transform', `translate(${margin.left},${height + margin.top})`);
     charts.select('.y.axis')
       .attr('transform', `translate(${margin.left},${margin.top})`);
-    let currentStat = this._stats.filter(stat => {
-      return stat.sourceAttr === this.sourceAttribute &&
-        stat.targetAttr === this.targetAttribute;
-    })[0];
+    let currentStat = this.bestStat;
     statSummaries.select('.spinner')
       .style('display', this.finishedStats ? 'none' : null);
     if (!currentStat) {
