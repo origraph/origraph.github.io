@@ -1,4 +1,4 @@
-/* globals d3 */
+/* globals d3, less */
 import './docs/exampleDatasets/debugScripts.js';
 import MainView from './views/MainView.js';
 import * as SUBVIEW_CLASSES from './views/SubViews/SubViews.js';
@@ -56,11 +56,10 @@ window.DEFAULT_LAYOUT = {
   ]
 };
 
-window.onload = () => {
+const windowLoadPromise = new Promise((resolve, reject) => {
+  window.addEventListener('load', resolve);
+});
+Promise.all([windowLoadPromise, less.pageLoadFinished]).then(() => {
   window.mainView = new MainView(d3.select('body'));
-};
-window.onresize = () => {
-  if (window.mainView) {
-    window.mainView.resize();
-  }
-};
+  window.addEventListener('resize', () => { window.mainView.resize(); });
+});
