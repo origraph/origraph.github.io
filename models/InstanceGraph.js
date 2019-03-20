@@ -1,105 +1,201 @@
 /* globals origraph */
 import PersistentGraph from './PersistentGraph.js';
 
+const MODES = {
+  CUSTOM: 'CUSTOM',
+  EMPTY: 'EMPTY',
+  FULL_CLASS: 'FULL_CLASS',
+  DEFAULT: 'DEFAULT'
+};
+
 class InstanceGraph extends PersistentGraph {
   constructor () {
     super();
-    this._instanceIds = null;
+    this._mode = MODES.DEFAULT;
+    this.currentSample = null;
+    this.highlightedSample = {};
+    this.highlightNeighbors = {};
+    this.seededClass = null;
+    this.initiateDefaultWaiting();
   }
-  keyFunction (instance) {
-    return instance.nodeInstance ? instance.nodeInstance.instanceId
-      : instance.edgeInstance ? instance.edgeInstance.instanceId
-        : instance;
+  keyFunction (container) {
+    return container.nodeInstance ? container.nodeInstance.instanceId
+      : container.edgeInstance ? container.edgeInstance.instanceId
+        : container;
   }
-  contains (instanceId) {
-    return this._instanceIds && !!this._instanceIds[instanceId];
+  get mode () {
+    if (this.currentSample && Object.keys(this.currentSample).length === 0) {
+      return MODES.EMPTY;
+    } else {
+      return this._mode;
+    }
+  }
+  get highlightCount () {
+    return Object.keys(this.highlightedSample).length;
+  }
+  async highlight (sample) {
+    this.highlightedSample = sample;
+    this.highlightNeighbors = {};
+    await this.waitFor(['updateInstanceSample']);
+    // Update the neighbors for styling purposes
+    for (const instance of Object.values(sample)) {
+      if (instance.type === 'Node') {
+        for await (const neighborNode of instance.neighborNodes()) {
+          this.highlightNeighbors[neighborNode.instanceId] = neighborNode;
+        }
+      } else if (instance.type === 'Edge') {
+        for await (const node of instance.nodes()) {
+          this.highlightNeighbors[node.instanceId] = node;
+        }
+      }
+    }
   }
   async reset () {
-    this._instanceIds = null;
-    await this.update();
-  }
-  get isReset () {
-    return this._instanceIds === null;
+    this._mode = MODES.DEFAULT;
+    this.currentSample = null;
+    this.highlightedSample = {};
+    this.highlightNeighbors = {};
+    this.seededClass = null;
+    return this.initiateDefaultWaiting();
   }
   async clear () {
-    this._instanceIds = {};
+    this._mode = MODES.EMPTY;
+    this.currentSample = {};
+    this.highlightedSample = {};
+    this.highlightNeighbors = {};
+    this.seededClass = null;
+    this.cancelWaiting();
     await this.update();
   }
-  get isClear () {
-    return this._instanceIds && Object.keys(this._instanceIds).length === 0;
-  }
-  async getArbitraryInstanceIds () {
-    const idList = await origraph.currentModel.getArbitraryInstanceList();
-    const result = {};
-    for (const id of idList || []) {
-      result[id] = true;
-    }
-    return result;
-  }
-  async unseed (instanceIds) {
-    if (!this._instanceIds) {
+  async unseed (sample) {
+    if (!this.currentSample) {
+      // Can't remove from a sample that we're waiting for
       return;
     }
-    if (!(instanceIds instanceof Array)) {
-      instanceIds = [ instanceIds ];
-    }
+    this._mode = MODES.CUSTOM;
+    this.seededClass = null;
+    await this.waitFor(['updateInstanceSample']);
     // Unseed each instance. Additionally, if it's a node, unseed all of its
-    // neighboring edges, or if it's an edge, unseed its neighboring nodes
-    for (const instanceId of instanceIds) {
-      delete this._instanceIds[instanceId];
-      const { classId, index } = JSON.parse(instanceId);
-      if (origraph.currentModel.classes[classId]) {
-        const instance = origraph.currentModel.classes[classId].table.getItem(index);
-        if (instance.type === 'Node') {
-          for (const edge of instance.edges()) {
-            delete this._instanceIds[edge.instanceId];
-          }
-        } else if (instance.type === 'Edge') {
-          for (const node of instance.nodes()) {
-            delete this._instanceIds[node.instanceId];
-          }
+    // neighboring edges
+    for (const instanceId of Object.keys(sample)) {
+      const instance = this.currentSample[instanceId];
+      delete this.currentSample[instanceId];
+      delete this.highlightedSample[instanceId];
+      delete this.highlightNeighbors[instanceId];
+      if (instance.type === 'Node') {
+        for await (const edge of instance.edges()) {
+          delete this.currentSample[edge.instanceId];
+          delete this.highlightedSample[edge.instanceId];
+          delete this.highlightNeighbors[instanceId];
         }
       }
     }
     await this.update();
   }
-  async seed (instanceIds) {
-    if (!(instanceIds instanceof Array)) {
-      instanceIds = [ instanceIds ];
+  async seed (sample, finish = true) {
+    if (!this.currentSample) {
+      // If the user clicked fast enough to seed something before a default sample
+      // loads, just roll with it and don't bother collecting the default sample
+      // in the first place
+      this.currentSample = {};
+      this.cancelWaiting();
     }
-    this._instanceIds = this._instanceIds || await this.getArbitraryInstanceIds() || null;
-    for (const instanceId of instanceIds) {
-      this._instanceIds[instanceId] = true;
+    this._mode = MODES.CUSTOM;
+    this.seededClass = null;
+    // Merge the new sample, and then make sure everything is updated
+    Object.assign(this.currentSample, sample);
+    await this.waitFor(['updateInstanceSample']);
+
+    if (finish) {
+      // Highlight the new seeded instances
+      await this.highlight(sample);
+      // Flesh out the results
+      await this.waitFor(['fillInstanceSample']);
+      await this.update();
     }
+  }
+  async seedNeighbors (sample) {
+    // First ensure the sample itself is seeded, and that everything is up to date
+    // (but don't bother finishing, as we want to add neighbors before those bits)
+    await this.seed(sample, false);
+    // Seed the sample's neighbors
+    for (const instance of Object.values(sample)) {
+      for await (const neighbor of instance.neighbors()) {
+        this.currentSample[neighbor.instanceId] = neighbor;
+      }
+    }
+    // Highlight the new seeded instances
+    await this.highlight(sample);
+    // Flesh out the results
+    await this.waitFor(['fillInstanceSample']);
     await this.update();
   }
-  async deriveGraph () {
-    if (!this._debouncedPromise) {
-      this._lastModelId = origraph.currentModel.modelId;
-      this._debouncedPromise = new Promise((resolve, reject) => {
-        const attempt = async () => {
-          if (origraph.currentModel.modelId !== this._lastModelId) {
-            this.reset();
-            return;
-          }
-          const instanceIds = this._instanceIds || await this.getArbitraryInstanceIds();
-          if (!instanceIds) {
-            setTimeout(attempt, 1000);
-            return;
-          }
-          const result = await origraph.currentModel.getInstanceGraph(Object.keys(instanceIds));
-          if (result === null) {
-            setTimeout(attempt, 1000);
-          } else {
-            delete this._lastModelId;
-            delete this._debouncedPromise;
-            resolve(result);
-          }
-        };
-        setTimeout(attempt, 1000);
-      });
+  async seedClass (classObj) {
+    this._mode = MODES.FULL_CLASS;
+    this.seededClass = classObj;
+    this.cancelWaiting();
+
+    this.currentSample = {};
+    for await (const instance of classObj.table.iterate()) {
+      this.currentSample[instance.instanceId] = instance;
     }
-    return this._debouncedPromise;
+    // When seeding a whole class, don't highlight anything
+    this.highlightedSample = {};
+    this.highlightNeighbors = {};
+    // Fill in the graph
+    await this.waitFor(['fillInstanceSample']);
+    await this.update();
+  }
+  async initiateDefaultWaiting () {
+    await this.waitFor(['getInstanceSample', 'fillInstanceSample']);
+    await this.update();
+  }
+  cancelWaiting () {
+    delete this._waitPromise;
+  }
+  async waitFor (commandList, firstTry = true) {
+    // "Atomically" attempt to execute the provided commands in order; as each
+    // may potentially return null if caches are reset, start over after a delay
+    // if any of them fail
+    if (!firstTry && (!this._waitPromise || this._currentModel !== origraph.currentModel)) {
+      // cancelWaiting() was called, or the whole model got swapped out; we can
+      // just give up
+      delete this._waitPromise;
+      window.clearTimeout(this._waitTimeout);
+      delete this._currentModel;
+      return null;
+    }
+    this._currentModel = origraph.currentModel;
+    this._waitPromise = new Promise((resolve, reject) => {
+      window.clearTimeout(this._waitTimeout);
+      this._waitTimeout = window.setTimeout(async () => {
+        let tempSample = Object.assign({}, this.currentSample);
+        for (const command of commandList) {
+          tempSample = await origraph.currentModel[command](tempSample);
+          if (tempSample === null) {
+            // Shoot, something broke; try the whole commandList again from the beginning
+            resolve(await this.waitFor(commandList, false));
+            break;
+          }
+        }
+        if (tempSample !== null) {
+          // We made it through without any resets!
+          this.currentSample = tempSample;
+          delete this._waitPromise;
+          window.clearTimeout(this._waitTimeout);
+          delete this._currentModel;
+          resolve(this.currentSample);
+        }
+      }, firstTry ? 0 : 1000); // try to execuete immediately on the first try, otherwise wait a second
+    });
+    return this._waitPromise;
+  }
+  async deriveGraph () {
+    if (!this.currentSample) {
+      // Just return an empty graph for now if we're waiting
+      return { nodes: [], nodeLookup: {}, edges: [] };
+    }
+    return origraph.currentModel.instanceSampleToGraph(this.currentSample);
   }
 }
 

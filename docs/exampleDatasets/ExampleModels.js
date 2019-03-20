@@ -8,9 +8,10 @@ export default [
       let [ nodeClass, edgeClass ] = classes['miserables.json']
         .closedTranspose(['nodes', 'links']);
       nodeClass = nodeClass.interpretAsNodes();
-      nodeClass.setClassName('nodes');
+      nodeClass.setAnnotation('labelAttr', 'name');
+      nodeClass.setClassName('Characters');
       edgeClass = edgeClass.interpretAsEdges();
-      edgeClass.setClassName('edges');
+      edgeClass.setClassName('Co-occurrence');
       edgeClass.connectToNodeClass({
         nodeClass,
         side: 'source',
