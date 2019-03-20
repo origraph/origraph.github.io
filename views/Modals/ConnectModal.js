@@ -274,6 +274,11 @@ score is shown separately.<p>
       .attr('transform', `translate(${margin.left},${height + margin.top})`);
     charts.select('.y.axis')
       .attr('transform', `translate(${margin.left},${margin.top})`);
+    charts.select('.x.label')
+      .attr('x', margin.left + width / 2);
+    charts.select('.y.label')
+      .attr('y', margin.left / 2)
+      .attr('x', -(margin.top + height / 2));
     let currentStat = this.bestStat;
     statSummaries.select('.spinner')
       .style('display', this.finishedStats ? 'none' : null);
