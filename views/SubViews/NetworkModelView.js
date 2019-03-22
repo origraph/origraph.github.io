@@ -1,7 +1,7 @@
 /* globals origraph, d3 */
 import GoldenLayoutView from './GoldenLayoutView.js';
 import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
-import ConnectModal from '../Modals/ConnectModal.js';
+import ConnectModal from '../Modals/ConnectModal/ConnectModal.js';
 
 const NODE_SIZE = 30;
 const CURVE_OFFSET = NODE_SIZE * 2;

@@ -1,13 +1,12 @@
 /* globals origraph, d3, Handsontable */
-import Modal from './Modal.js';
-import PathSpecificationView from './PathSpecificationView.js';
-
-const ONE_TO_ONE_BAR_HEIGHT = 20;
-const SYMLOG_CONSTANT = 10;
+import Modal from '../Modal.js';
+import PathSpecificationView from '../PathSpecificationView.js';
 
 class ConnectModal extends Modal {
   constructor (options) {
-    super(options);
+    super(Object.assign(options, {
+      resources: [{ type: 'text', url: 'views/Modals/ConnectModal/template.html' }]
+    }));
     this.customStyling = true;
     this.side = options.side;
     this.sourceClass = options.sourceClass;
@@ -22,7 +21,7 @@ class ConnectModal extends Modal {
   }
   async initStats () {
     this.startedStats = true;
-    this.statWorker = new window.Worker('views/Modals/ConnectModalStatWorker.js');
+    this.statWorker = new window.Worker('views/Modals/ConnectModal/statWorker.js');
     this.statWorker.onmessage = message => {
       delete this._sortedStatIds;
       if (message.data === 'done') {
@@ -80,43 +79,11 @@ class ConnectModal extends Modal {
       lastClass.type === 'Node';
   }
   setup () {
-    this.d3el.classed('ConnectModal', true).html(`
-      <div class="edgeProjectionView PathSpecificationView"></div>
-      <div class="attributeColumnsView">
-        <div>
-          <h3 style="color:#${this.sourceClass.annotations.color}">${this.sourceClass.className}</h3>
-          <select id="sourceSelect" size="10">
-            <option value="" selected>Index</option>
-            <optgroup label="Attributes:">
-            </optgroup>
-          </select>
-          <p>Connect when values are equivalent</p>
-          <h3 style="color:#${this.targetClass.annotations.color}">${this.targetClass.className}</h3>
-          <select id="targetSelect" size="10">
-            <option value="" selected>Index</option>
-            <optgroup label="Attributes:">
-            </optgroup>
-          </select>
-        </div>
-        <div class="statSummaries">
-          <div class="sourceDistribution"></div>
-          <div class="oneToOneChart"></div>
-          <div class="targetDistribution"></div>
-          <div class="spinner"></div>
-        </div>
-        <div class="matchView">
-          <div class="ConnectMenu">
-            <svg class="connections" height="calc(5em + 17px)"></svg>
-            <div class="sourceTable TableView"></div>
-            <div class="targetTable TableView"></div>
-          </div>
-        </div>
-      </div>
-    `);
     super.setup();
+    this.d3el.classed('ConnectModal', true).select('.modalContent').html(this.resources[0]);
     this.setupAttributeMenu('source');
     this.setupAttributeMenu('target');
-    this.setupStatViews();
+    this.setupPairView();
     this.sourceRenderer = this.initTable(this.d3el.select('.sourceTable'), this.sourceClass, true);
     this.targetRenderer = this.initTable(this.d3el.select('.targetTable'), this.targetClass);
     this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
@@ -133,9 +100,16 @@ class ConnectModal extends Modal {
     if (this.edgeProjectionMode) {
       this.pathSpecView.render();
     } else {
-      this.updateSelectMenu(this.d3el.select('#sourceSelect'), this.sourceAttribute);
-      this.updateSelectMenu(this.d3el.select('#targetSelect'), this.targetAttribute);
-      this.drawStatViews();
+      this.updateAttributeMenu(this.d3el.select('.source.attribute select'), this.sourceAttribute);
+      this.updateAttributeMenu(this.d3el.select('.target.attribute select'), this.targetAttribute);
+      const currentStatId = `${this.sourceAttribute}=${this.targetAttribute}`;
+      const currentStat = this._stats[currentStatId] || {
+        sourceSummary: { 0: 0 },
+        targetSummary: { 0: 0 }
+      };
+      this.drawBarChart(this.d3el.select('.source.distribution'), this.sourceClass, currentStat.sourceSummary);
+      this.drawBarChart(this.d3el.select('.target.distribution'), this.targetClass, currentStat.targetSummary);
+      this.drawPairView();
       this.sourceRenderer.updateSettings({
         data: Object.keys(this.sourceClass.table.currentData.lookup)
       });
@@ -197,7 +171,10 @@ class ConnectModal extends Modal {
   }
   setupAttributeMenu (menuString) { // menuString is 'source' or 'target'
     const classObj = this[menuString + 'Class'];
-    const selectMenu = this.d3el.select(`#${menuString}Select`);
+    this.d3el.select(`.${menuString}.attribute h3`)
+      .style('color', `#${classObj.annotations.color}`)
+      .text(classObj.className);
+    const selectMenu = this.d3el.select(`.${menuString}.attribute select`);
     // Update the list of attributes
     const attrList = d3.entries(classObj.table.getAttributeDetails());
     let attrs = selectMenu.select('optgroup').selectAll('option')
@@ -212,97 +189,31 @@ class ConnectModal extends Modal {
       this.render();
     });
   }
-  updateSelectMenu (selectMenu, attribute) {
+  updateAttributeMenu (selectMenu, attribute) {
     selectMenu.node().value = attribute === null ? '' : attribute;
   }
-  setupStatViews () {
-    const barChartBoilerplate = `
-      <svg class="mainContainer">
-        <g class="chart"></g>
-        <g class="x axis"></g>
-        <g class="y axis"></g>
-        <text class="x label" text-anchor="middle" y="0.85em"></text>
-        <text class="y label" text-anchor="middle" transform="rotate(-90)">Count</text>
-      </svg>`;
-    this.d3el.select('.sourceDistribution').html(barChartBoilerplate);
-    this.d3el.select('.targetDistribution').html(barChartBoilerplate);
-    this.d3el.select('.oneToOneChart').html(`
-      <div class="scroller">
-        <svg></svg>
-      </div>
-      <svg class="mainContainer">
-        <g class="x axis"></g>
-        <circle class="helpBubble" r="0.5em"></circle>
-        <text class="x label" text-anchor="middle" y="0.85em">One-to-one Cardinality<tspan class="helpMark" dx="0.5em">?</tspan></text>
-        <text class="y label" text-anchor="middle" transform="rotate(-90)">Attribute Pairs</text>
-      </svg>`);
-    this.d3el.select('.oneToOneChart .helpBubble')
-      .on('mouseenter', function () {
-        window.mainView.showTooltip({
-          content: `<div style="max-width:20em">
-<p>This is a heuristic to help you identify which pair(s) of attributes get
-close to a one-to-one relationship.</p>
-<p>The value is the sum of a weighted count of 1 for every item in both classes,
-divided by the number of each item's connections.</p>
-<p>For example, an item with one connection gets a weight of 1; two connections
-get a weight of 1/2; three gets 1/3; and so on. If an item has no connections,
-it gets a weight of -1</p>
-<p>This score is shown on a symlog scale, where a the region from
-+/-${SYMLOG_CONSTANT} is linear, and each class's contribution to the overall
-score is shown separately.<p>
-</div>`,
-          targetBounds: this.getBoundingClientRect(),
-          hideAfterMs: 60000
-        });
-      }).on('mouseleave', () => {
-        window.mainView.hideTooltip();
-      });
-  }
-  drawStatViews () {
-    const statSummaries = this.d3el.select('.statSummaries');
-    statSummaries.select('.spinner').style('display', this.finishedStats ? 'none' : null);
-    const bounds = statSummaries.node().getBoundingClientRect();
+  drawBarChart (container, classObj, distribution) {
+    // Set up the SVG tag
+    const bounds = container.node().getBoundingClientRect();
     const margin = { top: 20, right: 20, bottom: 40, left: 70 };
     const width = bounds.width - (margin.left + margin.right);
-    const height = (bounds.height / 3) - (margin.top + margin.bottom);
-    const charts = statSummaries.selectAll('svg.mainContainer')
+    const height = bounds.height - (margin.top + margin.bottom);
+    const svg = container.select('svg')
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom);
-    charts.select('.chart')
+    svg.select('.chart')
       .attr('transform', `translate(${margin.left},${margin.top})`);
-    charts.select('.x.axis')
+    svg.select('.x.axis')
       .attr('transform', `translate(${margin.left},${height + margin.top})`);
-    charts.select('.y.axis')
+    svg.select('.y.axis')
       .attr('transform', `translate(${margin.left},${margin.top})`);
-    charts.select('.x.label')
+    svg.select('.x.label')
       .attr('x', margin.left + width / 2);
-    charts.select('.y.label')
+    svg.select('.y.label')
       .attr('y', margin.left / 2)
       .attr('x', -(margin.top + height / 2));
-    let currentStat = this.bestStat;
-    statSummaries.select('.spinner')
-      .style('display', this.finishedStats ? 'none' : null);
-    if (!currentStat) {
-      currentStat = {
-        matches: 0,
-        sourceAttr: null,
-        targetAttr: null,
-        sourceDistribution: { 0: 0 },
-        targetDistribution: { 0: 0 },
-        sourceSummary: { 0: 0 },
-        targetSummary: { 0: 0 },
-        sourceOneToOneNess: 0,
-        targetOneToOneNess: 0
-      };
-    }
-    this.drawBarChart(statSummaries.select('.sourceDistribution'),
-      this.sourceClass, currentStat.sourceSummary, width, height, margin);
-    this.drawBarChart(statSummaries.select('.targetDistribution'),
-      this.targetClass, currentStat.targetSummary, width, height, margin);
-    this.drawOneToOneChart(statSummaries.select('.oneToOneChart'),
-      width, height, margin);
-  }
-  drawBarChart (container, classObj, distribution, width, height, margin) {
+
+    // Scales / axes
     const bins = Object.keys(distribution);
     const xScale = d3.scaleBand()
       .domain(bins)
@@ -326,6 +237,7 @@ score is shown separately.<p>
     container.select('.y.axis')
       .call(d3.axisLeft(yScale).tickValues(yDomain).tickFormat(d3.format('d')));
 
+    // Bars
     let bars = container.select('.chart').selectAll('.bar')
       .data(d3.entries(distribution), d => d.key);
     bars.exit().remove();
@@ -340,41 +252,62 @@ score is shown separately.<p>
       .attr('height', d => height - yScale(d.value))
       .attr('fill', '#' + classObj.annotations.color);
   }
-  getSymlogTicks (domain) {
-    const ticks = [0];
-    const minorInterval = 10 ** Math.floor(Math.log10(Math.max(Math.abs(domain[0]), Math.abs(domain[1]))));
-    if (domain[0] < -SYMLOG_CONSTANT) {
-      ticks.unshift(-SYMLOG_CONSTANT);
-      let i = -minorInterval;
-      while (i < SYMLOG_CONSTANT && i > domain[0]) {
-        ticks.unshift(i);
-        i -= minorInterval;
-      }
-    }
-    if (domain[0] < 0) {
-      ticks.unshift(domain[0]);
-    }
-    if (domain[1] > SYMLOG_CONSTANT) {
-      ticks.push(SYMLOG_CONSTANT);
-      let i = minorInterval;
-      while (i > SYMLOG_CONSTANT && i < domain[1]) {
-        ticks.push(i);
-        i += minorInterval;
-      }
-    }
-    if (domain[1] > 0) {
-      ticks.push(domain[1]);
-    }
-    return ticks;
+  setupPairView () {
+    this.d3el.select('.pairView .helpBubble')
+      .on('mouseenter', function () {
+        window.mainView.showTooltip({
+          content: `<div style="max-width:20em">
+<p>This is a heuristic to help you identify which pair(s) of attributes get
+close to a one-to-one relationship.</p>
+<p>The value is the sum of a weighted count of 1 for every item in both classes,
+divided by the number of each item's connections.</p>
+<p>For example, an item with one connection gets a weight of 1; two connections
+get a weight of 1/2; three gets 1/3; and so on. If an item has no connections,
+it gets a weight of -1</p>
+</div>`,
+          targetBounds: this.getBoundingClientRect(),
+          hideAfterMs: 60000
+        });
+      }).on('mouseleave', () => {
+        window.mainView.hideTooltip();
+      });
   }
-  drawOneToOneChart (container, width, height, margin) {
+  drawPairView () {
     // First ensure that we have our sorted list of statIds
     if (!this._sortedStatIds) {
       this.sortStats();
     }
 
-    // Container setup magic to enable scrolling
-    const scrollHeight = this._sortedStatIds.length * ONE_TO_ONE_BAR_HEIGHT;
+    // Show / hide the spinner
+    const container = this.d3el.select('.pairView');
+    container.select('.spinner')
+      .style('display', this.finishedStats ? 'none' : null);
+
+    // Position stuff in the the axis layer
+    const bounds = container.node().getBoundingClientRect();
+    const globalGap = 2 * this.emSize;
+    const margin = { top: globalGap + 40, right: 20, bottom: 40, left: 150 };
+    const width = bounds.width - (margin.left + margin.right);
+    const height = bounds.height - (margin.top + margin.bottom);
+    const axisLayer = container.select('.axisLayer')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom);
+    axisLayer.selectAll('.global')
+      .attr('transform', `translate(${margin.left},${globalGap})`);
+    axisLayer.select('.local')
+      .attr('transform', `translate(${margin.left},${height + margin.top})`);
+    axisLayer.select('.label')
+      .attr('x', margin.left + width / 2);
+    const markBounds = container.select('.label .helpMark')
+      .node().getBoundingClientRect();
+    const svgBounds = axisLayer.node().getBoundingClientRect();
+    container.select('.helpBubble')
+      .attr('cx', markBounds.right - 4 - svgBounds.left)
+      .attr('cy', (markBounds.top + markBounds.bottom) / 2 - 2 - svgBounds.top);
+
+    // Set up vertical scrolling and y scale
+    const barHeight = 20;
+    const scrollHeight = this._sortedStatIds.length * barHeight;
     container.select('.scroller')
       .style('left', margin.left + 'px')
       .style('top', margin.top + 'px')
@@ -383,72 +316,87 @@ score is shown separately.<p>
     container.select('.scroller svg')
       .attr('width', width)
       .attr('height', scrollHeight + 'px');
-
-    // Set up x scale + axis + labels + help bubble
-    // xDomain: we want it to reach to the highest and lowest individual heuristic,
-    // as well as the sum, that exists
-    const xDomain = [
-      0,
-      this._stats.length === 0 ? 1 : 0 // if no stats, use a dummy scale of 0 - 1
-    ];
-    for (const stat of Object.values(this._stats)) {
-      const sum = stat.sourceOneToOneNess + stat.targetOneToOneNess;
-      xDomain[0] = Math.min(xDomain[0], stat.sourceOneToOneNess, stat.targetOneToOneNess, sum);
-      xDomain[1] = Math.max(xDomain[1], stat.sourceOneToOneNess, stat.targetOneToOneNess, sum);
-    }
-    const xScale = d3.scaleSymlog()
-      .domain(xDomain)
-      .constant(SYMLOG_CONSTANT)
-      .range([0, width]);
-    const ticks = container.select('.x.axis')
-      .call(d3.axisBottom(xScale).tickValues(this.getSymlogTicks(xDomain)))
-      .selectAll('.tick');
-    const majorTicks = ticks.filter(d => d === 0 ||
-      Math.abs(d) === SYMLOG_CONSTANT || d === xDomain[0] || d === xDomain[1]);
-    majorTicks.select('text')
-      .attr('transform', 'rotate(-45)')
-      .attr('x', '-5')
-      .attr('y', null)
-      .attr('dy', '1em')
-      .attr('text-anchor', 'end');
-    majorTicks.select('line')
-      .attr('y1', -height);
-    const minorTicks = ticks.filter(d => d !== 0 &&
-      Math.abs(d) !== SYMLOG_CONSTANT && d !== xDomain[0] && d !== xDomain[1]);
-    minorTicks.select('text').remove();
-    const labelBounds = container.select('.x.label .helpMark')
-      .node().getBoundingClientRect();
-    const svgBounds = container.select('svg.mainContainer').node().getBoundingClientRect();
-    container.select('.helpBubble')
-      .attr('cx', labelBounds.right - 4 - svgBounds.left)
-      .attr('cy', (labelBounds.top + labelBounds.bottom) / 2 - 2 - svgBounds.top);
-
-    // Set up y scale
     const yScale = d3.scaleBand()
       .domain(this._sortedStatIds)
       .range([0, scrollHeight])
       .padding(0.1);
 
-    // Draw the bar groups
-    let barGroups = container.select('.scroller svg').selectAll('.bar')
-      .data(this._sortedStatIds, d => d);
-    barGroups.exit().remove();
-    const barGroupsEnter = barGroups.enter().append('g').classed('bar', true);
-    barGroups = barGroups.merge(barGroupsEnter);
+    // Set up the global scale + axis
+    // We want the domain to reach to the highest and lowest individual
+    // heuristic, as well as their sum, that exists (use 0 - 1 if no stats yet)
+    const globalDomain = [ 0, this._stats.length === 0 ? 1 : 0 ];
+    for (const stat of Object.values(this._stats)) {
+      const sum = stat.sourceOneToOneNess + stat.targetOneToOneNess;
+      globalDomain[0] = Math.min(globalDomain[0], stat.sourceOneToOneNess, stat.targetOneToOneNess, sum);
+      globalDomain[1] = Math.max(globalDomain[1], stat.sourceOneToOneNess, stat.targetOneToOneNess, sum);
+    }
+    const globalScale = d3.scaleLinear()
+      .domain(globalDomain)
+      .range([0, width])
+      .clamp(true);
+    container.select('.global.axis')
+      .call(d3.axisBottom(globalScale))
+      .selectAll('.tick text')
+      .attr('transform', 'rotate(-45)')
+      .attr('x', '-5')
+      .attr('y', null)
+      .attr('dy', '1em')
+      .attr('text-anchor', 'end');
 
-    // Selected styling and click interaction
-    barGroups.classed('selected', d => {
-      return this._stats[d].sourceAttr === this.sourceAttribute &&
-        this._stats[d].targetAttr === this.targetAttribute;
-    }).on('click', d => {
-      this._sourceAttribute = this._stats[d].sourceAttr;
-      this._targetAttribute = this._stats[d].targetAttr;
-      this.render();
-    });
+    // Helper function for getting the local domain and computing stacked bar
+    // magnitudes
+    const getLocalDomain = () => {
+      if (this._localDomain) {
+        return this._localDomain;
+      } else {
+        // The default zoom is roughly set for the (mostly) positive side
+        return [Math.max(globalDomain[0], -globalDomain[1] / 4), globalDomain[1]];
+      }
+    };
+    const magnitudes = d => {
+      const stat = this._stats[d];
+      const m = {
+        s: Math.abs(stat.sourceOneToOneNess),
+        t: Math.abs(stat.targetOneToOneNess),
+        sum: stat.sourceOneToOneNess + stat.targetOneToOneNess
+      };
+      m.extent = Math.sign(m.sum) * Math.max(m.s, m.t);
+      return m;
+    };
+
+    // Draw / update the pair groups
+    let pairs = container.select('.scroller svg').selectAll('.pair')
+      .data(this._sortedStatIds, d => d);
+    pairs.exit().remove();
+    const pairsEnter = pairs.enter().append('g').classed('pair', true);
+    pairs = pairs.merge(pairsEnter);
+
+    pairs.attr('transform', d => `translate(0,${yScale(d)})`)
+      .classed('selected', d => {
+        return this._stats[d].sourceAttr === this.sourceAttribute &&
+          this._stats[d].targetAttr === this.targetAttribute;
+      }).classed('ineligible', d => {
+        const stat = this._stats[d];
+        return (this._sourceAttribute !== undefined && stat.sourceAttr !== this._sourceAttribute) ||
+          (this._targetAttribute !== undefined && stat.targetAttr !== this._targetAttribute);
+      }).on('click', d => {
+        this._sourceAttribute = this._stats[d].sourceAttr;
+        this._targetAttribute = this._stats[d].targetAttr;
+        // Zoom out if we click something that isn't fully visible
+        const localDomain = getLocalDomain();
+        const { extent } = magnitudes(d);
+        if (localDomain[0] > extent || localDomain[1] < extent) {
+          this._localDomain = [
+            Math.min(localDomain[0], extent),
+            Math.max(localDomain[1], extent)
+          ];
+        }
+        this.render();
+      });
 
     // Tooltip
     const self = this;
-    barGroups.on('mouseenter', function (d) {
+    pairs.on('mouseenter', function (d) {
       const stat = self._stats[d];
       const sourceTag = stat.sourceAttr === self.sourceAttribute ? 'strong' : 'span';
       const sourceLabel = stat.sourceAttr === null ? 'Index' : stat.sourceAttr;
@@ -459,60 +407,97 @@ score is shown separately.<p>
         hideAfterMs: 0,
         content: `
 <${sourceTag} style="color:#${self.sourceClass.annotations.color}">
-  ${sourceLabel}: ${Math.floor(stat.sourceOneToOneNess)}
+  ${sourceLabel}: ${stat.sourceOneToOneNess}
 </${sourceTag}><br/>
 <${targetTag} style="color:#${self.targetClass.annotations.color}">
-  ${targetLabel}: ${Math.floor(stat.targetOneToOneNess)}
+  ${targetLabel}: ${stat.targetOneToOneNess}
 </${targetTag}>`
       });
     }).on('mouseleave', () => {
       window.mainView.hideTooltip();
     });
 
-    // Transition the bar groups
-    const transition = d3.transition().duration(300);
-    barGroupsEnter.attr('opacity', 0)
-      .attr('transform', d => `translate(0,${yScale(d)})`);
-    barGroups.transition(transition)
-      .attr('opacity', d => {
-        const stat = this._stats[d];
-        if (this._sourceAttribute !== undefined && stat.sourceAttr !== this._sourceAttribute) {
-          return 0.5;
-        }
-        if (this._targetAttribute !== undefined && stat.targetAttr !== this._targetAttribute) {
-          return 0.5;
-        }
-        return 1;
-      })
-      .attr('transform', d => `translate(0,${yScale(d)})`);
+    // TODO: draw labels
 
-    // Draw the bars themselves
-    barGroupsEnter.append('path').classed('source', true)
+    // Draw the bars
+    pairsEnter.append('path').classed('source', true)
       .attr('fill', '#' + this.sourceClass.annotations.color);
-    barGroupsEnter.append('path').classed('target', true)
+    pairsEnter.append('path').classed('target', true)
       .attr('fill', '#' + this.targetClass.annotations.color);
-    const zero = xScale(0);
-    const bandwidth = yScale.bandwidth();
-    barGroups.select('.source')
-      .attr('d', d => {
-        const x = xScale(this._stats[d].sourceOneToOneNess);
-        return `M${zero},0L${x},0L${x},${bandwidth}L${zero},${bandwidth}Z`;
+    pairs.select('.source')
+      .attr('mask', d => {
+        const { s, t, sum } = magnitudes(d);
+        return s + t > Math.abs(sum) && s < t ? 'url(#maskStripe)' : null;
       });
-    barGroups.select('.target')
-      .attr('d', d => {
-        const stat = this._stats[d];
-        if (Math.sign(stat.sourceOneToOneNess) === Math.sign(stat.targetOneToOneNess)) {
-          // Both source and target are on the same side; start from the end of
-          // the source bar
-          const x0 = xScale(stat.sourceOneToOneNess);
-          const x1 = xScale(stat.sourceOneToOneNess + stat.targetOneToOneNess);
+    pairs.select('.target')
+      .attr('mask', d => {
+        const { s, t, sum } = magnitudes(d);
+        return s + t > Math.abs(sum) && t <= s ? 'url(#maskStripe)' : null;
+      });
+
+    // Nested function for quickly re-drawing the chart as sliders are dragged,
+    // that doesn't need a full render() call
+    const updateChart = () => {
+      // Update the local scale + axis
+      const localDomain = getLocalDomain();
+      const localScale = d3.scaleLinear()
+        .domain(localDomain)
+        .range([0, width]);
+      const ticks = container.select('.local.axis')
+        .call(d3.axisBottom(localScale))
+        .selectAll('.tick');
+      ticks.select('text')
+        .attr('transform', 'rotate(-45)')
+        .attr('x', '-5')
+        .attr('y', null)
+        .attr('dy', '1em')
+        .attr('text-anchor', 'end');
+      ticks.select('line')
+        .attr('y1', -height);
+
+      // Update the global scale sliders
+      container.select('.global.sliders .low')
+        .attr('transform', `translate(${globalScale(localDomain[0])},0)`);
+      container.select('.global.sliders .high')
+        .attr('transform', `translate(${globalScale(localDomain[1])},0)`);
+
+      // Update the bars
+      const zero = localScale(0);
+      const bandwidth = yScale.bandwidth();
+      pairs.select('.source')
+        .attr('d', d => {
+          const { s, t, sum, extent } = magnitudes(d);
+          // if the source is smaller than the target, start it at the end of
+          // the bar; otherwise start at zero
+          const x0 = s < t ? localScale(extent) : zero;
+          const x1 = localScale(sum);
           return `M${x0},0L${x1},0L${x1},${bandwidth}L${x0},${bandwidth}Z`;
-        } else {
-          // source and target are on different sides; we can draw the bar normally
-          const x = xScale(stat.targetOneToOneNess);
-          return `M${zero},0L${x},0L${x},${bandwidth}L${zero},${bandwidth}Z`;
-        }
-      });
+        });
+      pairs.select('.target')
+        .attr('d', d => {
+          const { s, t, sum, extent } = magnitudes(d);
+          // if the target is smaller than the source, start it at the end of
+          // the bar; otherwise start at zero
+          const x0 = t <= s ? localScale(extent) : zero;
+          const x1 = localScale(sum);
+          return `M${x0},0L${x1},0L${x1},${bandwidth}L${x0},${bandwidth}Z`;
+        });
+    };
+
+    // Call updateChart now, and when the sliders are dragged
+    updateChart();
+    container.select('.global.sliders .low')
+      .call(d3.drag().on('drag', () => {
+        this._localDomain = getLocalDomain();
+        this._localDomain[0] = Math.min(this._localDomain[1], globalScale.invert(d3.event.x));
+        updateChart();
+      }));
+    container.select('.global.sliders .high')
+      .call(d3.drag().on('drag', () => {
+        this._localDomain = getLocalDomain();
+        this._localDomain[1] = Math.max(this._localDomain[0], globalScale.invert(d3.event.x));
+        updateChart();
+      }));
   }
   drawButtons () {
     this.d3el.select('#modeButton > span')

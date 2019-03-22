@@ -4,17 +4,17 @@
 #modal.ConnectModal {
   top: 1em;
   bottom: 1em;
-  left: 1em;
-  right: 1em;
+  left: 50%;
+  transform: translate(-50%, 0);
+  min-width: 50%;
   padding-bottom: calc(3em + @buttonSize);
 
-  .edgeProjectionView,
-  .attributeColumnsView,
-  .matchView {
+  .modalContent {
     position: relative;
     width: 100%;
     height: 100%;
   }
+
   .dialogButtons {
     position: absolute;
     bottom: 1em;
@@ -24,108 +24,132 @@
   }
 
   .edgeProjectionView {
+    position: relative;
+    width: 100%;
+    height: 100%;
     overflow: auto;
   }
 
   .attributeColumnsView {
+    position: relative;
+    width: 100%;
+    height: 100%;
+
     display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
     & > div {
       display: flex;
       flex-direction: column;
     }
-    h3 {
-      margin: 0;
-    }
-  }
+    .statsColumn {
+      flex: 0 1 auto;
 
-  .statSummaries {
-    position: relative;
-    min-width: 30em;
+      display: grid;
+      /* grid-gap: 0.5em; */
+      grid-template-rows: 250px calc(100% - 500px) 250px;
+      grid-template-columns: auto auto;
 
-    .axis {
-      path, line {
-        stroke: @lightTextColor;
+      .source {
+        grid-row: 1;
       }
-    }
-
-    .oneToOneChart {
-      position: relative;
-      .scroller {
-        position: absolute;
-        overflow-y: auto;
-        .bar {
-          cursor: pointer;
-          &.selected path {
-            stroke-width: 1px;
-            stroke: @textColor;
-          }
+      .target {
+        grid-row: 3;
+      }
+      .attribute {
+        grid-column: 1;
+        h3 {
+          margin: 0;
         }
       }
-      .helpMark {
-        fill: @invertedTextColor;
-        cursor: pointer;
-        pointer-events: none;
+      .distribution {
+        grid-column: 2;
+        position: relative;
+        height: 250px;
       }
-      .helpBubble {
-        fill: @lightTextColor;
-        cursor: pointer;
+      .pairView {
+        grid-row: 2;
+        grid-column: ~"1/3"; /* escaping needed, because less computes this as a fraction */
+        position: relative;
+        .scroller {
+          position: absolute;
+          overflow-y: auto;
+          .pair {
+            cursor: pointer;
+            &.selected path {
+              stroke-width: 1px;
+              stroke: @invertedBackgroundColor;
+            }
+            &.ineligible {
+              opacity: 0.5;
+            }
+          }
+        }
+        .helpMark {
+          fill: @invertedTextColor;
+          cursor: pointer;
+          pointer-events: none;
+        }
+        .helpBubble {
+          fill: @lightTextColor;
+          cursor: pointer;
+        }
+        .spinner {
+          position: absolute;
+          top: 0px;
+          left: 0px;
+          width: 100%;
+          height: 100%;
+          background: fade(@backgroundColor, 80%) center / 3em no-repeat url("/img/spinner.gif");
+        }
       }
     }
-
-    .spinner {
-      position: absolute;
-      top: 0px;
-      left: 0px;
-      width: 100%;
-      height: 100%;
-      background: fade(@backgroundColor, 80%) center / 3em no-repeat url("/img/spinner.gif");
-    }
-  }
-
-  .matchView {
-    .ConnectMenu {
-      position: relative;
+    .matchView {
       flex: 1 1 auto;
-      .sourceTable,
-      .targetTable {
-        position: absolute;
-        overflow: hidden;
-        left: 0;
-        right: 0;
+      .ConnectMenu {
+        position: relative;
+        flex: 1 1 auto;
+        .sourceTable,
+        .targetTable {
+          position: absolute;
+          overflow: hidden;
+          left: 0;
+          right: 0;
 
-        .ht_clone_top thead tr th {
-          border-bottom-width: 1px;
-        }
-        .ht_clone_top tr > th {
-          cursor: pointer;
-        }
-        .ht_clone_top tr > th.selected {
-          background-color: @invertedBackgroundColor;
-          border: 1px solid @invertedBackgroundColor;
-          color: @invertedTextColor;
-        }
-      }
-      .sourceTable {
-        top: 0;
-        bottom: calc(50% + 2.5em);
-      }
-      .connections {
-        position: absolute;
-        top: calc(50% - 2.5em - 17px);
-        left: 0px;
-
-        path {
-          fill: none;
-
-          &.selected {
-            stroke-width: 3px;
-            stroke: @invertedBackgroundColor;
+          .ht_clone_top thead tr th {
+            border-bottom-width: 1px;
+          }
+          .ht_clone_top tr > th {
+            cursor: pointer;
+          }
+          .ht_clone_top tr > th.selected {
+            background-color: @invertedBackgroundColor;
+            border: 1px solid @invertedBackgroundColor;
+            color: @invertedTextColor;
           }
         }
-      }
-      .targetTable {
-        top: calc(50% + 2.5em);
-        bottom: 0;
+        .sourceTable {
+          top: 0;
+          bottom: calc(50% + 2.5em);
+        }
+        .connections {
+          position: absolute;
+          top: calc(50% - 2.5em - 17px);
+          left: 0px;
+
+          path {
+            fill: none;
+
+            &.selected {
+              stroke-width: 3px;
+              stroke: @invertedBackgroundColor;
+            }
+          }
+        }
+        .targetTable {
+          top: calc(50% + 2.5em);
+          bottom: 0;
+        }
       }
     }
   }

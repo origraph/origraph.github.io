@@ -1,0 +1,74 @@
+<div class="edgeProjectionView PathSpecificationView"></div>
+<div class="attributeColumnsView">
+  <div class="statsColumn">
+    <div class="source attribute">
+      <h3></h3>
+      <select size="10">
+        <option value="" selected>Index</option>
+        <optgroup label="Attributes:">
+        </optgroup>
+      </select>
+    </div>
+    <div class="source distribution">
+      <svg>
+        <g class="chart"></g>
+        <g class="x axis"></g>
+        <g class="y axis"></g>
+        <text class="x label" text-anchor="middle" y="0.85em"></text>
+        <text class="y label" text-anchor="middle" transform="rotate(-90)">Count</text>
+      </svg>
+    </div>
+    <div class="pairView">
+      <div class="scroller">
+        <svg>
+          <defs>
+            <pattern id="patternStripe"
+              width="4" height="4"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)">
+              <rect width="2" height="4" transform="translate(0,0)" fill="white"></rect>
+            </pattern>
+            <mask id="maskStripe">
+              <rect x="0" y="0" width="100%" height="100%" fill="url(#patternStripe)" />
+            </mask>
+          </defs>
+        </svg>
+      </div>
+      <svg class="axisLayer">
+        <g class="global axis"></g>
+        <g class="global sliders">
+          <path class="low" d="M0,0L-10,-10L0,-10Z"></path>
+          <path class="high" d="M0,0L10,-10L0,-10Z"></path>
+        </g>
+        <circle class="helpBubble" r="0.5em"></circle>
+        <text class="label" text-anchor="middle" y="1em">One-to-one Cardinality<tspan class="helpMark" dx="0.5em">?</tspan></text>
+        <g class="local axis"></g>
+      </svg>
+      <div class="spinner"></div>
+    </div>
+    <div class="target attribute">
+      <h3></h3>
+      <select size="10">
+        <option value="" selected>Index</option>
+        <optgroup label="Attributes:">
+        </optgroup>
+      </select>
+    </div>
+    <div class="target distribution">
+      <svg>
+        <g class="chart"></g>
+        <g class="x axis"></g>
+        <g class="y axis"></g>
+        <text class="x label" text-anchor="middle" y="0.85em"></text>
+        <text class="y label" text-anchor="middle" transform="rotate(-90)">Count</text>
+      </svg>
+    </div>
+  </div>
+  <div class="matchView">
+    <div class="ConnectMenu">
+      <svg class="connections" height="calc(5em + 17px)"></svg>
+      <div class="sourceTable TableView"></div>
+      <div class="targetTable TableView"></div>
+    </div>
+  </div>
+</div>
