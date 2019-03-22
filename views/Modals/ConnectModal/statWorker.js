@@ -67,7 +67,7 @@ onmessage = function (message) { // eslint-disable-line no-undef
             const nMatches = sourceItemCount * targetItemCount;
             stat.matches += nMatches;
             // Add to (init if needed) each value-match count; for each source
-            // item that matched, it gets targetCount new connections, and vice-versa
+            // value that matched, it gets targetCount new connections, and vice-versa
             sourceConnectionCounts[sourceValue] = sourceConnectionCounts[sourceValue] || 0;
             sourceConnectionCounts[sourceValue] += targetItemCount;
             targetConnectionCounts[targetValue] = targetConnectionCounts[targetValue] || 0;
@@ -75,7 +75,7 @@ onmessage = function (message) { // eslint-disable-line no-undef
           }
         }
       }
-      // Now that we have the total number of connections per item, count + bin items
+      // Now that we have the total number of connections per value, count + bin items
       // by the number of new connections that they have
       for (const [sourceValue, connectionCount] of Object.entries(sourceConnectionCounts)) {
         stat.sourceDistribution[connectionCount] = stat.sourceDistribution[connectionCount] || 0;
@@ -83,7 +83,7 @@ onmessage = function (message) { // eslint-disable-line no-undef
       }
       for (const [targetValue, connectionCount] of Object.entries(targetConnectionCounts)) {
         stat.targetDistribution[connectionCount] = stat.targetDistribution[connectionCount] || 0;
-        stat.targetDistribution[connectionCount] += sourceBin[targetValue];
+        stat.targetDistribution[connectionCount] += targetBin[targetValue];
       }
       // We have almost all the counts at this point, with the exception of
       // values that never matched anything; add to the zero bin when a value

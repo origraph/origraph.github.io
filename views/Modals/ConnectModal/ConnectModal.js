@@ -102,7 +102,7 @@ class ConnectModal extends Modal {
     } else {
       this.updateAttributeMenu(this.d3el.select('.source.attribute select'), this.sourceAttribute);
       this.updateAttributeMenu(this.d3el.select('.target.attribute select'), this.targetAttribute);
-      const currentStatId = `${this.sourceAttribute}=${this.targetAttribute}`;
+      const currentStatId = `${this.sourceAttribute || '_origraph_index'}=${this.targetAttribute || '_origraph_index'}`;
       const currentStat = this._stats[currentStatId] || {
         sourceSummary: { 0: 0 },
         targetSummary: { 0: 0 }
