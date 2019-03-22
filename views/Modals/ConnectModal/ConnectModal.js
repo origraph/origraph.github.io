@@ -113,9 +113,15 @@ class ConnectModal extends Modal {
       this.sourceRenderer.updateSettings({
         data: Object.keys(this.sourceClass.table.currentData.lookup)
       });
+      if (!this._sourceHasBeenManuallyScrolled) {
+        this.sourceRenderer.scrollToAttribute(this.sourceAttribute);
+      }
       this.targetRenderer.updateSettings({
         data: Object.keys(this.targetClass.table.currentData.lookup)
       });
+      if (!this._targetHasBeenManuallyScrolled) {
+        this.targetRenderer.scrollToAttribute(this.targetAttribute);
+      }
       this.drawConnections();
     }
 
@@ -184,10 +190,15 @@ class ConnectModal extends Modal {
     attrs = attrsEnter.merge(attrs);
     attrs.text(({ key }) => key);
 
-    selectMenu.on('change', () => {
+    const setValue = () => {
+      const attr = selectMenu.node().value || null;
       this[`_${menuString}Attribute`] = selectMenu.node().value || null;
+      this[`${menuString}Renderer`].scrollToAttribute(attr);
       this.render();
-    });
+    };
+
+    selectMenu.on('change', setValue);
+    selectMenu.on('click', setValue);
   }
   updateAttributeMenu (selectMenu, attribute) {
     selectMenu.node().value = attribute === null ? '' : attribute;
@@ -286,8 +297,8 @@ it gets a weight of -1</p>
     // Position stuff in the the axis layer
     const bounds = container.node().getBoundingClientRect();
     const globalGap = 2 * this.emSize;
-    const margin = { top: globalGap + 40, right: 20, bottom: 40, left: 150 };
-    const width = bounds.width - (margin.left + margin.right);
+    const margin = { top: globalGap + 40, right: 10, bottom: 40, left: 150 };
+    const width = bounds.width - (margin.left + margin.right + this.scrollBarSize);
     const height = bounds.height - (margin.top + margin.bottom);
     const axisLayer = container.select('.axisLayer')
       .attr('width', width + margin.left + margin.right)
@@ -306,20 +317,24 @@ it gets a weight of -1</p>
       .attr('cy', (markBounds.top + markBounds.bottom) / 2 - 2 - svgBounds.top);
 
     // Set up vertical scrolling and y scale
-    const barHeight = 20;
+    const barHeight = 30;
     const scrollHeight = this._sortedStatIds.length * barHeight;
     container.select('.scroller')
-      .style('left', margin.left + 'px')
       .style('top', margin.top + 'px')
-      .style('width', (width + margin.right) + 'px')
+      .style('width', (margin.left + width + margin.right + this.scrollBarSize) + 'px')
       .style('height', height + 'px');
     container.select('.scroller svg')
-      .attr('width', width)
+      .attr('width', (margin.left + width + margin.right) + 'px')
       .attr('height', scrollHeight + 'px');
+    container.select('.scroller #barClip rect')
+      .attr('x', margin.left + 'px')
+      .attr('width', width + 'px')
+      .attr('height', height + 'px');
     const yScale = d3.scaleBand()
       .domain(this._sortedStatIds)
       .range([0, scrollHeight])
       .padding(0.1);
+    const bandwidth = yScale.bandwidth();
 
     // Set up the global scale + axis
     // We want the domain to reach to the highest and lowest individual
@@ -356,11 +371,15 @@ it gets a weight of -1</p>
     const magnitudes = d => {
       const stat = this._stats[d];
       const m = {
-        s: Math.abs(stat.sourceOneToOneNess),
-        t: Math.abs(stat.targetOneToOneNess),
+        absS: Math.abs(stat.sourceOneToOneNess),
+        absT: Math.abs(stat.targetOneToOneNess),
         sum: stat.sourceOneToOneNess + stat.targetOneToOneNess
       };
-      m.extent = Math.sign(m.sum) * Math.max(m.s, m.t);
+      m.absSum = Math.abs(m.sum);
+      m.absExtent = Math.max(m.absS, m.absT, m.absSum);
+      m.extent = Math.sign(m.sum) * m.absExtent;
+      m.middle = Math.sign(stat.sourceOneToOneNess) !== Math.sign(stat.targetOneToOneNess)
+        ? m.sum : m.absS < m.absT ? stat.targetOneToOneNess : stat.sourceOneToOneNess;
       return m;
     };
 
@@ -391,6 +410,9 @@ it gets a weight of -1</p>
             Math.max(localDomain[1], extent)
           ];
         }
+        // Scroll the tables
+        this.sourceRenderer.scrollToAttribute(this._sourceAttribute);
+        this.targetRenderer.scrollToAttribute(this._targetAttribute);
         this.render();
       });
 
@@ -417,22 +439,38 @@ it gets a weight of -1</p>
       window.mainView.hideTooltip();
     });
 
-    // TODO: draw labels
+    // Draw labels
+    pairsEnter.append('text')
+      .attr('fill', '#' + this.sourceClass.annotations.color)
+      .attr('text-anchor', 'end')
+      .attr('x', margin.left - 0.5 * this.emSize)
+      .attr('y', bandwidth / 2)
+      .attr('font-size', 10)
+      .text(d => this._stats[d].sourceAttr || 'Index');
+    pairsEnter.append('text')
+      .attr('fill', '#' + this.targetClass.annotations.color)
+      .attr('text-anchor', 'end')
+      .attr('x', margin.left - 0.5 * this.emSize)
+      .attr('y', bandwidth / 2 + 10)
+      .attr('font-size', 10)
+      .text(d => this._stats[d].targetAttr || 'Index');
 
     // Draw the bars
     pairsEnter.append('path').classed('source', true)
-      .attr('fill', '#' + this.sourceClass.annotations.color);
+      .attr('fill', '#' + this.sourceClass.annotations.color)
+      .attr('clip-path', 'url(#barClip)');
     pairsEnter.append('path').classed('target', true)
-      .attr('fill', '#' + this.targetClass.annotations.color);
+      .attr('fill', '#' + this.targetClass.annotations.color)
+      .attr('clip-path', 'url(#barClip)');
     pairs.select('.source')
       .attr('mask', d => {
-        const { s, t, sum } = magnitudes(d);
-        return s + t > Math.abs(sum) && s < t ? 'url(#maskStripe)' : null;
+        const { absS, absT, absExtent, absSum } = magnitudes(d);
+        return absExtent > absSum && absS < absT ? 'url(#maskStripe)' : null;
       });
     pairs.select('.target')
       .attr('mask', d => {
-        const { s, t, sum } = magnitudes(d);
-        return s + t > Math.abs(sum) && t <= s ? 'url(#maskStripe)' : null;
+        const { absS, absT, absExtent, absSum } = magnitudes(d);
+        return absExtent > absSum && absT <= absS ? 'url(#maskStripe)' : null;
       });
 
     // Nested function for quickly re-drawing the chart as sliders are dragged,
@@ -463,23 +501,24 @@ it gets a weight of -1</p>
 
       // Update the bars
       const zero = localScale(0);
-      const bandwidth = yScale.bandwidth();
       pairs.select('.source')
         .attr('d', d => {
-          const { s, t, sum, extent } = magnitudes(d);
+          const { absS, absT, middle, extent } = magnitudes(d);
           // if the source is smaller than the target, start it at the end of
           // the bar; otherwise start at zero
-          const x0 = s < t ? localScale(extent) : zero;
-          const x1 = localScale(sum);
+          const x0 = margin.left + (absS < absT ? localScale(extent) : zero);
+          // draw to the middle
+          const x1 = margin.left + (localScale(middle));
           return `M${x0},0L${x1},0L${x1},${bandwidth}L${x0},${bandwidth}Z`;
         });
       pairs.select('.target')
         .attr('d', d => {
-          const { s, t, sum, extent } = magnitudes(d);
+          const { absS, absT, middle, extent } = magnitudes(d);
           // if the target is smaller than the source, start it at the end of
           // the bar; otherwise start at zero
-          const x0 = t <= s ? localScale(extent) : zero;
-          const x1 = localScale(sum);
+          const x0 = margin.left + (absT <= absS ? localScale(extent) : zero);
+          // draw to the middle
+          const x1 = margin.left + (localScale(middle));
           return `M${x0},0L${x1},0L${x1},${bandwidth}L${x0},${bandwidth}Z`;
         });
     };
@@ -489,13 +528,13 @@ it gets a weight of -1</p>
     container.select('.global.sliders .low')
       .call(d3.drag().on('drag', () => {
         this._localDomain = getLocalDomain();
-        this._localDomain[0] = Math.min(this._localDomain[1], globalScale.invert(d3.event.x));
+        this._localDomain[0] = Math.min(this._localDomain[1] - 1, globalScale.invert(d3.event.x));
         updateChart();
       }));
     container.select('.global.sliders .high')
       .call(d3.drag().on('drag', () => {
         this._localDomain = getLocalDomain();
-        this._localDomain[1] = Math.max(this._localDomain[0], globalScale.invert(d3.event.x));
+        this._localDomain[1] = Math.max(this._localDomain[0] + 1, globalScale.invert(d3.event.x));
         updateChart();
       }));
   }
@@ -681,6 +720,21 @@ C${coords.scx},${coords.scy}\
             classObj,
             headersOnBottom);
         });
+      // Sneaky hack to identify when the user has manually scrolled the
+      // div (handsontable fires afterScrollHorizontally for programmatic
+      // scrolling)
+      element.select('.ht_master .wtHolder').on('scroll.manual', () => {
+        if (!this._autoScrolling) {
+          if (headersOnBottom) {
+            this._sourceHasBeenManuallyScrolled = true;
+          } else {
+            this._targetHasBeenManuallyScrolled = true;
+          }
+          element.on('scroll.manual', null);
+        } else {
+          this._autoScrolling = false;
+        }
+      });
     });
     renderer.addHook('afterColumnResize', () => {
       this.drawConnections();
@@ -688,6 +742,13 @@ C${coords.scx},${coords.scy}\
     renderer.addHook('afterScrollHorizontally', () => {
       this.drawConnections();
     });
+    // Monkey patch scrolling to attribute... there's probably a better way to
+    // this...
+    renderer.scrollToAttribute = attrName => {
+      const colNumber = attrs.findIndex(attr => attr.name === attrName);
+      this._autoScrolling = true;
+      renderer.scrollViewportTo(0, colNumber);
+    };
     return renderer;
   }
 }
