@@ -324,17 +324,29 @@ class TableView extends GoldenLayoutView {
     };
 
     if (attribute.name === null) {
-      // Add options specific to ID column (currently none)
+      // Options specific to the index column
       menuEntries['Expand Rows as Classes'] = {
         icon: 'img/transpose.svg',
         onClick: () => {
           this.collectNewClasses(this.classObj.openTranspose());
         }
       };
+      // Add the full class menu to the index column's menu as well
+      Object.assign(menuEntries, window.mainView.getClassMenuEntries(this.classObj.classId));
     } else if (attribute.meta) {
       // Add options specific to meta columns (currently none)
     } else {
       // Add options specific to regular attributes
+      const aggregateLabel = this.classObj.type === 'Edge' ? 'Roll Up Distinct Values'
+        : this.classObj.type === 'Node' ? 'Create Supernodes w/Distinct Values'
+          : 'Aggregate Distinct Values';
+      menuEntries[aggregateLabel] = {
+        icon: this.classObj.type === 'Edge' ? 'img/rollup.svg' : 'img/supernode.svg',
+        onClick: () => {
+          // TODO: show an interface that asks if they want to reduce any attributes
+          this.classObj.aggregate(attribute.name);
+        }
+      };
       menuEntries['Promote Distinct Values'] = {
         icon: 'img/promote.svg',
         onClick: () => {

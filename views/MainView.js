@@ -5,6 +5,7 @@ import InstanceGraph from '../models/InstanceGraph.js';
 import NetworkModelGraph from '../models/NetworkModelGraph.js';
 import Modal from './Modals/Modal.js';
 import HtmlModal from './Modals/HtmlModal.js';
+import DeriveModal from './Modals/DeriveModal.js';
 
 class MainView extends View {
   constructor (d3el) {
@@ -524,7 +525,7 @@ class MainView extends View {
       menuEntries
     });
   }
-  showClassContextMenu ({ classId, targetBounds = null } = {}) {
+  getClassMenuEntries (classId) {
     const menuEntries = {
       'Rename': {
         icon: 'img/pencil.svg',
@@ -562,9 +563,16 @@ class MainView extends View {
         onClick: () => {
           origraph.currentModel.classes[classId].delete();
         }
+      },
+      'New Attribute...': {
+        icon: 'img/deriveAttribute.svg',
+        onClick: (button) => {
+          window.mainView.showModal(new DeriveModal(origraph.currentModel.classes[classId], null));
+        }
       }
     };
-    if (origraph.currentModel.classes[classId].type === 'Edge') {
+    const classType = origraph.currentModel.classes[classId].type;
+    if (classType === 'Edge') {
       menuEntries['Toggle Direction'] = {
         icon: 'img/toggleDirection.svg',
         onClick: () => {
@@ -572,9 +580,23 @@ class MainView extends View {
         }
       };
     }
+    if (origraph.currentModel.classes[classId].canDissolve) {
+      const label = classType === 'Edge' ? 'Unroll Edges'
+        : classType === 'Node' ? 'Dissolve Supernodes'
+          : 'Dissolve Aggregation';
+      menuEntries[label] = {
+        icon: classType === 'Edge' ? 'img/rollup.svg' : 'img/supernode.svg',
+        onClick: () => {
+          origraph.currentModel.classes[classId].dissolve();
+        }
+      };
+    }
+    return menuEntries;
+  }
+  showClassContextMenu ({ classId, targetBounds = null } = {}) {
     this.showContextMenu({
       targetBounds,
-      menuEntries
+      menuEntries: this.getClassMenuEntries(classId)
     });
   }
   async alert (message) {
