@@ -16,7 +16,7 @@ class InstanceGraph extends PersistentGraph {
     this.highlightedSample = {};
     this.highlightNeighbors = {};
     this.seededClass = null;
-    this.initiateDefaultWaiting();
+    this.doDefaultSampling();
   }
   keyFunction (container) {
     return container.nodeInstance ? container.nodeInstance.instanceId
@@ -56,7 +56,7 @@ class InstanceGraph extends PersistentGraph {
     this.highlightedSample = {};
     this.highlightNeighbors = {};
     this.seededClass = null;
-    return this.initiateDefaultWaiting();
+    return this.doDefaultSampling();
   }
   async clear () {
     this._mode = MODES.EMPTY;
@@ -168,7 +168,7 @@ class InstanceGraph extends PersistentGraph {
     await this.waitFor(['fillInstanceSample']);
     await this.update();
   }
-  async initiateDefaultWaiting () {
+  async doDefaultSampling () {
     await this.waitFor(['getInstanceSample', 'fillInstanceSample']);
     await this.update();
   }
@@ -217,6 +217,7 @@ class InstanceGraph extends PersistentGraph {
       // Just return an empty graph for now if we're waiting
       return { nodes: [], nodeLookup: {}, edges: [] };
     }
+    await this.waitFor(['updateInstanceSample']);
     return origraph.currentModel.instanceSampleToGraph(this.currentSample);
   }
 }
