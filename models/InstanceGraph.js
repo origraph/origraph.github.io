@@ -105,6 +105,16 @@ class InstanceGraph extends PersistentGraph {
     // Merge the new sample, and then make sure everything is updated
     Object.assign(this.currentSample, sample);
     await this.waitFor(['updateInstanceSample']);
+    // If we seeded any edges directly, we need to make sure to seed ALL of
+    // those edges' nodes as well
+    for (const instanceId of Object.keys(sample)) {
+      const instance = this.currentSample[instanceId];
+      if (instance.type === 'Edge') {
+        for await (const node of instance.nodes()) {
+          this.currentSample[node.instanceId] = node;
+        }
+      }
+    }
 
     if (finish) {
       // Highlight the new seeded instances
@@ -122,6 +132,12 @@ class InstanceGraph extends PersistentGraph {
     for (const instance of Object.values(sample)) {
       for await (const neighbor of instance.neighbors()) {
         this.currentSample[neighbor.instanceId] = neighbor;
+        // If the neighbor is an edge, include all of the edge's nodes
+        if (neighbor.type === 'Edge') {
+          for await (const node of neighbor.nodes()) {
+            this.currentSample[node.instanceId] = node;
+          }
+        }
       }
     }
     // Highlight the new seeded instances
