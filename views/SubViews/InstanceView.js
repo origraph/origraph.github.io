@@ -92,7 +92,14 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           const menuEntries = {};
           for (const classObj of Object.values(origraph.currentModel.classes)) {
             if (classObj.type === 'Node' || classObj.type === 'Edge') {
-              menuEntries[classObj.className] = {
+              let baseEntryName = classObj.className;
+              let i = 2;
+              let entryName = baseEntryName;
+              while (menuEntries[entryName]) {
+                entryName = `${baseEntryName} (${i})`;
+                i++;
+              }
+              menuEntries[entryName] = {
                 icon: `img/${classObj.lowerCamelCaseType}.svg`,
                 onClick: () => {
                   window.mainView.instanceGraph.seedClass(classObj);
