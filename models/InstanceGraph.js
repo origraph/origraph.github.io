@@ -154,6 +154,12 @@ class InstanceGraph extends PersistentGraph {
     this.currentSample = {};
     for await (const instance of classObj.table.iterate()) {
       this.currentSample[instance.instanceId] = instance;
+      // Include all neighbor nodes if this is an edge class
+      if (this.seededClass.type === 'Edge') {
+        for await (const node of instance.nodes()) {
+          this.currentSample[node.instanceId] = node;
+        }
+      }
     }
     // When seeding a whole class, don't highlight anything
     this.highlightedSample = {};
