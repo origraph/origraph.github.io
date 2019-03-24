@@ -163,7 +163,7 @@ class TableView extends GoldenLayoutView {
           for await (const nodeItem of dataValue.sourceNodes()) { // eslint-disable-line no-unused-vars
             idList.push(nodeItem.index);
           }
-        } else if (attribute.name === 'Targets') {
+        } else if (attribute.targetClass) {
           for await (const nodeItem of dataValue.targetNodes()) { // eslint-disable-line no-unused-vars
             idList.push(nodeItem.index);
           }

@@ -48,7 +48,7 @@ ${content.split(/\n/g).map(d => '  ' + d).join('\n')}
         if (attr === '') {
           result += `${indent}let value = ${classObj.variableName}.index;`;
         } else {
-          result += `${indent}let value = ${classObj.variableName}.row['${attr}'];`;
+          result += `${indent}let value = await ${classObj.variableName}.row['${attr}'];`;
         }
       }
       if (func === 'Mean' || func === 'Sum') {

@@ -52,7 +52,7 @@ ${indent}}`;
       if (this.attribute === null) {
         codeContent += `  let value = ${this.targetClass.variableName}.index;`;
       } else {
-        codeContent += `  let value = ${this.targetClass.variableName}.row['${this.attribute}'];`;
+        codeContent += `  let value = await ${this.targetClass.variableName}.row['${this.attribute}'];`;
       }
     } else {
       codeContent += addLoop(1, '  ');
@@ -165,7 +165,8 @@ ${indent}}`;
       .text(this.advancedMode ? 'Template Mode' : 'Advanced Mode');
   }
   setupCodeView () {
-    const attrBit = this.attribute === null ? '.index' : `.row['${this.attribute}']`;
+    const attrBit = this.attribute === null ? `${this.targetClass.variableName}.index`
+      : `await ${this.targetClass.variableName}.row['${this.attribute}']`;
     this.code = CodeMirror(this.d3el.select('.codeView').node(), {
       theme: 'material',
       mode: 'javascript',
@@ -174,8 +175,8 @@ ${indent}}`;
 // Hint: if you apply a function in Template Mode, it automatically
 // replaces the contents of this function
 
-// This is the default behavior (keeps only the first row):
-return ${this.targetClass.variableName}${attrBit} === 0;`)
+// This is the default behavior:
+return ${attrBit} === 0;`)
     });
     // Don't allow the user to edit the first or last lines
     this.code.on('beforeChange', (cm, change) => {
