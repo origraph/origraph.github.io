@@ -277,7 +277,7 @@ class TableView extends GoldenLayoutView {
       icon: 'img/hide.svg',
       onClick: async () => {
         if (attribute.name) {
-          this.classObj.table.suppressAttribute(attribute.name !== null);
+          this.classObj.table.suppressAttribute(attribute.name);
         }
       },
       disabled: () => attribute.name === null
@@ -323,6 +323,18 @@ class TableView extends GoldenLayoutView {
       }
     };
 
+    if (this.classObj.canDissolve) {
+      const label = this.classObj.type === 'Edge' ? 'Unroll Edges'
+        : this.classObj.type === 'Node' ? 'Dissolve Supernodes'
+          : 'Dissolve Aggregation';
+      menuEntries[label] = {
+        icon: this.classObj.type === 'Edge' ? 'img/rollup.svg' : 'img/supernode.svg',
+        onClick: () => {
+          this.classObj.dissolve();
+        }
+      };
+    }
+
     if (attribute.name === null) {
       // Options specific to the index column
       menuEntries['Expand Rows as Classes'] = {
@@ -331,8 +343,6 @@ class TableView extends GoldenLayoutView {
           this.collectNewClasses(this.classObj.openTranspose());
         }
       };
-      // Add the full class menu to the index column's menu as well
-      Object.assign(menuEntries, window.mainView.getClassMenuEntries(this.classObj.classId));
     } else if (attribute.meta) {
       // Add options specific to meta columns (currently none)
     } else {

@@ -580,17 +580,6 @@ class MainView extends View {
         }
       };
     }
-    if (origraph.currentModel.classes[classId].canDissolve) {
-      const label = classType === 'Edge' ? 'Unroll Edges'
-        : classType === 'Node' ? 'Dissolve Supernodes'
-          : 'Dissolve Aggregation';
-      menuEntries[label] = {
-        icon: classType === 'Edge' ? 'img/rollup.svg' : 'img/supernode.svg',
-        onClick: () => {
-          origraph.currentModel.classes[classId].dissolve();
-        }
-      };
-    }
     return menuEntries;
   }
   showClassContextMenu ({ classId, targetBounds = null } = {}) {

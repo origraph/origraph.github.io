@@ -36,3 +36,34 @@ window.prepConnectState = async () => {
   people.setClassName('People');
   people.setAnnotation('labelAttr', 'name');
 };
+
+window.prepParallelEdgesAndNodes = async () => {
+  const newModel = origraph.createModel({
+    name: 'Debug Parallel Edges / Nodes',
+    annotations: { description: 'Toy dataset for playing with topological rollups / supernodes' }
+  });
+  const baseClass = await newModel.addTextFile({
+    name: 'parallelEdgesAndNodes.json',
+    text: await d3.text('docs/exampleDatasets/parallelEdgesAndNodes.json')
+  });
+  let [ nodeClass, edgeClass ] = baseClass
+    .closedTranspose(['nodes', 'edges']);
+  nodeClass = nodeClass.interpretAsNodes();
+  nodeClass.setAnnotation('labelAttr', 'value');
+  nodeClass.setClassName('Nodes');
+  edgeClass = edgeClass.interpretAsEdges();
+  edgeClass.setClassName('Edges');
+  edgeClass.connectToNodeClass({
+    nodeClass,
+    side: 'source',
+    nodeAttribute: 'value',
+    edgeAttribute: 'source'
+  });
+  edgeClass.connectToNodeClass({
+    nodeClass,
+    side: 'target',
+    nodeAttribute: 'value',
+    edgeAttribute: 'target'
+  });
+  baseClass.delete();
+};
