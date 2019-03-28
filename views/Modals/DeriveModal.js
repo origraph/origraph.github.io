@@ -114,7 +114,8 @@ return (sortedBins[0] || [])[0];`;
     this.render();
   }
   setup () {
-    this.d3el.classed('DeriveModal', true).html(`
+    super.setup();
+    this.d3el.classed('DeriveModal', true).select('.modalContent').html(`
       <div class="pathSpecView PathSpecificationView"></div>
       <div class="selectorView">
         <div>
@@ -152,7 +153,6 @@ return (sortedBins[0] || [])[0];`;
         <input type="text" id="attrName" value="New Attribute"/>
       </div>
     `);
-    super.setup();
     this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
     this.pathSpecView.on('pathChange', () => { this.render(); });
     this.setupButtons();

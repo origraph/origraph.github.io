@@ -80,7 +80,8 @@ ${indent}}`;
     this.render();
   }
   setup () {
-    this.d3el.classed('DeriveModal', true).html(`
+    super.setup();
+    this.d3el.classed('DeriveModal', true).select('.modalContent').html(`
       <div class="pathSpecView PathSpecificationView"></div>
       <div class="selectorView">
         <div>
@@ -117,7 +118,6 @@ ${indent}}`;
         </details>
       </div>
     `);
-    super.setup();
     this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
     this.pathSpecView.on('pathChange', () => { this.render(); });
     this.setupButtons();
