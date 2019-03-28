@@ -66,7 +66,7 @@ class ExampleOption extends ModalMenuOption {
     this.spinner = loadButtonContainer.append('img');
     this.loadButton.append('span').text('Load');
     this.loadButton.on('click', async () => {
-      if (!this.loaded && !this.loading) {
+      if (!this.loading) {
         this.loaded = false;
         this.loading = true;
         this.render();
@@ -87,6 +87,7 @@ class ExampleOption extends ModalMenuOption {
           await this.prefab(newModel, classes);
         }
         await window.mainView.handleClassChange();
+        this.loading = false;
         this.loaded = true;
         this.render();
       }
@@ -97,7 +98,7 @@ class ExampleOption extends ModalMenuOption {
     this.spinner
       .style('display', this.loading || this.loaded ? null : 'none')
       .attr('src', this.loaded ? 'img/check.svg' : 'img/spinner.gif');
-    this.loadButton.classed('disabled', this.loaded || this.loading);
+    this.loadButton.classed('disabled', this.loading);
   }
 }
 export default ExampleOption;
