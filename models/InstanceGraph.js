@@ -169,6 +169,15 @@ class InstanceGraph extends PersistentGraph {
     await this.update();
   }
   async doDefaultSampling () {
+    if (origraph.currentModel === null) {
+      // We're in the middle of switching to a new empty model; try sampling
+      // again in about two seconds (if we're still in default mode at that point)
+      return new Promise((resolve, reject) => {
+        window.setTimeout(() => {
+          resolve(this._mode === MODES.DEFAULT ? this.doDefaultSampling() : null);
+        }, 2000);
+      });
+    }
     await this.waitFor(['getInstanceSample', 'fillInstanceSample']);
     await this.update();
   }
@@ -179,7 +188,7 @@ class InstanceGraph extends PersistentGraph {
     // "Atomically" attempt to execute the provided commands in order; as each
     // may potentially return null if caches are reset, start over after a delay
     // if any of them fail
-    if (!firstTry && (!this._waitPromise || this._currentModel !== origraph.currentModel)) {
+    if (!firstTry && (!this._waitPromise || this._currentModel !== origraph.currentModel || origraph.currentModel === null)) {
       // cancelWaiting() was called, or the whole model got swapped out; we can
       // just give up
       delete this._waitPromise;

@@ -27,9 +27,6 @@ class MainView extends View {
     this.classColors = {};
     window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
 
-    origraph.on('changeCurrentModel', () => {
-      this.handleClassChange();
-    });
     this.handleClassChange();
 
     this.render();
@@ -65,10 +62,11 @@ class MainView extends View {
     origraph.currentModel.on('update:mainView', async () => {
       this.handleClassUpdate();
     });
-    this.handleClassUpdate();
+    return this.handleClassUpdate();
   }
   async handleClassUpdate () {
     this.updateLayout();
+    this.instanceGraph.reset();
     (async () => {
       await Promise.all([
         this.networkModelGraph.update(),

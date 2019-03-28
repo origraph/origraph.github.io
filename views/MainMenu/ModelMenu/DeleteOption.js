@@ -12,6 +12,7 @@ class DeleteOption extends ModelSubmenuMixin(ActionMenuOption) {
     if (await window.mainView.confirm(message) === true) {
       window.mainView.instanceGraph.reset();
       this.model.delete();
+      await window.mainView.handleClassChange();
     }
   }
 }
