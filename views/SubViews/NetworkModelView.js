@@ -325,13 +325,21 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     objects.select('.count').text(function (d) {
       let count = '...';
       (async () => {
-        count = await d.classObj.table.countRows();
-        d3.select(this).text(count);
+        let totalCount = 0;
+        let throughCount = d.classObj.type === 'Edge' ? 0 : null;
+        for await (const item of d.classObj.table.iterate()) {
+          totalCount++;
+          if (throughCount !== null) {
+            for await (const neighbors of item.pairwiseNeighborhood()) { // eslint-disable-line no-unused-vars
+              throughCount++;
+            }
+          }
+        }
+        d3.select(this).text(throughCount === null ? totalCount : `${totalCount} (${throughCount})`);
       })();
       return count;
-    }).attr('x', d => d.classObj.type === 'Edge' ? d.labelWidth / 2 : 0)
-      .attr('y', '0.35em')
-      .attr('text-anchor', d => d.classObj.type === 'Edge' ? 'end' : 'middle');
+    }).attr('y', '0.35em')
+      .attr('text-anchor', 'middle');
   }
 
   updateEdgeDummyHandle ({
