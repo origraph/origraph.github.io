@@ -155,8 +155,8 @@ class ConnectModal extends Modal {
       } else {
         resolve(this.nodeClass.connectToNodeClass({
           otherNodeClass: this.otherNodeClass,
-          attribute: this.nodeAttribute,
-          otherAttribute: this.otherAttribute
+          attribute: this.sourceAttribute,
+          otherAttribute: this.targetAttribute
         }));
       }
     }
