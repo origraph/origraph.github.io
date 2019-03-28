@@ -91,6 +91,9 @@ class ConnectModal extends Modal {
     this.setupButtons();
   }
   draw () {
+    if (this.closed) {
+      return;
+    }
     this.d3el.select('.edgeProjectionView')
       .style('display', this.edgeProjectionMode ? null : 'none');
     this.d3el.select('.attributeColumnsView')
@@ -136,6 +139,7 @@ class ConnectModal extends Modal {
   }
   ok (resolve) {
     this.statWorker.terminate();
+    this.closed = true;
     if (this.edgeProjectionMode) {
       if (this.projectionPathIsValid) {
         resolve(this.pathSpecView.targetClass.projectNewEdge(this.pathSpecView.currentPath.slice(1)));
@@ -159,6 +163,7 @@ class ConnectModal extends Modal {
   }
   cancel (resolve) {
     this.statWorker.terminate();
+    this.closed = true;
     resolve();
   }
   setupButtons () {
