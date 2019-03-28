@@ -154,17 +154,15 @@ class TableView extends GoldenLayoutView {
       (async () => {
         let idList = [];
         if (attribute.edgeClass) {
-          const edgeIds = {};
-          edgeIds[attribute.edgeClass.classId] = true;
-          for await (const edgeItem of dataValue.edges({ edgeIds })) { // eslint-disable-line no-unused-vars
+          for await (const edgeItem of dataValue.edges({ classIds: [attribute.edgeClass.classId] })) {
             idList.push(edgeItem.index);
           }
         } else if (attribute.sourceClass) {
-          for await (const nodeItem of dataValue.sourceNodes()) { // eslint-disable-line no-unused-vars
+          for await (const nodeItem of dataValue.sourceNodes()) {
             idList.push(nodeItem.index);
           }
         } else if (attribute.targetClass) {
-          for await (const nodeItem of dataValue.targetNodes()) { // eslint-disable-line no-unused-vars
+          for await (const nodeItem of dataValue.targetNodes()) {
             idList.push(nodeItem.index);
           }
         }
