@@ -1,19 +1,20 @@
-/* globals origraph, CodeMirror */
+/* globals d3, origraph, CodeMirror */
 import Modal from './Modal.js';
 import PathSpecificationView from './PathSpecificationView.js';
 
 class FilterModal extends Modal {
-  constructor (targetClass, attribute) {
+  constructor (targetClass, attr) {
     super({
       resources: [{ type: 'text', url: 'docs/code.html' }]
     });
     this.customStyling = true;
     this.targetClass = targetClass;
     this.pathSpecView = new PathSpecificationView(targetClass);
-    this.attribute = attribute;
+    this._initiatedAttr = attr;
     this.codeTemplate = {
       func: 'Equals',
-      value: 0
+      value: 0,
+      attr
     };
     this.advancedMode = false;
   }
@@ -26,8 +27,8 @@ class FilterModal extends Modal {
 ${content.split(/\n/g).map(d => '  ' + d).join('\n')}
 }`;
   }
-  setCodeContents ({ func, value }) {
-    this.codeTemplate = { func, value };
+  setCodeContents ({ func, value, attr }) {
+    this.codeTemplate = { func, value, attr };
     let codeContent = '';
     if (func.startsWith('Count')) {
       codeContent = 'let count = 0;\n';
@@ -49,10 +50,10 @@ ${loopContents}
 ${indent}}`;
     };
     if (this.currentPath.length === 1) {
-      if (this.attribute === null) {
+      if (attr === null) {
         codeContent += `  let value = ${this.targetClass.variableName}.index;`;
       } else {
-        codeContent += `  let value = await ${this.targetClass.variableName}.row['${this.attribute}'];`;
+        codeContent += `  let value = await ${this.targetClass.variableName}.row['${attr}'];`;
       }
     } else {
       codeContent += addLoop(1, '  ');
@@ -84,6 +85,14 @@ ${indent}}`;
     this.d3el.classed('DeriveModal', true).select('.modalContent').html(`
       <div class="pathSpecView PathSpecificationView"></div>
       <div class="selectorView">
+        <div>
+          <h3>Choose a value</h3>
+          <select id="attrSelect" size="10">
+            <option value="" selected>Index</option>
+            <optgroup label="Attributes:">
+            </optgroup>
+          </select>
+        </div>
         <div>
           <h3>Choose a function</h3>
           <select id="funcSelect" size="10">
@@ -140,7 +149,9 @@ ${indent}}`;
   ok (resolve) {
     this.targetClass.table.addFilter(
       this.evalFunction(),
-      this.attribute);
+      // Store the function on the attribute where the filter was initiated
+      // if the user has written some custom code
+      this.codeTemplate ? this.codeTemplate.attr : this._initiatedAttr);
     resolve(true);
   }
   cancel (resolve) {
@@ -165,8 +176,8 @@ ${indent}}`;
       .text(this.advancedMode ? 'Template Mode' : 'Advanced Mode');
   }
   setupCodeView () {
-    const attrBit = this.attribute === null ? `${this.targetClass.variableName}.index`
-      : `await ${this.targetClass.variableName}.row['${this.attribute}']`;
+    const attrBit = this.codeTemplate.attr === null ? `${this.targetClass.variableName}.index`
+      : `await ${this.targetClass.variableName}.row['${this.codeTemplate.attr}']`;
     this.code = CodeMirror(this.d3el.select('.codeView').node(), {
       theme: 'material',
       mode: 'javascript',
@@ -239,6 +250,24 @@ return ${attrBit} === 0;`)
     }, 1000);
   }
   drawSelectorView () {
+    // Attribute select menu
+    const attrSelect = this.d3el.select('#attrSelect');
+
+    // Update the Index option
+    attrSelect.select('[value=""]')
+      .property('selected', this.codeTemplate && this.codeTemplate.attr === null);
+
+    // Update the list of attributes
+    const attrList = d3.entries(origraph.currentModel
+      .classes[this.pathSpecView.currentClassId].table.getAttributeDetails());
+    let attrs = attrSelect.select('optgroup').selectAll('option')
+      .data(attrList, ({ key }) => key);
+    attrs.exit().remove();
+    const attrsEnter = attrs.enter().append('option');
+    attrs = attrsEnter.merge(attrs);
+    attrs.text(({ key }) => key)
+      .property('selected', ({ key }) => this.codeTemplate && this.codeTemplate.attr === key);
+
     // Function select menu
     const funcSelect = this.d3el.select('#funcSelect');
     // Enable / disable sections based on what currentPath and codeTemplate are
@@ -268,11 +297,12 @@ return ${attrBit} === 0;`)
       if (func) {
         this.setCodeContents({
           func,
-          value: filterValue.node().value
+          value: filterValue.node().value,
+          attr: attrSelect.node().value
         });
       }
     };
-    this.d3el.selectAll('#funcSelect, #filterValue')
+    this.d3el.selectAll('#attrSelect, #funcSelect, #filterValue')
       .on('change', updateContents);
     filterValue.on('keyup', () => {
       clearTimeout(this._updateContentsTimeout);
