@@ -323,18 +323,6 @@ class TableView extends GoldenLayoutView {
       }
     };
 
-    if (this.classObj.canDissolve) {
-      const label = this.classObj.type === 'Edge' ? 'Unroll Edges'
-        : this.classObj.type === 'Node' ? 'Dissolve Supernodes'
-          : 'Dissolve Aggregation';
-      menuEntries[label] = {
-        icon: this.classObj.type === 'Edge' ? 'img/rollup.svg' : 'img/supernode.svg',
-        onClick: () => {
-          this.classObj.dissolve();
-        }
-      };
-    }
-
     if (attribute.name === null) {
       // Options specific to the index column
       menuEntries['Expand Rows as Classes'] = {
@@ -347,16 +335,21 @@ class TableView extends GoldenLayoutView {
       // Add options specific to meta columns (currently none)
     } else {
       // Add options specific to regular attributes
-      const aggregateLabel = this.classObj.type === 'Edge' ? 'Roll Up Distinct Values'
-        : this.classObj.type === 'Node' ? 'Create Supernodes w/Distinct Values'
-          : 'Aggregate Distinct Values';
-      menuEntries[aggregateLabel] = {
-        icon: this.classObj.type === 'Edge' ? 'img/rollup.svg' : 'img/supernode.svg',
-        onClick: () => {
-          // TODO: show an interface that asks if they want to reduce any attributes
-          this.classObj.aggregate(attribute.name);
-        }
-      };
+      if (this.classObj.type === 'Edge') {
+        menuEntries['Roll Up Distinct Values'] = {
+          icon: 'img/rollup.svg',
+          onClick: () => {
+            this.classObj.rollup(attribute.name);
+          }
+        };
+      } else if (this.classObj.type === 'Node') {
+        menuEntries['Create Supernodes'] = {
+          icon: 'img/supernode.svg',
+          onClick: () => {
+            this.classObj.createSupernodes(attribute.name);
+          }
+        };
+      }
       menuEntries['Promote Distinct Values'] = {
         icon: 'img/promote.svg',
         onClick: () => {
