@@ -280,6 +280,9 @@ divided by the number of each item's connections.</p>
 <p>For example, an item with one connection gets a weight of 1; two connections
 get a weight of 1/2; three gets 1/3; and so on. If an item has no connections,
 it gets a weight of -1</p>
+<p>The final score is normalized by the number of items in each class, meaning
+that a summed score of 2.0 should have a perfect one-to-one relationship, and
+-2.0 would indicate that the pair is as far from one-to-one as possible.</p>
 </div>`,
           targetBounds: this.getBoundingClientRect(),
           hideAfterMs: 60000

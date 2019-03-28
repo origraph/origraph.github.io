@@ -109,12 +109,21 @@ onmessage = function (message) { // eslint-disable-line no-undef
       // of attributes should be the basis for a connection; currently the
       // approach is to score highly when there's mostly a 1-to-1 relationship
       // between items and new connections
+      let totalSourceCount = 0;
       for (const [connectionCount, itemCount] of Object.entries(stat.sourceDistribution)) {
+        totalSourceCount += itemCount;
         stat.sourceOneToOneNess += +connectionCount === 0 ? -itemCount : itemCount / connectionCount;
       }
+      let totalTargetCount = 0;
       for (const [connectionCount, itemCount] of Object.entries(stat.targetDistribution)) {
+        totalTargetCount += itemCount;
         stat.targetOneToOneNess += +connectionCount === 0 ? -itemCount : itemCount / connectionCount;
       }
+
+      // Normalize each of the heuristic scores based on their class's size
+      stat.sourceOneToOneNess /= totalSourceCount;
+      stat.targetOneToOneNess /= totalTargetCount;
+
       // Now that this attribute pairing's stats have been calculated, send it
       // back so it can be accumulated / rendered
       postMessage(JSON.stringify(stat));
