@@ -234,7 +234,16 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
 
     this.simulation.on('tick', () => {
       edges.select('.line')
-        .attr('d', d => `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`);
+        .attr('d', d => {
+          if (d.source === d.target) {
+            return `M${d.source.x},${d.source.y}
+                    C${d.source.x - 4 * NODE_SIZE},${d.source.y},
+                     ${d.source.x},${d.source.y - 4 * NODE_SIZE},
+                     ${d.source.x},${d.source.y}`;
+          } else {
+            return `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`;
+          }
+        });
       nodes.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
