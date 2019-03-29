@@ -219,7 +219,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     edgesEnter.append('path')
       .classed('line', true);
     edges.select('.line')
-      .attr('stroke', d => window.mainView.getClassColor(d.edgeInstance.classObj));
+      .attr('stroke', d => '#' + window.mainView.getClassColor(d.edgeInstance.classObj));
 
     edges.on('click', d => {
       const sample = {};
