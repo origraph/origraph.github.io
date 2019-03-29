@@ -183,7 +183,7 @@ class ConnectModal extends Modal {
   setupAttributeMenu (menuString) { // menuString is 'source' or 'target'
     const classObj = this[menuString + 'Class'];
     this.d3el.select(`.${menuString}.attribute h3`)
-      .style('color', `#${classObj.annotations.color}`)
+      .style('color', `#${window.mainView.getClassColor(classObj)}`)
       .text(classObj.className);
     const selectMenu = this.d3el.select(`.${menuString}.attribute select`);
     // Update the list of attributes
@@ -245,7 +245,7 @@ class ConnectModal extends Modal {
       .attr('dy', '1em')
       .attr('text-anchor', 'end');
     container.select('.x.label')
-      .html(`Connections per <tspan fill="#${classObj.annotations.color}">${classObj.className}</tspan> ${classObj === this.edgeClass ? 'edge' : 'node'}`);
+      .html(`Connections per <tspan fill="#${window.mainView.getClassColor(classObj)}">${classObj.className}</tspan> ${classObj === this.edgeClass ? 'edge' : 'node'}`);
     const yDomain = [0, d3.max(Object.values(distribution).concat([1]))];
     const yScale = d3.scaleLinear()
       .domain(yDomain)
@@ -266,7 +266,7 @@ class ConnectModal extends Modal {
       .attr('width', xScale.bandwidth())
       .attr('y', d => yScale(d.value))
       .attr('height', d => height - yScale(d.value))
-      .attr('fill', '#' + classObj.annotations.color);
+      .attr('fill', '#' + window.mainView.getClassColor(classObj));
   }
   setupPairView () {
     this.d3el.select('.pairView .helpBubble')
@@ -436,10 +436,10 @@ that a summed score of 2.0 should have a perfect one-to-one relationship, and
         targetBounds: this.getBoundingClientRect(),
         hideAfterMs: 0,
         content: `
-<${sourceTag} style="color:#${self.sourceClass.annotations.color}">
+<${sourceTag} style="color:#${window.mainView.getClassColor(self.sourceClass)}">
   ${sourceLabel}: ${stat.sourceOneToOneNess}
 </${sourceTag}><br/>
-<${targetTag} style="color:#${self.targetClass.annotations.color}">
+<${targetTag} style="color:#${window.mainView.getClassColor(self.targetClass)}">
   ${targetLabel}: ${stat.targetOneToOneNess}
 </${targetTag}>`
       });
@@ -453,20 +453,20 @@ that a summed score of 2.0 should have a perfect one-to-one relationship, and
       .attr('x', margin.left - 0.5 * this.emSize)
       .attr('y', 2 * bandwidth / 3);
     pairLabel.append('tspan')
-      .attr('fill', '#' + this.sourceClass.annotations.color)
+      .attr('fill', '#' + window.mainView.getClassColor(this.sourceClass))
       .text(d => this._stats[d].sourceAttr || 'Index');
     pairLabel.append('tspan')
       .text(' = ');
     pairLabel.append('tspan')
-      .attr('fill', '#' + this.targetClass.annotations.color)
+      .attr('fill', '#' + window.mainView.getClassColor(this.targetClass))
       .text(d => this._stats[d].targetAttr || 'Index');
 
     // Draw the bars
     pairsEnter.append('path').classed('source', true)
-      .attr('fill', '#' + this.sourceClass.annotations.color)
+      .attr('fill', '#' + window.mainView.getClassColor(this.sourceClass))
       .attr('clip-path', 'url(#barClip)');
     pairsEnter.append('path').classed('target', true)
-      .attr('fill', '#' + this.targetClass.annotations.color)
+      .attr('fill', '#' + window.mainView.getClassColor(this.targetClass))
       .attr('clip-path', 'url(#barClip)');
     pairs.select('.source')
       .attr('mask', d => {

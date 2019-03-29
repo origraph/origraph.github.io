@@ -224,7 +224,7 @@ class PathSpecificationView extends View {
     classesEnter.append('path');
     classes.select('path')
       .attr('d', classObj => NODE_OUTLINES[classObj.type])
-      .attr('fill', classObj => `#${classObj.annotations.color}`);
+      .attr('fill', classObj => `#${window.mainView.getClassColor(classObj)}`);
 
     classesEnter.append('text');
     classes.select('text')
@@ -285,7 +285,7 @@ class PathSpecificationView extends View {
     classes.select('.className')
       .text(classId => origraph.currentModel.classes[classId].className)
       .style('color', classId => {
-        return `#${origraph.currentModel.classes[classId].annotations.color}`;
+        return `#${window.mainView.getClassColor(origraph.currentModel.classes[classId])}`;
       }).on('click', (classId, index) => {
         this.currentPath.splice(index + 1);
         this.trigger('pathChange');

@@ -84,27 +84,9 @@ class TableView extends GoldenLayoutView {
   setupTab () {
     super.setupTab();
     if (!this.isEmpty()) {
-      const imageFilter = this.classObj.annotations.color
-        ? `url(#recolorImageTo${this.classObj.annotations.color})` : null;
-      this.tabElement.select('.viewIcon')
-        .style('filter', imageFilter);
-      const titleElement = this.tabElement.select('.lm_title')
-        .style('color', this.classObj.annotations.color ? '#' + this.classObj.annotations.color : null)
-        .style('font-style', this.classObj !== null && this.classObj.hasCustomName ? null : 'italic')
-        .on('keyup', function () {
-          if (d3.event.keyCode === 13) { // return key
-            this.blur();
-          } else if (d3.event.keyCode === 27) { // esc key
-            this.blur();
-          }
-        }).on('blur', () => {
-          const newName = titleElement.text();
-          if (this.classObj !== null && newName) {
-            this.classObj.setClassName(newName);
-          } else {
-            window.mainView.render();
-          }
-        });
+      this.tabElement
+        .style('background-color', '#' + window.mainView.getClassColor(this.classObj))
+        .style('border-bottom', `1px solid #${window.mainView.getClassColor(this.classObj)}`);
     }
   }
   fillCell (element, value) {

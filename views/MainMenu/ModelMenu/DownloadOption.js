@@ -113,7 +113,7 @@ class DownloadOption extends ModelSubmenuMixin(ModalMenuOption) {
       .attr('value', classObj => classObj.classId);
     classesEnter.append('span');
     classes.select('span').text(classObj => classObj.className)
-      .style('color', classObj => `#${classObj.annotations.color}`);
+      .style('color', classObj => `#${window.mainView.getClassColor(classObj)}`);
 
     classes.on('change', () => { this.render(); });
     this.downloadButton.classed('disabled', this.includeClasses.length === 0);

@@ -104,7 +104,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
                   window.mainView.instanceGraph.seedClass(classObj);
                 },
                 postProcess: element => {
-                  d3.select(element).style('background-color', '#' + classObj.annotations.color);
+                  d3.select(element).style('background-color', '#' + window.mainView.getClassColor(classObj));
                 }
               };
             }
@@ -168,8 +168,8 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     nodesEnter.append('circle')
       .attr('r', NODE_SIZE);
     nodes.select('circle')
-      .attr('fill', d => d.nodeInstance && d.nodeInstance.classObj.annotations.color
-        ? '#' + d.nodeInstance.classObj.annotations.color : '#BDBDBD');
+      .attr('fill', d => d.nodeInstance
+        ? '#' + window.mainView.getClassColor(d.nodeInstance.classObj) : '#BDBDBD');
 
     nodesEnter.append('text')
       .attr('y', '1.35em')
@@ -219,8 +219,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
     edgesEnter.append('path')
       .classed('line', true);
     edges.select('.line')
-      .attr('stroke', d => d.edgeInstance.classObj.annotations.color
-        ? '#' + d.edgeInstance.classObj.annotations.color : '#BDBDBD');
+      .attr('stroke', d => window.mainView.getClassColor(d.edgeInstance.classObj));
 
     edges.on('click', d => {
       const sample = {};

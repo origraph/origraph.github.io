@@ -25,7 +25,6 @@ class MainView extends View {
     this.networkModelGraph.on('update', () => { this.render(); });
 
     this.classColors = {};
-    window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
 
     this.handleClassChange();
 
@@ -51,6 +50,7 @@ class MainView extends View {
     }
   }
   async handleClassChange () {
+    window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
     if (!origraph.currentModel) {
       const existingModels = Object.values(origraph.models);
       if (existingModels.length > 0) {
@@ -63,6 +63,18 @@ class MainView extends View {
       this.handleClassUpdate();
     });
     return this.handleClassUpdate();
+  }
+  getClassColor (classObj) {
+    if (!classObj.annotations.color) {
+      const availableColors = Object.entries(this.classColors)
+        .filter(([color, assignedClassId]) => !assignedClassId);
+      if (availableColors.length > 0) {
+        const color = availableColors[0][0];
+        classObj.annotations.color = color;
+        this.classColors[color] = classObj.classId;
+      }
+    }
+    return classObj.annotations.color || 'BDBDBD';
   }
   async handleClassUpdate () {
     this.updateLayout();
@@ -77,17 +89,6 @@ class MainView extends View {
     this.sampling = true;
     const tableCountPromises = {};
     for (const [ classId, classObj ] of Object.entries(origraph.currentModel.classes)) {
-      // Assign colors where necessary
-      if (!classObj.annotations.color) {
-        const availableColors = Object.entries(this.classColors)
-          .filter(([color, assignedClassId]) => !assignedClassId);
-        if (availableColors.length > 0) {
-          const color = availableColors[0][0];
-          classObj.annotations.color = color;
-          this.classColors[color] = classId;
-        }
-      }
-
       // Count the rows in each table (todo: compute histograms)
       this.tableCounts[classId] = null;
       tableCountPromises[classId] = classObj.table.countRows()

@@ -318,7 +318,7 @@ class NetworkModelView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       } else {
         return OBJECT_PATHS[d.classObj.type];
       }
-    }).attr('fill', d => '#' + (d.classObj.annotations.color || 'BDBDBD'));
+    }).attr('fill', d => '#' + window.mainView.getClassColor(d.classObj));
 
     // Count
     objectsEnter.append('text').classed('count', true);
