@@ -448,19 +448,17 @@ that a summed score of 2.0 should have a perfect one-to-one relationship, and
     });
 
     // Draw labels
-    pairsEnter.append('text')
+    const pairLabel = pairsEnter.append('text')
+      .attr('text-anchor', 'end')
+      .attr('x', margin.left - 0.5 * this.emSize)
+      .attr('y', 2 * bandwidth / 3);
+    pairLabel.append('tspan')
       .attr('fill', '#' + this.sourceClass.annotations.color)
-      .attr('text-anchor', 'end')
-      .attr('x', margin.left - 0.5 * this.emSize)
-      .attr('y', bandwidth / 2)
-      .attr('font-size', 10)
       .text(d => this._stats[d].sourceAttr || 'Index');
-    pairsEnter.append('text')
+    pairLabel.append('tspan')
+      .text(' = ');
+    pairLabel.append('tspan')
       .attr('fill', '#' + this.targetClass.annotations.color)
-      .attr('text-anchor', 'end')
-      .attr('x', margin.left - 0.5 * this.emSize)
-      .attr('y', bandwidth / 2 + 10)
-      .attr('font-size', 10)
       .text(d => this._stats[d].targetAttr || 'Index');
 
     // Draw the bars
