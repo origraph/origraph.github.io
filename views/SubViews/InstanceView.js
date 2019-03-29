@@ -191,14 +191,6 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           }
           d.fx = d.x;
           d.fy = d.y;
-          // Initiate linked highlighting
-          if (d.nodeInstance) {
-            const sample = {};
-            sample[d.nodeInstance.instanceId] = d.nodeInstance;
-            window.mainView.highlightSample(sample, this);
-          } else {
-            window.mainView.clearHighlightSample();
-          }
         }).on('drag', d => {
           d.fx = d3.event.x;
           d.fy = d3.event.y;
@@ -208,6 +200,14 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
           }
           delete d.fx;
           delete d.fy;
+          // Highlight the dragged node when the mouse is released
+          if (d.nodeInstance) {
+            const sample = {};
+            sample[d.nodeInstance.instanceId] = d.nodeInstance;
+            window.mainView.highlightSample(sample, this);
+          } else {
+            window.mainView.clearHighlightSample();
+          }
         }));
 
     let edges = this.content.select('.edgeLayer')
