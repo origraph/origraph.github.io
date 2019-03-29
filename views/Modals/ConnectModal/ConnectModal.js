@@ -183,8 +183,7 @@ class ConnectModal extends Modal {
   setupAttributeMenu (menuString) { // menuString is 'source' or 'target'
     const classObj = this[menuString + 'Class'];
     this.d3el.select(`.${menuString}.attribute h3`)
-      .style('color', `#${window.mainView.getClassColor(classObj)}`)
-      .text(classObj.className);
+      .html(`<span style="color:#${window.mainView.getClassColor(classObj)}">${classObj.className}</span> ${classObj === this.edgeClass ? 'edges' : 'nodes'}`);
     const selectMenu = this.d3el.select(`.${menuString}.attribute select`);
     // Update the list of attributes
     const attrList = d3.entries(classObj.table.getAttributeDetails());
