@@ -222,12 +222,6 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       .attr('stroke', d => d.edgeInstance.classObj.annotations.color
         ? '#' + d.edgeInstance.classObj.annotations.color : '#BDBDBD');
 
-    edgesEnter.append('text')
-      .attr('y', '0.35em')
-      .attr('text-anchor', 'middle');
-    edges.select('text')
-      .text(d => d.edgeInstance.label);
-
     edges.on('click', d => {
       const sample = {};
       sample[d.edgeInstance.instanceId] = d.edgeInstance;
@@ -249,9 +243,6 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
             return `M${d.source.x},${d.source.y}L${d.target.x},${d.target.y}`;
           }
         });
-      edges.select('text')
-        .attr('x', d => (d.source.x + d.target.x) / 2)
-        .attr('y', d => (d.source.y + d.target.y) / 2);
       nodes.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
