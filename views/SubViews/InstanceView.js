@@ -4,18 +4,17 @@ import ZoomableSvgViewMixin from './ZoomableSvgViewMixin.js';
 
 const NODE_SIZE = 7;
 
-const REPULSION = -30;
-/*node => {
+const REPULSION = node => {
   if (node.nodeInstance) {
     const instanceId = node.nodeInstance.instanceId;
     if (window.mainView.instanceGraph.highlightedSample[instanceId]) {
-      return -500;
+      return -1000;
     } else if (window.mainView.instanceGraph.highlightNeighbors[instanceId]) {
       return -100;
     }
   }
   return -50;
-};*/
+};
 
 const FORCES = {
   link: d3.forceLink(),
@@ -57,7 +56,7 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
       this.simulation.force(forceName, forceObj);
     }
     window.mainView.instanceGraph.on('update', () => {
-      this.simulation.alpha(0.3).restart();
+      this.simulation.alpha(1.0).restart();
       this.render();
     });
   }
