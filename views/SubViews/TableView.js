@@ -234,10 +234,6 @@ class TableView extends GoldenLayoutView {
       });
   }
   showAttributeMenu (targetBounds, attribute) {
-    if (attribute.seed) {
-      throw new Error(`You shouldn't be able to open the seed attribute menu`);
-    }
-
     let menuEntries = {};
 
     // Add sort, filter, and hide to everything

@@ -147,10 +147,10 @@ return (sortedBins[0] || [])[0];`;
       <div class="codeView"></div>
       <div class="docsView">${this.resources[0]}</div>
       <div class="preview">
-        <h3>Preview</h3>
-        <div class="TableView"></div>
         <h3>Name the new attribute</h3>
         <input type="text" id="attrName" value="New Attribute"/>
+        <h3>Preview</h3>
+        <div class="TableView"></div>
       </div>
     `);
     this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
@@ -201,6 +201,7 @@ return (sortedBins[0] || [])[0];`;
       .text(this.advancedMode ? 'Template Mode' : 'Advanced Mode');
   }
   setupCodeView () {
+    const attrBit = this.codeTemplate.attr ? `.row['${this.codeTemplate.attr}']` : `.index`;
     this.code = CodeMirror(this.d3el.select('.codeView').node(), {
       theme: 'material',
       mode: 'javascript',
@@ -209,8 +210,8 @@ return (sortedBins[0] || [])[0];`;
 // Hint: if you apply a function in Template Mode, it automatically
 // replaces the contents of this function
 
-// This is the default behavior (copies the index from the same table):
-return ${this.targetClass.variableName}.index;`)
+// This is the default behavior (copies ${this.codeTemplate.attr || 'the index'} from the same table):
+return ${this.targetClass.variableName}${attrBit};`)
     });
     // Don't allow the user to edit the first or last lines
     this.code.on('beforeChange', (cm, change) => {
@@ -236,13 +237,13 @@ return ${this.targetClass.variableName}.index;`)
       // (Handsontable can't handle our actual Wrapper objects, because they have cycles)
       columns: [],
       readOnly: true,
-      stretchH: 'last',
+      // stretchH: 'last',
       disableVisualSelection: true
     });
 
-    this.d3el.select('#attrName').on('change', () => {
-      this.handleNewName();
-    });
+    this.d3el.select('#attrName')
+      .on('keyup', () => { this.render(); })
+      .on('change', () => { this.handleNewName(); });
   }
   handleNewName () {
     const attrDetails = this.targetClass.table.getAttributeDetails();
@@ -253,6 +254,7 @@ return ${this.targetClass.variableName}.index;`)
       i = i === '' ? 1 : i + 1;
     }
     el.value = base + i;
+    this.render();
   }
   evalFunction () {
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
@@ -289,7 +291,7 @@ return ${this.targetClass.variableName}.index;`)
           if (this.__error) {
             window.mainView.showTooltip({
               targetBounds: this.getBoundingClientRect(),
-              hideAfterMs: 20000,
+              hideAfterMs: 0,
               content: `<p>${this.__error.message}</p>`
             });
           }
@@ -298,28 +300,39 @@ return ${this.targetClass.variableName}.index;`)
 
       const currentTable = this.targetClass.table.currentData;
       const currentKeys = Object.keys(currentTable.data);
+      const labelAttr = this.targetClass.annotations.labelAttr;
       const cellRenderer = function (instance, td, row, col, prop, value, cellProperties) {
         Handsontable.renderers.TextRenderer.apply(this, arguments);
         const index = instance.getSourceDataAtRow(instance.toPhysicalRow(row));
         if (col === 0) {
           d3.select(td).classed('idColumn', true);
-        } else {
+        } else if (!labelAttr || col > 1) {
           previewCell(d3.select(td), currentTable.data[index]);
         }
       };
-      const columns = [
-        {
+      const columns = [{
+        renderer: cellRenderer,
+        data: index => index
+      }];
+      if (labelAttr) {
+        columns.push({
           renderer: cellRenderer,
-          data: index => index
-        },
-        {
-          renderer: cellRenderer,
-          data: index => '...'
-        }
-      ];
+          data: index => currentTable.data[index].row[labelAttr]
+        });
+      }
+      columns.push({
+        renderer: cellRenderer,
+        data: index => '...'
+      });
       const spec = {
         data: currentKeys,
-        columns
+        columns,
+        colHeaders: (columnIndex) => {
+          const attr = columnIndex === 0 ? ''
+            : labelAttr && columnIndex === 1 ? labelAttr
+              : this.d3el.select('#attrName').node().value;
+          return `<div class="text" data-column-index=${columnIndex}>${attr}</div>`;
+        }
       };
       this.tableRenderer.updateSettings(spec);
       this.tableRenderer.render();
