@@ -298,7 +298,7 @@ return ${attrBit} === 0;`)
         this.setCodeContents({
           func,
           value: filterValue.node().value,
-          attr: attrSelect.node().value
+          attr: attrSelect.node().value || null
         });
       }
     };
