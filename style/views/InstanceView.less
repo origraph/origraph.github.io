@@ -38,6 +38,7 @@
 
   .edgeLayer {
     .edge {
+      cursor: pointer;
       .line {
         fill: none;
         stroke-width: 2px;
@@ -45,6 +46,12 @@
       &.highlighted .line {
         stroke-width: 4px;
         stroke: @textColor;
+      }
+      text {
+        display: none;
+      }
+      &:hover text {
+        display: unset;
       }
     }
   }
