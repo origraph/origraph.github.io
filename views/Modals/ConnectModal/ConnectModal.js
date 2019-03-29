@@ -304,14 +304,14 @@ that a summed score of 2.0 should have a perfect one-to-one relationship, and
     // Position stuff in the the axis layer
     const bounds = container.node().getBoundingClientRect();
     const globalGap = 2 * this.emSize;
-    const margin = { top: globalGap + 40, right: 10, bottom: 40, left: 150 };
+    const margin = { top: 25, right: 10, bottom: 40 + globalGap, left: 150 };
     const width = bounds.width - (margin.left + margin.right + this.scrollBarSize);
     const height = bounds.height - (margin.top + margin.bottom);
     const axisLayer = container.select('.axisLayer')
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom);
     axisLayer.selectAll('.global')
-      .attr('transform', `translate(${margin.left},${globalGap})`);
+      .attr('transform', `translate(${margin.left},${margin.top + height + globalGap})`);
     axisLayer.select('.local')
       .attr('transform', `translate(${margin.left},${height + margin.top})`);
     axisLayer.select('.label')
@@ -533,13 +533,13 @@ that a summed score of 2.0 should have a perfect one-to-one relationship, and
     container.select('.global.sliders .low')
       .call(d3.drag().on('drag', () => {
         this._localDomain = getLocalDomain();
-        this._localDomain[0] = Math.min(this._localDomain[1] - 1, globalScale.invert(d3.event.x));
+        this._localDomain[0] = Math.min(this._localDomain[1] - 0.1, globalScale.invert(d3.event.x));
         updateChart();
       }));
     container.select('.global.sliders .high')
       .call(d3.drag().on('drag', () => {
         this._localDomain = getLocalDomain();
-        this._localDomain[1] = Math.max(this._localDomain[0] + 1, globalScale.invert(d3.event.x));
+        this._localDomain[1] = Math.max(this._localDomain[0] + 0.1, globalScale.invert(d3.event.x));
         updateChart();
       }));
   }
