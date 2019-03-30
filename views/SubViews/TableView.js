@@ -85,8 +85,7 @@ class TableView extends GoldenLayoutView {
     super.setupTab();
     if (!this.isEmpty()) {
       this.tabElement
-        .style('background-color', '#' + window.mainView.getClassColor(this.classObj))
-        .style('border-bottom', `1px solid #${window.mainView.getClassColor(this.classObj)}`);
+        .style('background-color', '#' + window.mainView.getClassColor(this.classObj));
     }
   }
   fillCell (element, value) {
