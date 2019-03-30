@@ -252,5 +252,5 @@ class InstanceView extends ZoomableSvgViewMixin(GoldenLayoutView) {
   }
 }
 InstanceView.icon = 'img/instanceView.svg';
-InstanceView.label = 'Topology Sample';
+InstanceView.label = 'Network Sample';
 export default InstanceView;
