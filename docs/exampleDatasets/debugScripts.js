@@ -120,17 +120,20 @@ window.halfwayThroughSenate = async () => {
   // Y2
 
   let twitterAccounts = tweets.expand('user'); // Y3
+  const projectedTwitterEdge = Array.from(twitterAccounts.edgeClasses())[0];
 
   // Y4
 
-  twitterAccounts.connectToNodeClass({
+  const twitterSenatorLink = twitterAccounts.connectToNodeClass({
     otherNodeClass: senators,
     attribute: 'screen_name',
     otherAttribute: 'twitter_account'
   }); // Y5
 
-  twitterAccounts = twitterAccounts.interpretAsEdges(); // Y6
-
+  twitterAccounts = twitterAccounts.interpretAsEdges({ autoconnect: true }); // Y6
+  projectedTwitterEdge.delete();
+  twitterSenatorLink.delete();
+/*
   const contribSenatorEdge = contribs.connectToNodeClass({
     otherNodeClass: senators,
     attribute: 'fec_candidate_id',
@@ -148,16 +151,18 @@ window.halfwayThroughSenate = async () => {
     .closedFacet('vote_position', ['Yes', 'No'])
     .map(classObj => classObj.interpretAsNodes());
   votes.delete();
-  senators.connectToNodeClass({
+  const yesVotes = senators.connectToNodeClass({
     otherNodeClass: yesses,
     attribute: 'id',
     otherAttribute: 'member_id'
-  }).setClassName('Voted');
-  senators.connectToNodeClass({
+  });
+  yesVotes.setClassName('Voted');
+  const noVotes = senators.connectToNodeClass({
     otherNodeClass: nos,
     attribute: 'id',
     otherAttribute: 'member_id'
-  }).setClassName('Voted');
+  });
+  noVotes.setClassName('Voted');
 
   // Y8
 
@@ -174,6 +179,45 @@ window.halfwayThroughSenate = async () => {
   contribsFor.setClassName('Contributions For');
   contribsAgainst.setClassName('Contributions Against');
   contribs.delete();
+
+  const contribForYes = donorCommittees.projectNewEdge([
+    contribsFor.classId,
+    senators.classId,
+    yesVotes.classId,
+    yesses.classId
+  ]);
+  contribForYes.setClassName('Contributions for Yes');
+  const contribForNo = donorCommittees.projectNewEdge([
+    contribsFor.classId,
+    senators.classId,
+    noVotes.classId,
+    nos.classId
+  ]);
+  contribForNo.setClassName('Contributions for No');
+  const contribAgainstYes = donorCommittees.projectNewEdge([
+    contribsAgainst.classId,
+    senators.classId,
+    yesVotes.classId,
+    yesses.classId
+  ]);
+  contribAgainstYes.setClassName('Contributions against Yes');
+  const contribAgainstNo = donorCommittees.projectNewEdge([
+    contribsAgainst.classId,
+    senators.classId,
+    noVotes.classId,
+    nos.classId
+  ]);
+  contribAgainstNo.setClassName('Contributions against No');
+
+  */
+
+  // Y12
+
+  // (Y13 is in Gephi)
+
+  // (Y14 is just a shot of the connect interface)
+
+  // (Y15 is an UpSet plot)
 
   await window.mainView.handleModelChange();
 };
