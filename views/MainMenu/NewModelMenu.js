@@ -9,7 +9,7 @@ class NewModelMenu extends ActionMenuOption {
   }
   executeAction () {
     origraph.createModel();
-    window.mainView.handleClassChange();
+    window.mainView.handleModelChange();
   }
 }
 export default NewModelMenu;

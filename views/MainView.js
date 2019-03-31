@@ -26,7 +26,7 @@ class MainView extends View {
 
     this.classColors = {};
 
-    this.handleClassChange();
+    this.handleModelChange();
 
     this.render();
   }
@@ -49,8 +49,7 @@ class MainView extends View {
       }
     }
   }
-  async handleClassChange () {
-    window.CLASS_COLORS.forEach(color => { this.classColors[color] = null; });
+  async handleModelChange () {
     if (!origraph.currentModel) {
       const existingModels = Object.values(origraph.models);
       if (existingModels.length > 0) {
@@ -66,10 +65,10 @@ class MainView extends View {
   }
   getClassColor (classObj) {
     if (!classObj.annotations.color) {
-      const availableColors = Object.entries(this.classColors)
-        .filter(([color, assignedClassId]) => !assignedClassId);
+      const availableColors = window.CLASS_COLORS
+        .filter(color => !this.classColors[color]);
       if (availableColors.length > 0) {
-        const color = availableColors[0][0];
+        const color = availableColors[0];
         classObj.annotations.color = color;
         this.classColors[color] = classObj.classId;
       }
@@ -88,14 +87,20 @@ class MainView extends View {
     })();
     this.sampling = true;
     const tableCountPromises = {};
+    this.classColors = {};
     for (const [ classId, classObj ] of Object.entries(origraph.currentModel.classes)) {
-      // Count the rows in each table (todo: compute histograms)
+      // Count the rows in each table (todo: compute histograms),
+      // and make each class re-claim its color (so that unused colors can be
+      // recycled)
       this.tableCounts[classId] = null;
       tableCountPromises[classId] = classObj.table.countRows()
         .then(count => {
           this.tableCounts[classId] = count;
           this.render();
         });
+      if (classObj.annotations.color) {
+        this.classColors[classObj.annotations.color] = true;
+      }
     }
     await Promise.all(Object.values(tableCountPromises));
 
@@ -547,12 +552,9 @@ class MainView extends View {
         onClick: async () => {
           const classObj = origraph.currentModel.classes[classId];
           let autoconnect = false;
-          if (classObj.type === 'Node') {
-            const numEdges = Array.from(classObj.edgeClasses()).length;
-            if (numEdges === 1 || numEdges === 2) {
-              autoconnect = await this.confirm(`Preserve connections to node classes?
-                If so, the existing edge classes will be detached.`);
-            }
+          if (classObj.type === 'Node' && classObj.canAutoConnect) {
+            autoconnect = await this.confirm(`Preserve connections to node classes?
+              Existing edge classes will still be detached.`);
           }
           origraph.currentModel.classes[classId].interpretAsEdges({ autoconnect });
         }

@@ -86,7 +86,7 @@ class ExampleOption extends ModalMenuOption {
         if (prefabLabel.select('input').property('checked')) {
           await this.prefab(newModel, classes);
         }
-        await window.mainView.handleClassChange();
+        await window.mainView.handleModelChange();
         this.loading = false;
         this.loaded = true;
         this.render();
