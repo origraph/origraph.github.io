@@ -154,7 +154,10 @@ return (sortedBins[0] || [])[0];`;
       </div>
     `);
     this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
-    this.pathSpecView.on('pathChange', () => { this.render(); });
+    this.pathSpecView.on('pathChange', () => {
+      this._forceTemplateUpdate = true;
+      this.render();
+    });
     this.setupButtons();
     this.setupCodeView();
     this.setupPreview();
@@ -374,17 +377,25 @@ return ${this.targetClass.variableName}${attrBit};`)
       funcSelect.node().value = null;
     }
 
+    if (this._forceTemplateUpdate) {
+      delete this._forceTemplateUpdate;
+      this.handleTemplateChange();
+    }
+
     // Apply changes whenever either select menu is changed
     this.d3el.selectAll('#attrSelect, #funcSelect')
       .on('change', () => {
-        const func = funcSelect.node().value;
-        if (func) {
-          this.setCodeContents({
-            func,
-            attr: attrSelect.node().value
-          });
-        }
+        this.handleTemplateChange();
       });
+  }
+  handleTemplateChange () {
+    const func = this.d3el.select('#funcSelect').node().value;
+    if (func) {
+      this.setCodeContents({
+        func,
+        attr: this.d3el.select('#attrSelect').node().value
+      });
+    }
   }
 }
 

@@ -128,7 +128,10 @@ ${indent}}`;
       </div>
     `);
     this.pathSpecView.render(this.d3el.select('.PathSpecificationView'));
-    this.pathSpecView.on('pathChange', () => { this.render(); });
+    this.pathSpecView.on('pathChange', () => {
+      this._forceTemplateUpdate = true;
+      this.render();
+    });
     this.setupButtons();
     this.setupCodeView();
   }
@@ -290,17 +293,15 @@ return ${attrBit} === 0;`)
       .property('disabled', !this.codeTemplate);
     filterValue.node().value = this.codeTemplate ? this.codeTemplate.value : '';
 
+    if (this._forceTemplateUpdate) {
+      delete this._forceTemplateUpdate;
+      this.handleTemplateChange();
+    }
+
     // Apply changes whenever either select menu or filterValue is changed
     const updateContents = () => {
       clearTimeout(this._updateContentsTimeout);
-      const func = funcSelect.node().value;
-      if (func) {
-        this.setCodeContents({
-          func,
-          value: filterValue.node().value,
-          attr: attrSelect.node().value || null
-        });
-      }
+      this.handleTemplateChange();
     };
     this.d3el.selectAll('#attrSelect, #funcSelect, #filterValue')
       .on('change', updateContents);
@@ -308,6 +309,17 @@ return ${attrBit} === 0;`)
       clearTimeout(this._updateContentsTimeout);
       this._updateContentsTimeout = setTimeout(updateContents, 1000);
     });
+  }
+  handleTemplateChange () {
+    const func = this.d3el.select('#funcSelect').node().value;
+    if (func) {
+      this.setCodeContents({
+        func,
+        value: this.d3el.select('#filterValue').node().value,
+        attr: this.d3el.select('#attrSelect').node().value || null
+      });
+    }
+    this.render();
   }
 }
 
