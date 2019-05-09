@@ -219,38 +219,46 @@ return ${attrBit} === 0;`)
       return err;
     }
   }
-  drawPreview () {
-    clearTimeout(this._previewTimeout);
-    this._previewTimeout = setTimeout(async () => {
-      const func = this.evalFunction();
-      const errorMessage = this.d3el.select('#errorMessage');
-      if (func instanceof Error) {
-        errorMessage.style('display', null);
-        errorMessage.select('summary').text(func.constructor.name);
-        errorMessage.select('#errorContents').text(func.message);
-        this.d3el.selectAll('#filterCount, #remainingCount').text('--');
-      } else {
-        try {
-          errorMessage.style('display', 'none');
-          let keep = 0;
-          let reject = 0;
-          for await (const item of this.targetClass.table.iterate()) {
-            if (await func(item) === true) {
+  async drawPreview () {
+    window.clearTimeout(this._previewInterval);
+    for (const timeout of this._previewTimeouts || []) {
+      window.clearTimeout(timeout);
+    }
+    const func = this.evalFunction();
+    const errorMessage = this.d3el.select('#errorMessage');
+    if (func instanceof Error) {
+      errorMessage.style('display', null);
+      errorMessage.select('summary').text(func.constructor.name);
+      errorMessage.select('#errorContents').text(func.message);
+      this.d3el.selectAll('#filterCount, #remainingCount').text('--');
+    } else {
+      try {
+        errorMessage.style('display', 'none');
+        let keep = 0;
+        let reject = 0;
+        const previewIter = this.targetClass.table.iterate();
+        this._previewTimeouts = [];
+        this._previewInterval = window.setInterval(async () => {
+          const { done, value } = await previewIter.next();
+          if (done) {
+            window.clearTimeout(this._previewInterval);
+          } else {
+            if (await func(value) === true) {
               keep++;
             } else {
               reject++;
             }
+            this.d3el.select('#filterCount').text(reject);
+            this.d3el.select('#remainingCount').text(keep);
           }
-          this.d3el.select('#filterCount').text(reject);
-          this.d3el.select('#remainingCount').text(keep);
-        } catch (err) {
-          errorMessage.style('display', null);
-          errorMessage.select('summary').text(err.constructor.name);
-          errorMessage.select('#errorContents').text(err.message);
-          this.d3el.selectAll('#filterCount, #remainingCount').text('--');
-        }
+        }, 0);
+      } catch (err) {
+        errorMessage.style('display', null);
+        errorMessage.select('summary').text(err.constructor.name);
+        errorMessage.select('#errorContents').text(err.message);
+        this.d3el.selectAll('#filterCount, #remainingCount').text('--');
       }
-    }, 1000);
+    }
   }
   drawSelectorView () {
     // Attribute select menu
