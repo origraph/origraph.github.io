@@ -60,10 +60,15 @@ ${indent}}`;
     }
     codeContent += '\n';
 
+    if (String(parseFloat(value)) !== value) {
+      // Dumb check to see whether we should wrap the value in quotes
+      value = "'" + value + "'";
+    }
+
     if (func === 'Equals') {
-      codeContent += `return value === '${value}';`;
+      codeContent += `return value === ${value};`;
     } else if (func === 'Contains') {
-      codeContent += `return value.indexOf('${value}') !== -1;`;
+      codeContent += `return value.indexOf(${value}) !== -1;`;
     } else if (func === 'Greater than') {
       codeContent += `return value > ${value};`;
     } else if (func === 'Less than') {
@@ -71,9 +76,9 @@ ${indent}}`;
     } else if (func === 'Count equals') {
       codeContent += `return count === ${value};`;
     } else if (func === 'Count greater than') {
-      codeContent += `return count > '${value}';`;
+      codeContent += `return count > ${value};`;
     } else if (func === 'Count less than') {
-      codeContent += `return count < '${value}';`;
+      codeContent += `return count < ${value};`;
     }
     this._injectingTemplate = true;
     this.code.setValue(this.generateCodeBlock(codeContent));
@@ -221,9 +226,6 @@ return ${attrBit} === 0;`)
   }
   async drawPreview () {
     window.clearTimeout(this._previewInterval);
-    for (const timeout of this._previewTimeouts || []) {
-      window.clearTimeout(timeout);
-    }
     const func = this.evalFunction();
     const errorMessage = this.d3el.select('#errorMessage');
     if (func instanceof Error) {
@@ -237,20 +239,22 @@ return ${attrBit} === 0;`)
         let keep = 0;
         let reject = 0;
         const previewIter = this.targetClass.table.iterate();
-        this._previewTimeouts = [];
         this._previewInterval = window.setInterval(async () => {
-          const { done, value } = await previewIter.next();
-          if (done) {
-            window.clearTimeout(this._previewInterval);
-          } else {
-            if (await func(value) === true) {
-              keep++;
+          for (let i = 0; i < 30; i++) { // preview in batches of 30
+            const { done, value } = await previewIter.next();
+            if (done) {
+              window.clearTimeout(this._previewInterval);
+              break;
             } else {
-              reject++;
+              if (await func(value) === true) {
+                keep++;
+              } else {
+                reject++;
+              }
             }
-            this.d3el.select('#filterCount').text(reject);
-            this.d3el.select('#remainingCount').text(keep);
           }
+          this.d3el.select('#filterCount').text(reject);
+          this.d3el.select('#remainingCount').text(keep);
         }, 0);
       } catch (err) {
         errorMessage.style('display', null);
